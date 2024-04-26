@@ -36,11 +36,6 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   stopped_ = false;
   SetExecutablePath("UNKNOWN.ext");
   absl::SetFlag(&FLAGS_logtostderr, true);
-#ifdef NDEBUG
-  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_WARNING);
-#else
-  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
-#endif
 
   NETunnelProviderProtocol* protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;

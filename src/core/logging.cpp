@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #if defined(__SANITIZE_THREAD__)
 #define DYNAMIC_ANNOTATIONS_ENABLED 1
@@ -212,9 +212,11 @@ typedef FILE* FileHandle;
 #if !defined(NDEBUG) || defined(_DEBUG)
 #define DEFAULT_LOGBUFLEVEL -1
 #define DEFAULT_VERBOSE_LEVEL 1
+#define DEFAULT_LOGSTDERRTHRESHOLD LOGGING_WARNING
 #else
 #define DEFAULT_LOGBUFLEVEL 0
 #define DEFAULT_VERBOSE_LEVEL 0
+#define DEFAULT_LOGSTDERRTHRESHOLD LOGGING_ERROR
 #endif
 
 namespace {
@@ -276,7 +278,7 @@ ABSL_FLAG(bool, logtostderr, false, "log messages go to stderr instead of logfil
 ABSL_FLAG(bool, alsologtostderr, false, "log messages go to stderr in addition to logfiles");
 ABSL_FLAG(bool, colorlogtostderr, false, "color messages logged to stderr (if supported by terminal)");
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_FREEBSD) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 ABSL_FLAG(bool,
           drop_log_memory,
           true,
@@ -293,7 +295,7 @@ ABSL_FLAG(bool,
 // when they run a program without having to look in another file.
 ABSL_FLAG(int32_t,
           stderrthreshold,
-          LOGGING_ERROR,
+          DEFAULT_LOGSTDERRTHRESHOLD,
           "log messages at or above this level are copied to stderr in "
           "addition to logfiles.  This flag obsoletes --alsologtostderr.");
 ABSL_FLAG(int32_t,
@@ -1409,11 +1411,6 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
 void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char* message, int message_len) {
   absl::MutexLock l(&lock_);
 
-  auto log_process_id = g_log_process_id;
-  auto log_thread_id = g_log_thread_id;
-  auto log_timestamp = g_log_timestamp;
-  auto log_tickcount = g_log_tickcount;
-  auto log_prefix = g_log_prefix;
   // https://en.cppreference.com/w/cpp/atomic/atomic_thread_fence
   std::atomic_thread_fence(std::memory_order_release);
   if (!g_log_init.load(std::memory_order_acquire)) {
@@ -1424,6 +1421,12 @@ void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char
     g_log_prefix = absl::GetFlag(FLAGS_log_prefix);
     g_log_init.store(true, std::memory_order_relaxed);
   }
+
+  auto log_process_id = g_log_process_id;
+  auto log_thread_id = g_log_thread_id;
+  auto log_timestamp = g_log_timestamp;
+  auto log_tickcount = g_log_tickcount;
+  auto log_prefix = g_log_prefix;
 
   // We don't log if the base_name_ is "" (which means "don't write")
   if (base_filename_selected_ && base_filename_.empty()) {
@@ -1578,7 +1581,7 @@ void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char
   // or every "FLAGS_logbufsecs" seconds.
   if (force_flush || (bytes_since_flush_ >= 1000000) || (CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_FREEBSD) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     // Only consider files >= 3MiB
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
@@ -1587,12 +1590,7 @@ void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char
       uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
-#if BUILDFLAG(IS_ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
-        // 'posix_fadvise' introduced in API 21:
-        // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
-#else
         posix_fadvise(fileno(file_), dropped_mem_length_, this_drop_length, POSIX_FADV_DONTNEED);
-#endif
         dropped_mem_length_ = total_drop_length;
       }
     }
