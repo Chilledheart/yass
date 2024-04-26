@@ -42,6 +42,7 @@ static_assert(sizeof(QWORD) == sizeof(uint64_t), "A QWORD is a 64-bit unsigned i
 bool ReadValue(HKEY hkey, const std::string& value, DWORD* type, std::vector<BYTE>* output) {
   DWORD BufferSize;
   std::wstring wvalue = SysUTF8ToWide(value);
+  output->clear();
 
   // If lpData is nullptr, and lpcbData is non-nullptr, the function returns
   // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
@@ -167,7 +168,7 @@ class ConfigImplWindows : public ConfigImpl {
     std::vector<BYTE> output;
 
     if (ReadValue(hkey_, key, &type, &output) && (type == REG_DWORD || type == REG_BINARY) &&
-        output.size() == sizeof(DWORD)) {
+        output.size() == sizeof(uint32_t)) {
       *value = *reinterpret_cast<uint32_t*>(output.data());
       return true;
     }
@@ -185,8 +186,14 @@ class ConfigImplWindows : public ConfigImpl {
     std::vector<BYTE> output;
 
     if (ReadValue(hkey_, key, &type, &output) && (type == REG_QWORD || type == REG_BINARY) &&
-        output.size() == sizeof(*value)) {
+        output.size() == sizeof(uint64_t)) {
       *value = *reinterpret_cast<uint64_t*>(output.data());
+      return true;
+    }
+
+    if (ReadValue(hkey_, key, &type, &output) && (type == REG_DWORD || type == REG_BINARY) &&
+        output.size() == sizeof(uint32_t)) {
+      *value = *reinterpret_cast<uint32_t*>(output.data());
       return true;
     }
 
