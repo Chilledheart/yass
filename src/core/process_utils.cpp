@@ -42,9 +42,9 @@ static int Pipe2(int pipe_fds[2]) {
     return ret;
   }
   if ((ret = fcntl(pipe_fds[0], F_SETFD, FD_CLOEXEC)) != 0 || (ret = fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC)) != 0) {
+    PLOG(WARNING) << "fcntl F_SETFD failure";
     IGNORE_EINTR(close(pipe_fds[0]));
     IGNORE_EINTR(close(pipe_fds[1]));
-    PLOG(WARNING) << "fcntl F_SETFD failure";
     return ret;
   }
 #endif
@@ -206,10 +206,10 @@ int ExecuteProcess(const std::vector<std::string>& params, std::string* output, 
     }
     _params.push_back(nullptr);
     ret = execvp(_params[0], &_params[0]);
+    PLOG(ERROR) << "execvp failure on " << command_line;
 
     fprintf(stderr, "execvp failure on %s\n", command_line.c_str());
     fflush(stderr);
-    PLOG(ERROR) << "execvp failure on " << command_line;
 
     if (ret < 0) {
       _exit(ret);
