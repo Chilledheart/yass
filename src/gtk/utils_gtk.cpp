@@ -167,12 +167,12 @@ std::string Utils::GetLocalAddr() {
   bool host_is_ip_address = !ec;
   if (host_is_ip_address && addr.is_v6()) {
     if (addr.is_unspecified()) {
-      local_host = "::1";
+      local_host = "::1"s;
     }
     ss << "http://[" << local_host << "]:" << local_port;
   } else {
     if (host_is_ip_address && addr.is_unspecified()) {
-      local_host = "127.0.0.1";
+      local_host = "127.0.0.1"s;
     }
     ss << "http://" << local_host << ":" << local_port;
   }
@@ -186,17 +186,17 @@ bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* serv
     return false;
   }
   // trim whites
-  if (output[output.size() - 1] == '\n') {
+  if (!output.empty() && output[output.size() - 1] == '\n') {
     output.resize(output.size() - 1);
   }
-  *enabled = output == "'manual'";
+  *enabled = output == "'manual'"s;
 
   params = {"gsettings"s, "get"s, "org.gnome.system.proxy.http"s, "host"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
   // trim whites
-  if (output[output.size() - 1] == '\n') {
+  if (!output.empty() && output[output.size() - 1] == '\n') {
     output.resize(output.size() - 1);
   }
   *server_host = output;
@@ -206,7 +206,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* serv
     return false;
   }
   // trim whites
-  if (output[output.size() - 1] == '\n') {
+  if (!output.empty() && output[output.size() - 1] == '\n') {
     output.resize(output.size() - 1);
   }
   *server_port = output;
@@ -216,7 +216,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* serv
     return false;
   }
   // trim whites
-  if (output[output.size() - 1] == '\n') {
+  if (!output.empty() && output[output.size() - 1] == '\n') {
     output.resize(output.size() - 1);
   }
   *bypass_addr = output;
@@ -246,7 +246,7 @@ bool SetSystemProxy(bool enable,
       return false;
     }
 
-    params = {"gsettings"s, "set"s, std::string(protocol), "port", server_port};
+    params = {"gsettings"s, "set"s, std::string(protocol), "port"s, server_port};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
     }
@@ -280,10 +280,10 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
     return false;
   }
   // trim whites
-  if (output[output.size() - 1] == '\n') {
+  if (!output.empty() && output[output.size() - 1] == '\n') {
     output.resize(output.size() - 1);
   }
-  *enabled = output == "1";
+  *enabled = output == "1"s;
 
   params = {"kreadconfig5"s, "--file"s,   config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s,
             "--key"s,        "httpProxy"s};
@@ -291,7 +291,7 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
     return false;
   }
   // trim whites
-  if (output[output.size() - 1] == '\n') {
+  if (!output.empty() && output[output.size() - 1] == '\n') {
     output.resize(output.size() - 1);
   }
   *server_addr = output;
@@ -302,7 +302,7 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
     return false;
   }
   // trim whites
-  if (output[output.size() - 1] == '\n') {
+  if (!output.empty() && output[output.size() - 1] == '\n') {
     output.resize(output.size() - 1);
   }
   *bypass_addr = output;

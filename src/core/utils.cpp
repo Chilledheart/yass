@@ -161,8 +161,8 @@ std::string_view Basename(std::string_view path) {
   return path.substr(last_slash_pos + 1, first_non_slash_at_end_pos - last_slash_pos);
 }
 
-std::string ExpandUser(const std::string& file_path) {
-  std::string real_path = file_path;
+std::string ExpandUser(std::string_view file_path) {
+  std::string real_path = std::string(file_path);
 
   if (!real_path.empty() && real_path[0] == '~') {
     std::string home;
