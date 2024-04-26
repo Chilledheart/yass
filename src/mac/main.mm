@@ -44,8 +44,6 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
-  // Sets the locale to the default,
-  // which is the user-default ANSI code page obtained from the operating system.
   setlocale(LC_ALL, "");
 
   absl::InitializeSymbolizer(exec_path.c_str());
