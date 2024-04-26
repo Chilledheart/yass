@@ -173,10 +173,10 @@ std::string_view Dirname(std::string_view path);
 // TODO: handle with driver letter under windows
 std::string_view Basename(std::string_view path);
 
-std::string ExpandUser(const std::string& file_path);
+std::string ExpandUser(std::string_view file_path);
 #ifdef _WIN32
 /* path_len should be the string length plus the terminating null character*/
-std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len);
+std::wstring ExpandUserFromString(const std::wstring& path);
 #endif
 
 bool GetExecutablePath(std::string* exe_path);
