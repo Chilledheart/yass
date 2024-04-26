@@ -810,26 +810,26 @@ static int get_yass_auto_start() {
     return -1;
   }
 
+  // If the data has the REG_SZ, REG_MULTI_SZ or REG_EXPAND_SZ type,
+  // the string may not have been stored with the proper terminating null characters.
+  // Therefore, even if the function returns ERROR_SUCCESS,
+  // the application should ensure that the string is properly terminated before using it
   if (type != REG_SZ || BufferSize > kRegReadMaximumSize || BufferSize % sizeof(wchar_t) != 0) {
     VLOG(1) << "[autostart] mistyped auto start entry set";
     return -1;
   }
 
-  output.resize(BufferSize / sizeof(wchar_t) + 2);
+  if (BufferSize == 0) {
+    VLOG(1) << "[autostart] empty auto start entry set";
+    return -1;
+  }
+
+  output.resize(BufferSize / sizeof(wchar_t) - 1);
   if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */, nullptr /* lpReserved */, &type /* lpType */,
                          reinterpret_cast<BYTE*>(output.data()) /* lpData */,
                          &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     VLOG(1) << "[autostart] failed to fetch auto start entry";
     return -1;
-  }
-  // If the data has the REG_SZ, REG_MULTI_SZ or REG_EXPAND_SZ type,
-  // the string may not have been stored with the proper terminating null characters.
-  // Therefore, even if the function returns ERROR_SUCCESS,
-  // the application should ensure that the string is properly terminated before using it
-  output.reserve(BufferSize / sizeof(wchar_t));
-  // removing trailing space
-  while (!output.empty() && output.back() == L'\0') {
-    output.resize(output.size() - 1);
   }
 
   VLOG(2) << "[autostart] previous autostart entry: " << SysWideToUTF8(output);
