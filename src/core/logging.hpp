@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2022 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #ifndef H_CORE_LOGGING
 #define H_CORE_LOGGING
 

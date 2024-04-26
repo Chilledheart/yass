@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #if defined(__SANITIZE_THREAD__)
 #define DYNAMIC_ANNOTATIONS_ENABLED 1
@@ -1409,11 +1409,6 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
 void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char* message, int message_len) {
   absl::MutexLock l(&lock_);
 
-  auto log_process_id = g_log_process_id;
-  auto log_thread_id = g_log_thread_id;
-  auto log_timestamp = g_log_timestamp;
-  auto log_tickcount = g_log_tickcount;
-  auto log_prefix = g_log_prefix;
   // https://en.cppreference.com/w/cpp/atomic/atomic_thread_fence
   std::atomic_thread_fence(std::memory_order_release);
   if (!g_log_init.load(std::memory_order_acquire)) {
@@ -1424,6 +1419,12 @@ void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char
     g_log_prefix = absl::GetFlag(FLAGS_log_prefix);
     g_log_init.store(true, std::memory_order_relaxed);
   }
+
+  auto log_process_id = g_log_process_id;
+  auto log_thread_id = g_log_thread_id;
+  auto log_timestamp = g_log_timestamp;
+  auto log_tickcount = g_log_tickcount;
+  auto log_prefix = g_log_prefix;
 
   // We don't log if the base_name_ is "" (which means "don't write")
   if (base_filename_selected_ && base_filename_.empty()) {
