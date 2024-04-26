@@ -17,7 +17,6 @@ jobject g_activity_obj = nullptr;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
   g_jvm = vm;
-  absl::SetFlag(&FLAGS_logtostderr, true);
 
   return JNI_VERSION_1_6;
 }

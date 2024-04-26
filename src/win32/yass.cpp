@@ -80,7 +80,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     argv_store[i] = SysWideToUTF8(wargv[i]);
     argv[i] = argv_store[i].data();
   }
-  absl::SetFlag(&FLAGS_logtostderr, false);
   argv[0] = exec_path.data();
 
   config::SetClientUsageMessage(exec_path);

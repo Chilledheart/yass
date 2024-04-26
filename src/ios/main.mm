@@ -33,8 +33,6 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
-  absl::SetFlag(&FLAGS_logtostderr, true);
-
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }

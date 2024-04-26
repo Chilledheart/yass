@@ -35,7 +35,6 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 - (void)startTunnelWithOptions:(NSDictionary*)options completionHandler:(void (^)(NSError*))completionHandler {
   stopped_ = false;
   SetExecutablePath("UNKNOWN.ext");
-  absl::SetFlag(&FLAGS_logtostderr, true);
 
   NETunnelProviderProtocol* protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
