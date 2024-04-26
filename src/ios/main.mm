@@ -33,8 +33,6 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
-  setlocale(LC_ALL, "");
-
   absl::InitializeSymbolizer(exec_path.c_str());
 #ifdef HAVE_CRASHPAD
   CHECK(InitializeCrashpad(exec_path));
