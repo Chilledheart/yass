@@ -274,7 +274,14 @@ ABSL_FLAG(std::string, log_prefix, std::string(), "Prepend the log prefix to the
 #endif
 
 ABSL_FLAG(bool, tick_counts_in_logfile_name, true, "put a tick_counts at the end of the log file name");
-ABSL_FLAG(bool, logtostderr, false, "log messages go to stderr instead of logfiles");
+ABSL_FLAG(bool,
+          logtostderr,
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_IOS)
+          true,
+#else
+          false,
+#endif
+          "log messages go to stderr instead of logfiles");
 ABSL_FLAG(bool, alsologtostderr, false, "log messages go to stderr in addition to logfiles");
 ABSL_FLAG(bool, colorlogtostderr, false, "color messages logged to stderr (if supported by terminal)");
 

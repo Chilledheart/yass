@@ -212,58 +212,6 @@ bool IsProgramConsole(HANDLE handle) {
   return IsHandleConsole(handle);
 }
 
-#ifndef CP_UTF8
-#define CP_UTF8 65001
-#endif  // CP_UTF8
-
-bool SetUTF8Locale() {
-  bool success = false;
-
-  bool is_console = false /* IsProgramConsole() */;
-
-  if (is_console) {
-    // Calling SetConsoleCP
-    // this setting is permanent and we need to restore CP value after exit,
-    // otherwise it might affects the all programs in the same console
-    //
-    // anyway using WriteConsoleW should be sufficient to handle with UTF-8
-    // characters in console, better to leave this code path aside.
-#if 0
-    // Use UTF-8 mode on Windows 10 1903 or later.
-    if (IsWindowsVersionBNOrGreater(10, 0, 18362)) {
-      static UINT previous_cp, previous_output_cp;
-      previous_cp = GetConsoleCP();
-      previous_output_cp = GetConsoleOutputCP();
-      if (SetConsoleCP(CP_UTF8) && SetConsoleOutputCP(CP_UTF8)) {
-        success = true;
-      } else {
-        PLOG(WARNING) << "Interal error: setup utf-8 console cp failed";
-      }
-      std::atexit([]() {
-        if (!SetConsoleCP(previous_cp) ||
-            !SetConsoleOutputCP(previous_output_cp)) {
-          PLOG(WARNING) << "Interal error: restore console cp failed";
-        }
-      });
-    }
-#else
-    success = true;
-#endif
-  } else {
-    success = true;
-  }
-
-  // Starting in Windows 10 version 1803 (10.0.17134.0), the Universal C Runtime
-  // supports using a UTF-8 code page.
-  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/setlocale-wsetlocale?view=msvc-170
-  if (IsWindowsVersionBNOrGreater(10, 0, 17134)) {
-    setlocale(LC_ALL, ".UTF8");
-  } else if (!is_console) {
-    success = false;
-  }
-  return success;
-}
-
 static const wchar_t* kDllWhiteList[] = {
 #ifndef _LIBCPP_MSVCRT
     // msvc runtime, still searched current directory
