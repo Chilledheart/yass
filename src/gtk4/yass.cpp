@@ -90,9 +90,8 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
-  if (!SetUTF8Locale()) {
-    LOG(WARNING) << "Failed to set up utf-8 locale";
-  }
+  setlocale(LC_ALL, "");
+
   constexpr std::string_view kDefaultLocalePath = "../share/locale";
   std::string locale_path = std::string(kDefaultLocalePath);
   size_t rpos = exec_path.rfind('/');

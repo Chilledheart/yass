@@ -46,12 +46,4 @@ uint64_t GetMonotonicTime() {
   return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND + ts.tv_nsec - start_ts.tv_nsec;
 }
 
-bool SetUTF8Locale() {
-  if (setlocale(LC_ALL, "C.UTF-8") == nullptr)
-    return false;
-  if (strcmp(setlocale(LC_ALL, nullptr), "C.UTF-8") != 0)
-    return false;
-  return true;
-}
-
 #endif  // BUILDFLAG(IS_FREEBSD)

@@ -33,9 +33,7 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
-  if (!SetUTF8Locale()) {
-    LOG(WARNING) << "Failed to set up utf-8 locale";
-  }
+  setlocale(LC_ALL, "");
 
   absl::InitializeSymbolizer(exec_path.c_str());
 #ifdef HAVE_CRASHPAD

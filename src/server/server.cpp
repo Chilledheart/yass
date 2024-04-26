@@ -47,9 +47,8 @@ int main(int argc, const char* argv[]) {
     return -1;
   }
 #endif
-  if (!SetUTF8Locale()) {
-    LOG(WARNING) << "Failed to set up utf-8 locale";
-  }
+
+  setlocale(LC_ALL, "");
 
   // Major routine
   // - Read config from ss config file

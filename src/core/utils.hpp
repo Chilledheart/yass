@@ -61,8 +61,6 @@ using fd_t = int;
 
 bool IsProgramConsole(internal::fd_t fd);
 
-bool SetUTF8Locale();
-
 std::optional<int> StringToInteger(std::string_view value);
 std::optional<unsigned> StringToIntegerU(std::string_view value);
 std::optional<int64_t> StringToInteger64(std::string_view value);
