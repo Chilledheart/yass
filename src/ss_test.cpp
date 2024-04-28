@@ -33,7 +33,6 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
 #include "feature.h"
-#include "i18n/icu_util.hpp"
 #include "net/cipher.hpp"
 #include "net/iobuf.hpp"
 #include "server/server_server.hpp"
@@ -768,10 +767,6 @@ int main(int argc, char** argv) {
   LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
 #ifndef NDEBUG
   LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
-#endif
-
-#ifdef HAVE_ICU
-  CHECK(InitializeICU());
 #endif
 
 #ifdef _WIN32
