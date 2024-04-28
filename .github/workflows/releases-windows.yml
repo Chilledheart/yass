@@ -214,7 +214,7 @@ jobs:
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -build-test -build-benchmark -use-icu=false || exit /b
+          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -build-test -build-benchmark || exit /b
 
           goto :eof
       - name: Run tests

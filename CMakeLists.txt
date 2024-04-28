@@ -437,7 +437,6 @@ option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 option(USE_MBEDTLS "Build with mbedtls support" ON)
 option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
-option(USE_ICU "Build with icu" OFF)
 option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
 option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
@@ -2389,21 +2388,6 @@ if (USE_TCMALLOC)
 endif()
 
 # *****************************************************************************************
-#           icu Library
-# *****************************************************************************************
-
-if (USE_ICU)
-  message(STATUS "Compiling with bundled icu library")
-  add_subdirectory(third_party/icu)
-  list(APPEND YASS_APP_FEATURES "icu")
-  set(SUPPORT_DEFINITIONS
-    HAVE_ICU
-    ${SUPPORT_DEFINITIONS}
-  )
-  set(SUPPORT_LIBS icuuc icui18n ${SUPPORT_LIBS})
-endif()
-
-# *****************************************************************************************
 #           re2 Library
 # *****************************************************************************************
 
@@ -3690,12 +3674,6 @@ if (USE_CRASHPAD)
   target_link_libraries(yass_core PUBLIC yass_crashpad)
 endif()
 
-if (USE_ICU)
-  target_sources(yass_core PRIVATE src/i18n/icu_util.cpp)
-  target_sources(yass_core PRIVATE src/i18n/icu_util.hpp)
-  target_link_libraries(yass_core PUBLIC icuuc icui18n)
-endif()
-
 if (USE_TCMALLOC)
   target_link_libraries(yass_core PUBLIC tcmalloc)
 endif()
@@ -4027,10 +4005,6 @@ if (GUI)
         list(APPEND SRC_FILES ${ALLRESOURCES})
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
-        if (USE_ICU)
-          list(APPEND SRC_FILES
-            ${ICU_DATAFILE})
-        endif()
         if (_CRASHPAD_BINARY)
           list(APPEND SRC_FILES
             ${_CRASHPAD_BINARY})
@@ -4070,10 +4044,6 @@ if (GUI)
         list(APPEND SRC_FILES ${ALLRESOURCES})
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
-        if (USE_ICU)
-          list(APPEND SRC_FILES
-            ${ICU_DATAFILE})
-        endif()
         list(APPEND SRC_FILES
           src/ios/YassAppDelegate.mm
           src/ios/YassAppDelegate.h
@@ -4350,10 +4320,6 @@ if (GUI)
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
-        if (USE_ICU)
-          set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
-            MACOSX_PACKAGE_LOCATION "Resources")
-        endif()
         if (_CRASHPAD_BINARY)
           set_source_files_properties("${_CRASHPAD_BINARY}" PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
@@ -4436,10 +4402,6 @@ if (GUI)
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
-        if (USE_ICU)
-          set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
-            MACOSX_PACKAGE_LOCATION "Resources")
-        endif()
 
         set_target_properties(${APP_NAME} PROPERTIES
           RESOURCE "${ALLRESOURCES}"
@@ -4602,7 +4564,6 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/asio/asio/LICENSE_1_0.txt           _ASIO_LICENSE)
   file(READ third_party/boringssl/src/LICENSE               _BORINGSSL_LICENSE)
   file(READ third_party/googleurl/LICENSE                   _GOOGLEURL_LICENSE)
-  file(READ third_party/icu/LICENSE                         _ICU_LICENSE)
   file(READ third_party/json/LICENSE.MIT                    _JSON_LICENSE)
   file(READ third_party/leveldb/LICENSE                     _LEVELDB_LICENSE)
   file(READ third_party/libc++/trunk/LICENSE.TXT            _LIBCXX_LICENSE)

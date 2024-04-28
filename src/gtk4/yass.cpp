@@ -23,7 +23,6 @@
 #include "feature.h"
 #include "gtk4/option_dialog.hpp"
 #include "gtk4/yass_window.hpp"
-#include "i18n/icu_util.hpp"
 #include "version.h"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
@@ -111,12 +110,6 @@ int main(int argc, const char** argv) {
 
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
-
-#ifdef HAVE_ICU
-  if (!InitializeICU()) {
-    LOG(WARNING) << "Failed to initialize icu component";
-  }
-#endif
 
   CRYPTO_library_init();
 

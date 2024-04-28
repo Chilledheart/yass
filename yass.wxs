@@ -65,7 +65,6 @@
             <Component Id='yass.exe' Directory='INSTALLDIR' Win64='$(var.Win64)' Guid='3E5E8F97-4E9A-4B11-B334-611CE0AFFC54'>
                 <File Name='yass.exe' Source='yass.exe' KeyPath='yes'/>
                 <!-- %CRASHPAD_HANDLER_HOLDER% -->
-                <!-- %ICUDATAFILE_HOLDER% -->
 
                 <RegistryKey Root='HKMU' Key='[REGISTRYKEY]'>
                     <RegistryValue Key='InstallPath' Type='string' Value='[INSTALLDIR]' KeyPath='no' />

@@ -15,7 +15,6 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
-#include "i18n/icu_util.hpp"
 
 // Data
 static bool g_Initialized = false;
@@ -44,13 +43,6 @@ void Init(JNIEnv* env, jobject activity_obj) {
   std::string lib_path;
   CHECK_EQ(0, GetNativeLibraryDirectory(env, activity_obj, &lib_path));
   CHECK(InitializeCrashpad(lib_path + "/libnative-lib.so"));
-#endif
-
-#ifdef HAVE_ICU
-  if (!InitializeICU()) {
-    LOG(WARNING) << "Failed to initialize icu component";
-    return;
-  }
 #endif
 
   CRYPTO_library_init();
