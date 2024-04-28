@@ -63,9 +63,6 @@ android {
     buildFeatures {
         viewBinding true
     }
-    aaptOptions {
-        noCompress 'icudtl.dat'
-    }
     packagingOptions {
         jniLibs {
             useLegacyPackaging = true
@@ -78,11 +75,6 @@ task copyTask {
         from '../common/res/drawable'
         into 'src/main/res/drawable'
         include 'icon.png'
-    }
-    copy {
-        from '../../third_party/icu/android'
-        into 'assets'
-        include 'icudtl.dat'
     }
     copy {
         from '../../build-android24-x86/libyass.so'

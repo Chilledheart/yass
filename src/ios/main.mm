@@ -18,7 +18,6 @@
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
-#include "i18n/icu_util.hpp"
 #include "ios/YassAppDelegate.h"
 #include "version.h"
 
@@ -43,12 +42,6 @@ int main(int argc, const char** argv) {
 
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
-
-#ifdef HAVE_ICU
-  if (!InitializeICU()) {
-    LOG(WARNING) << "Failed to initialize icu component";
-  }
-#endif
 
   NSString* appDelegateClassName;
   @autoreleasepool {

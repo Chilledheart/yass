@@ -20,7 +20,6 @@
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
-#include "i18n/icu_util.hpp"
 #include "version.h"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
@@ -99,12 +98,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, &argv[0]);
-
-#ifdef HAVE_ICU
-  if (!InitializeICU()) {
-    LOG(WARNING) << "Failed to initialize icu component";
-  }
-#endif
 
   int iResult = 0;
   WSADATA wsaData = {0};
