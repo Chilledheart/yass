@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022-2024 Chilledheart  */
 #include "cli/cli_worker.hpp"
-#include "cli/cli_server.hpp"
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_join.h>
+#include <signal.h>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #endif
+
+#include "cli/cli_server.hpp"
 
 using namespace std::string_literals;
 const ProgramType pType = YASS_CLIENT_SLAVE;
@@ -38,6 +40,10 @@ Worker::Worker()
 #endif
 
   CRYPTO_library_init();
+
+#ifdef SIGPIPE
+  signal(SIGPIPE, SIG_IGN);
+#endif
 
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
 }
