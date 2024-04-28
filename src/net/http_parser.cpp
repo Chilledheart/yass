@@ -5,6 +5,7 @@
 #include "core/utils.hpp"
 #include "url/gurl.h"
 
+#include <absl/strings/ascii.h>
 #include <absl/strings/str_cat.h>
 
 #ifndef HAVE_BALSA_HTTP_PARSER
@@ -16,6 +17,8 @@
 #endif
 
 namespace net {
+
+constexpr const std::string_view kHttpVersionPrefix = "HTTP/";
 
 // Convert plain http proxy header to http request header
 //
@@ -58,23 +61,35 @@ static void ReforgeHttpRequestImpl(std::string* header,
   *header = ss.str();
 }
 
-static void SplitHostPort(std::string* out_hostname, std::string* out_port, const std::string& hostname_and_port) {
-  size_t colon_offset = hostname_and_port.find_last_of(':');
-  const size_t bracket_offset = hostname_and_port.find_last_of(']');
-  std::string hostname, port;
+static bool SplitHostPort(std::string* out_hostname, std::string* out_port, const std::string& host_port_string) {
+  url::Component username_component;
+  url::Component password_component;
+  url::Component host_component;
+  url::Component port_component;
 
-  // An IPv6 literal may have colons internally, guarded by square brackets.
-  if (bracket_offset != std::string::npos && colon_offset != std::string::npos && bracket_offset > colon_offset) {
-    colon_offset = std::string::npos;
+  url::ParseAuthority(host_port_string.data(), url::Component(0, host_port_string.size()), &username_component,
+                      &password_component, &host_component, &port_component);
+
+  // Only support "host:port" and nothing more or less.
+  if (username_component.is_valid() || password_component.is_valid() || !host_component.is_nonempty() ||
+      !port_component.is_valid()) {
+    DVLOG(1) << "HTTP authority could not be parsed: " << host_port_string;
+    return false;
   }
 
-  if (colon_offset == std::string::npos) {
-    *out_hostname = hostname_and_port;
-    *out_port = "80";
-  } else {
-    *out_hostname = hostname_and_port.substr(0, colon_offset);
-    *out_port = hostname_and_port.substr(colon_offset + 1);
+  std::string hostname(host_port_string.data() + host_component.begin, host_component.len);
+
+  int parsed_port_number = port_component.is_empty() ? 80 : url::ParsePort(host_port_string.data(), port_component);
+  // Negative result is either invalid or unspecified, either of which is
+  // disallowed for this parse. Port 0 is technically valid but reserved and not
+  // really usable in practice, so easiest to just disallow it here.
+  if (parsed_port_number <= 0 || parsed_port_number > UINT16_MAX) {
+    DVLOG(1) << "Port could not be parsed while parsing from: " << host_port_string;
+    return false;
   }
+  *out_hostname = hostname;
+  *out_port = std::to_string(parsed_port_number);
+  return true;
 }
 
 #ifdef HAVE_BALSA_HTTP_PARSER
@@ -180,23 +195,21 @@ bool isUrlValid(std::string_view url, bool is_connect) {
          std::all_of(path_query.begin(), path_query.end(), is_valid_path_query_char);
 }
 
+// Returns true if `version_input` is a valid HTTP version string as defined at
+// https://www.rfc-editor.org/rfc/rfc9112.html#section-2.3, or empty (for HTTP/0.9).
 bool isVersionValid(std::string_view version_input) {
-  // HTTP-version is defined at
-  // https://www.rfc-editor.org/rfc/rfc9112.html#section-2.3. HTTP/0.9 requests
-  // have no http-version, so empty `version_input` is also accepted.
+  if (version_input.empty()) {
+    return true;
+  }
 
-#if 0
-  static const auto regex = [] {
-    envoy::type::matcher::v3::RegexMatcher matcher;
-    *matcher.mutable_google_re2() = envoy::type::matcher::v3::RegexMatcher::GoogleRE2();
-    matcher.set_regex("|HTTP/[0-9]\\.[0-9]");
-    return Regex::Utility::parseRegex(matcher);
-  }();
+  if (!absl::StartsWith(version_input, kHttpVersionPrefix)) {
+    return false;
+  }
+  version_input.remove_prefix(kHttpVersionPrefix.size());
 
-  return regex->match(version_input);
-#else
-  return true;
-#endif
+  // Version number is in the form of "[0-9].[0-9]".
+  return version_input.size() == 3 && absl::ascii_isdigit(version_input[0]) && version_input[1] == '.' &&
+         absl::ascii_isdigit(version_input[2]);
 }
 
 }  // anonymous namespace
@@ -253,7 +266,11 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     if (key == "Host" && !http_is_connect_) {
       std::string authority = std::string(value);
       std::string hostname, port;
-      SplitHostPort(&hostname, &port, authority);
+      if (!SplitHostPort(&hostname, &port, authority)) {
+        VLOG(1) << "parser failed: bad http field: Authority: " << authority;
+        status_ = ParserStatus::Error;
+        break;
+      }
 
       // Handle IPv6 literals.
       if (hostname.size() >= 2 && hostname[0] == '[' && hostname[hostname.size() - 1] == ']') {
@@ -315,7 +332,12 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
   if (is_connect) {
     std::string authority = http_url_;
     std::string hostname, port;
-    SplitHostPort(&hostname, &port, authority);
+    if (!SplitHostPort(&hostname, &port, authority)) {
+      VLOG(1) << "parser failed: bad http field: Authority: " << authority;
+      status_ = ParserStatus::Error;
+      error_message_ = "HPE_INVALID_AUTHORITY";
+      return;
+    }
 
     // Handle IPv6 literals.
     if (hostname.size() >= 2 && hostname[0] == '[' && hostname[hostname.size() - 1] == ']') {
@@ -520,7 +542,10 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   if (self->http_field_ == "Host" && !self->http_is_connect_) {
     std::string authority = std::string(buf, len);
     std::string hostname, port;
-    SplitHostPort(&hostname, &port, authority);
+    if (!SplitHostPort(&hostname, &port, authority)) {
+      VLOG(1) << "parser failed: bad http field: Authority: " << authority;
+      return -1;
+    }
 
     // Handle IPv6 literals.
     if (hostname.size() >= 2 && hostname[0] == '[' && hostname[hostname.size() - 1] == ']') {
