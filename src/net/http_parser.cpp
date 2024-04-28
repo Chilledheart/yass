@@ -234,8 +234,9 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
 
     if (key == "Host" && !http_is_connect_) {
       std::string authority = std::string(value);
-      std::string hostname, port;
-      if (!SplitHostPortWithDefaultPort<80>(&hostname, &port, authority)) {
+      std::string hostname;
+      uint16_t portnum;
+      if (!SplitHostPortWithDefaultPort<80>(&hostname, &portnum, authority)) {
         VLOG(1) << "parser failed: bad http field: Authority: " << authority;
         status_ = ParserStatus::Error;
         break;
@@ -246,14 +247,6 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
         hostname = hostname.substr(1, hostname.size() - 2);
       }
 
-      std::optional<unsigned> portnum_opt = StringToIntegerU(port);
-      if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
-        VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname
-                << " port: " << port;
-        status_ = ParserStatus::Error;
-        break;
-      }
-      const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
       http_host_ = hostname;
       http_port_ = portnum;
     }
@@ -300,8 +293,9 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
   http_url_ = std::string(request_uri);
   if (is_connect) {
     std::string authority = http_url_;
-    std::string hostname, port;
-    if (!SplitHostPortWithDefaultPort<80>(&hostname, &port, authority)) {
+    std::string hostname;
+    uint16_t portnum;
+    if (!SplitHostPortWithDefaultPort<80>(&hostname, &portnum, authority)) {
       VLOG(1) << "parser failed: bad http field: Authority: " << authority;
       status_ = ParserStatus::Error;
       error_message_ = "HPE_INVALID_AUTHORITY";
@@ -313,14 +307,6 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
       hostname = hostname.substr(1, hostname.size() - 2);
     }
 
-    std::optional<unsigned> portnum_opt = StringToIntegerU(port);
-    if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
-      VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname << " port: " << port;
-      status_ = ParserStatus::Error;
-      error_message_ = "HPE_INVALID_URL";
-      return;
-    }
-    const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
     http_host_ = hostname;
     http_port_ = portnum;
   }
@@ -510,8 +496,9 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   self->http_headers_[self->http_field_] = self->http_value_;
   if (self->http_field_ == "Host" && !self->http_is_connect_) {
     std::string authority = std::string(buf, len);
-    std::string hostname, port;
-    if (!SplitHostPortWithDefaultPort<80>(&hostname, &port, authority)) {
+    std::string hostname;
+    uint16_t portnum;
+    if (!SplitHostPortWithDefaultPort<80>(&hostname, &portnum, authority)) {
       VLOG(1) << "parser failed: bad http field: Authority: " << authority;
       return -1;
     }
@@ -521,12 +508,6 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
       hostname = hostname.substr(1, hostname.size() - 2);
     }
 
-    std::optional<unsigned> portnum_opt = StringToIntegerU(port);
-    if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
-      VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname << " port: " << port;
-      return -1;
-    }
-    const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
     self->http_host_ = hostname;
     self->http_port_ = portnum;
   }

@@ -326,8 +326,9 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
     return false;
   }
 
-  std::string hostname, port;
-  if (!SplitHostPortWithDefaultPort<443>(&hostname, &port, authority)) {
+  std::string hostname;
+  uint16_t portnum;
+  if (!SplitHostPortWithDefaultPort<443>(&hostname, &portnum, authority)) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
               << " Unexpected authority: " << authority;
     return false;
@@ -342,14 +343,6 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
     LOG(WARNING) << "Connection (server) " << connection_id() << " too long domain name: " << hostname;
     return false;
   }
-
-  std::optional<unsigned> portnum_opt = StringToIntegerU(port);
-  if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
-    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-              << " Unexpected authority: " << authority << " hostname: " << hostname << " port: " << port;
-    return false;
-  }
-  const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
 
   request_ = ss::request(hostname, portnum);
 
