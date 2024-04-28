@@ -15,7 +15,6 @@
 #include "net/base64.hpp"
 #include "net/http_parser.hpp"
 #include "net/padding.hpp"
-#include "url/gurl.h"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
@@ -29,37 +28,6 @@ using namespace net;
 using gurl_base::ToLowerASCII;
 
 #ifdef HAVE_QUICHE
-static bool SplitHostPort(std::string* out_hostname, std::string* out_port, const std::string& host_port_string) {
-  url::Component username_component;
-  url::Component password_component;
-  url::Component host_component;
-  url::Component port_component;
-
-  url::ParseAuthority(host_port_string.data(), url::Component(0, host_port_string.size()), &username_component,
-                      &password_component, &host_component, &port_component);
-
-  // Only support "host:port" and nothing more or less.
-  if (username_component.is_valid() || password_component.is_valid() || !host_component.is_nonempty() ||
-      !port_component.is_valid()) {
-    DVLOG(1) << "HTTP authority could not be parsed: " << host_port_string;
-    return false;
-  }
-
-  std::string hostname(host_port_string.data() + host_component.begin, host_component.len);
-
-  int parsed_port_number = port_component.is_empty() ? 443 : url::ParsePort(host_port_string.data(), port_component);
-  // Negative result is either invalid or unspecified, either of which is
-  // disallowed for this parse. Port 0 is technically valid but reserved and not
-  // really usable in practice, so easiest to just disallow it here.
-  if (parsed_port_number <= 0 || parsed_port_number > UINT16_MAX) {
-    DVLOG(1) << "Port could not be parsed while parsing from: " << host_port_string;
-    return false;
-  }
-  *out_hostname = hostname;
-  *out_port = std::to_string(parsed_port_number);
-  return true;
-}
-
 static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair<std::string, std::string>> headers,
                                                            int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
@@ -359,7 +327,7 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
   }
 
   std::string hostname, port;
-  if (!SplitHostPort(&hostname, &port, authority)) {
+  if (!SplitHostPortWithDefaultPort<443>(&hostname, &port, authority)) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
               << " Unexpected authority: " << authority;
     return false;
