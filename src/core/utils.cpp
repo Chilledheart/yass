@@ -443,7 +443,7 @@ const char* ProgramTypeToStr(ProgramType type) {
 
 template <int DefaultPort>
 bool SplitHostPortWithDefaultPort(std::string* out_hostname,
-                                  std::string* out_port,
+                                  uint16_t* out_port,
                                   const std::string& host_port_string) {
   url::Component username_component;
   url::Component password_component;
@@ -475,14 +475,14 @@ bool SplitHostPortWithDefaultPort(std::string* out_hostname,
     return false;
   }
   *out_hostname = hostname;
-  *out_port = std::to_string(parsed_port_number);
+  *out_port = static_cast<uint16_t>(parsed_port_number);
   return true;
 }
 
 template bool SplitHostPortWithDefaultPort<80>(std::string* out_hostname,
-                                               std::string* out_port,
+                                               uint16_t* out_port,
                                                const std::string& host_port_string);
 
 template bool SplitHostPortWithDefaultPort<443>(std::string* out_hostname,
-                                                std::string* out_port,
+                                                uint16_t* out_port,
                                                 const std::string& host_port_string);
