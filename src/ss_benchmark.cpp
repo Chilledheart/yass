@@ -23,9 +23,11 @@
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
+#include "feature.h"
 #include "net/cipher.hpp"
 #include "net/iobuf.hpp"
 #include "server/server_server.hpp"
+#include "version.h"
 
 const ProgramType pType = YASS_BENCHMARK;
 
@@ -612,14 +614,19 @@ int main(int argc, char** argv) {
   ::benchmark::Initialize(&argc, argv);
   absl::ParseCommandLine(argc, argv);
 
+  // first line of logging
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG << " type: " << ProgramTypeToStr(pType);
+  LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
+  LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
+#ifndef NDEBUG
+  LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
+#endif
+
 #ifdef _WIN32
   int iResult = 0;
   WSADATA wsaData = {0};
   iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
   CHECK_EQ(iResult, 0) << "WSAStartup failure";
-#endif
-#ifdef _WIN32
-  LOG(WARNING) << "Benchmark Started";
 #endif
 
   CRYPTO_library_init();

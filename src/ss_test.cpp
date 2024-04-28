@@ -32,10 +32,12 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
+#include "feature.h"
 #include "i18n/icu_util.hpp"
 #include "net/cipher.hpp"
 #include "net/iobuf.hpp"
 #include "server/server_server.hpp"
+#include "version.h"
 
 #include "test_util.hpp"
 
@@ -760,6 +762,18 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   absl::ParseCommandLine(argc, argv);
 
+  // first line of logging
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG << " type: " << ProgramTypeToStr(pType);
+  LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
+  LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
+#ifndef NDEBUG
+  LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
+#endif
+
+#ifdef HAVE_ICU
+  CHECK(InitializeICU());
+#endif
+
 #ifdef _WIN32
   int iResult = 0;
   WSADATA wsaData = {0};
@@ -780,10 +794,6 @@ int main(int argc, char** argv) {
   if (absl::GetFlag(FLAGS_ipv6_mode)) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
   }
-
-#ifdef HAVE_ICU
-  CHECK(InitializeICU());
-#endif
 
   int ret = RUN_ALL_TESTS();
 
