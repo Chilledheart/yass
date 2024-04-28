@@ -3,9 +3,6 @@
 
 #include "core/utils.hpp"
 
-#include "config/config.hpp"
-#include "core/logging.hpp"
-
 #ifndef _WIN32
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -17,6 +14,10 @@
 #include <winsock2.h>
 #endif
 
+#ifdef HAVE_TCMALLOC
+#include <tcmalloc/malloc_extension.h>
+#endif
+
 #include <absl/flags/flag.h>
 #include <absl/flags/internal/program_name.h>
 #include <absl/strings/str_cat.h>
@@ -24,14 +25,10 @@
 #include <base/strings/string_number_conversions.h>
 #include <iomanip>
 #include <sstream>
+#include "url/gurl.h"
 
-#ifdef HAVE_TCMALLOC
-#include <tcmalloc/malloc_extension.h>
-#endif
-
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif
+#include "config/config.hpp"
+#include "core/logging.hpp"
 
 #ifdef __ANDROID__
 std::string a_cache_dir;
@@ -443,3 +440,49 @@ const char* ProgramTypeToStr(ProgramType type) {
       return "unspec";
   }
 }
+
+template <int DefaultPort>
+bool SplitHostPortWithDefaultPort(std::string* out_hostname,
+                                  std::string* out_port,
+                                  const std::string& host_port_string) {
+  url::Component username_component;
+  url::Component password_component;
+  url::Component host_component;
+  url::Component port_component;
+
+  url::ParseAuthority(host_port_string.data(), url::Component(0, host_port_string.size()), &username_component,
+                      &password_component, &host_component, &port_component);
+
+  // Only support "host", "host:port" and nothing more or less.
+  if (username_component.is_valid() || password_component.is_valid() || !host_component.is_nonempty()) {
+    DVLOG(1) << "HTTP authority could not be parsed: " << host_port_string;
+    return false;
+  }
+
+  std::string_view hostname(host_port_string.data() + host_component.begin, host_component.len);
+  std::string_view port;
+  if (!port_component.is_empty()) {
+    port = std::string_view(host_port_string.data() + port_component.begin, port_component.len);
+  }
+
+  int parsed_port_number =
+      port_component.is_empty() ? DefaultPort : url::ParsePort(host_port_string.data(), port_component);
+  // Negative result is either invalid or unspecified, either of which is
+  // disallowed for this parse. Port 0 is technically valid but reserved and not
+  // really usable in practice, so easiest to just disallow it here.
+  if (parsed_port_number <= 0 || parsed_port_number > UINT16_MAX) {
+    DVLOG(1) << "Port could not be parsed while parsing from: " << port;
+    return false;
+  }
+  *out_hostname = hostname;
+  *out_port = std::to_string(parsed_port_number);
+  return true;
+}
+
+template bool SplitHostPortWithDefaultPort<80>(std::string* out_hostname,
+                                               std::string* out_port,
+                                               const std::string& host_port_string);
+
+template bool SplitHostPortWithDefaultPort<443>(std::string* out_hostname,
+                                                std::string* out_port,
+                                                const std::string& host_port_string);
