@@ -242,8 +242,6 @@ extern const ProgramType pType;
 const char* ProgramTypeToStr(ProgramType type);
 
 template <int DefaultPort>
-bool SplitHostPortWithDefaultPort(std::string* out_hostname,
-                                  uint16_t* out_port,
-                                  const std::string& host_port_string);
+bool SplitHostPortWithDefaultPort(std::string* out_hostname, uint16_t* out_port, const std::string& host_port_string);
 
 #endif  // YASS_UTILS

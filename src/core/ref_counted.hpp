@@ -412,7 +412,7 @@ class RefCountedData : public RefCountedThreadSafe<RefCountedData<T>> {
   RefCountedData(const T& in_value) : data(in_value) {}
   RefCountedData(T&& in_value) : data(std::move(in_value)) {}
   template <typename... Args>
-  explicit RefCountedData(in_place_t, Args&&... args) : data(std::forward<Args>(args)...) {}
+  explicit RefCountedData(std::in_place_t, Args&&... args) : data(std::forward<Args>(args)...) {}
 
   T data;
 
