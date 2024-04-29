@@ -3,6 +3,7 @@
 
 #include "config/config.hpp"
 #include "config/config_impl.hpp"
+#include "config/config_tls.hpp"
 
 #include <absl/flags/internal/program_name.h>
 #include <absl/flags/parse.h>
@@ -81,6 +82,14 @@ void ReadConfigFileAndArguments(int argc, const char** argv) {
   config::ReadConfig();
   if (argc) {
     absl::ParseCommandLine(argc, const_cast<char**>(argv));
+  }
+
+  // raise some early warning on SSL client/server setups
+  auto method = absl::GetFlag(FLAGS_method).method;
+  if (CIPHER_METHOD_IS_TLS(method)) {
+    if (!config::ReadTLSConfigFile()) {
+      exit(-1);
+    }
   }
 
   // first line of logging
