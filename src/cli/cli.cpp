@@ -95,6 +95,27 @@ int main(int argc, const char* argv[]) {
   auto work_guard =
       std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
+  do {
+    auto method = absl::GetFlag(FLAGS_method).method;
+    if (!CIPHER_METHOD_IS_TLS(method)) {
+      break;
+    }
+    static constexpr const size_t kBufferSize = 256 * 1024;
+    std::string certificate_chain, certificate_chain_path = absl::GetFlag(FLAGS_certificate_chain_file);
+    if (certificate_chain_path.empty()) {
+      break;
+    }
+    certificate_chain.resize(kBufferSize);
+    auto ret = ReadFileToBuffer(certificate_chain_path, absl::MakeSpan(certificate_chain));
+    if (ret <= 0) {
+      LOG(WARNING) << "certificate file " << certificate_chain_path << " failed to read";
+      return -1;
+    }
+    certificate_chain.resize(ret);
+    g_certificate_chain_content = certificate_chain;
+    VLOG(1) << "Using certificate chain file: " << certificate_chain_path;
+  } while (false);
+
   std::string remote_host_name = absl::GetFlag(FLAGS_server_host);
   std::string remote_host_sni = remote_host_name;
   if (!absl::GetFlag(FLAGS_server_sni).empty()) {
