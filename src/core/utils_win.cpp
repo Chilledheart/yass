@@ -18,6 +18,7 @@ struct IUnknown;
 #include <absl/flags/internal/program_name.h>
 #include <base/compiler_specific.h>
 #include <build/build_config.h>
+#include <limits>
 
 #define MAKE_WIN_VER(major, minor, build_number) (((major) << 24) | ((minor) << 16) | (build_number))
 
@@ -519,23 +520,23 @@ std::wstring GetHomeDirW() {
   return L"C:\\";
 }
 
-ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
-  DWORD read;
+ssize_t ReadFileToBuffer(const std::string& path, absl::Span<char> buffer) {
+  DCHECK_LE(buffer.size(), std::numeric_limits<DWORD>::max());
   HANDLE hFile =
       ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
     return -1;
   }
 
-  if (!::ReadFile(hFile, buf, buf_len - 1, &read, nullptr)) {
+  DWORD bytes_read;
+  if (!::ReadFile(hFile, buffer.data(), buffer.size(), &bytes_read, nullptr)) {
     ::CloseHandle(hFile);
     return -1;
   }
 
   ::CloseHandle(hFile);
 
-  buf[read] = '\0';
-  return read;
+  return bytes_read;
 }
 
 ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf) {

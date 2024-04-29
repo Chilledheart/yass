@@ -109,7 +109,6 @@ TEST(UtilsTest, GetHomeDir) {
 TEST(UtilsTest, ReadFileAndWrite4K) {
   std::string buf, buf2;
   buf.resize(4096);
-  buf2.resize(4096);
   RandBytes(buf.data(), buf.size());
   int tmp_suffix;
   RandBytes(&tmp_suffix, sizeof(tmp_suffix));
@@ -121,8 +120,24 @@ TEST(UtilsTest, ReadFileAndWrite4K) {
   std::string tmp = tmp_dir / tmp_name;
 #endif
 
-  ASSERT_TRUE(WriteFileWithBuffer(tmp, buf));
-  ASSERT_TRUE(ReadFileToBuffer(tmp, buf2.data(), buf2.size() + 1));
+  ASSERT_EQ(WriteFileWithBuffer(tmp, buf), (ssize_t)buf.size());
+
+  // undersize
+  buf2.resize(buf.size() / 2);
+  ASSERT_EQ(ReadFileToBuffer(tmp, absl::MakeSpan(buf2)), (ssize_t)buf.size() / 2);
+  // don't need to resize buf2
+  ASSERT_EQ(std::string_view(buf).substr(0, buf.size() / 2), std::string_view(buf2).substr(0, buf.size() / 2));
+
+  // equalsize
+  buf2.resize(buf.size());
+  ASSERT_EQ(ReadFileToBuffer(tmp, absl::MakeSpan(buf2)), (ssize_t)buf.size());
+  // don't need to resize buf2
+  ASSERT_EQ(buf, buf2);
+
+  // oversize
+  buf2.resize(buf.size() * 2);
+  ASSERT_EQ(ReadFileToBuffer(tmp, absl::MakeSpan(buf2)), (ssize_t)buf.size());
+  buf2.resize(buf.size());
   ASSERT_EQ(buf, buf2);
 
   ASSERT_TRUE(RemoveFile(tmp));
