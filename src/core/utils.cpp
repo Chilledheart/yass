@@ -442,9 +442,7 @@ const char* ProgramTypeToStr(ProgramType type) {
 }
 
 template <int DefaultPort>
-bool SplitHostPortWithDefaultPort(std::string* out_hostname,
-                                  uint16_t* out_port,
-                                  const std::string& host_port_string) {
+bool SplitHostPortWithDefaultPort(std::string* out_hostname, uint16_t* out_port, const std::string& host_port_string) {
   url::Component username_component;
   url::Component password_component;
   url::Component host_component;
