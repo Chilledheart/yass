@@ -16,7 +16,7 @@ namespace detail {
 template <typename Exception>
 void throw_exception(const Exception& e) {
   Alias(&e);
-  IMMEDIATE_CRASH();
+  ImmediateCrash();
 }
 #endif  // ASIO_NO_EXCEPTIONS
 
