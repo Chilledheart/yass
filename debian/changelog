@@ -1,3 +1,8 @@
+yass (1.8.5-1) UNRELEASED; urgency=medium
+
+  * net: fix broken --certificate_chain_file flag
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 29 Apr 2024 16:49:20 +0800
 yass (1.8.4-1) UNRELEASED; urgency=medium
 
   * net: fix cve-2024-32475
