@@ -24,6 +24,7 @@
 #include <base/posix/eintr_wrapper.h>
 #include <base/strings/string_number_conversions.h>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include "url/gurl.h"
 
@@ -328,17 +329,20 @@ bool Net_ipv6works() {
 }
 
 #ifndef _WIN32
-ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
+ssize_t ReadFileToBuffer(const std::string& path, absl::Span<char> buffer) {
+  DCHECK_LE(buffer.size(), static_cast<size_t>(std::numeric_limits<ssize_t>::max()));
   int fd = HANDLE_EINTR(::open(path.c_str(), O_RDONLY));
   if (fd < 0) {
     return -1;
   }
-  ssize_t ret = HANDLE_EINTR(::read(fd, buf, buf_len - 1));
+  ssize_t ret = HANDLE_EINTR(::read(fd, buffer.data(), buffer.size()));
 
   if (HANDLE_EINTR(close(fd)) < 0) {
     return -1;
   }
-  buf[ret] = '\0';
+  if (ret < 0) {
+    return -1;
+  }
   return ret;
 }
 

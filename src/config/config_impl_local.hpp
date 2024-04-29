@@ -41,14 +41,19 @@ class ConfigImplLocal : public ConfigImpl {
     dontread_ = dontread;
 
     do {
-      ssize_t size = ReadFileToBuffer(path_, read_buffer_, sizeof(read_buffer_));
-      if (size < 0) {
+      static constexpr const size_t kBufferSize = 32768;
+      std::string buffer;
+      buffer.resize(kBufferSize);
+
+      ssize_t ret = ReadFileToBuffer(path_, absl::MakeSpan(buffer));
+      if (ret <= 0) {
         std::cerr << "configure file failed to read: " << path_ << std::endl;
         break;
       }
-      root_ = json::parse(read_buffer_, nullptr, false);
+      buffer.resize(ret);
+      root_ = json::parse(buffer, nullptr, false);
       if (root_.is_discarded() || !root_.is_object()) {
-        std::cerr << "bad config file: " << path_ << " content: \"" << read_buffer_ << "\"" << std::endl;
+        std::cerr << "bad config file: " << path_ << " content: \"" << buffer << "\"" << std::endl;
         break;
       }
       std::cerr << "loaded from config file: " << path_ << std::endl;
@@ -184,7 +189,6 @@ class ConfigImplLocal : public ConfigImpl {
  private:
   std::string path_;
   json root_;
-  char read_buffer_[4096];
 };
 
 }  // namespace config

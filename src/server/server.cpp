@@ -82,9 +82,10 @@ int main(int argc, const char* argv[]) {
       LOG(WARNING) << "No private key file for certificate provided";
       return -1;
     }
-    private_key.resize(256 * 1024);
-    ret = ReadFileToBuffer(private_key_path, private_key.data(), private_key.size());
-    if (ret < 0) {
+    static constexpr const size_t kBufferSize = 256 * 1024;
+    private_key.resize(kBufferSize);
+    ret = ReadFileToBuffer(private_key_path, absl::MakeSpan(private_key));
+    if (ret <= 0) {
       LOG(WARNING) << "private key " << private_key_path << " failed to read";
       return -1;
     }
@@ -97,9 +98,9 @@ int main(int argc, const char* argv[]) {
       LOG(WARNING) << "No certificate file provided";
       return -1;
     }
-    certificate_chain.resize(256 * 1024);
-    ret = ReadFileToBuffer(certificate_chain_path, certificate_chain.data(), certificate_chain.size());
-    if (ret < 0) {
+    certificate_chain.resize(kBufferSize);
+    ret = ReadFileToBuffer(certificate_chain_path, absl::MakeSpan(certificate_chain));
+    if (ret <= 0) {
       LOG(WARNING) << "certificate file " << certificate_chain_path << " failed to read";
       return -1;
     }
