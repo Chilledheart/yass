@@ -528,16 +528,10 @@ class ContentServer {
       return;
     }
 
-    std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
-    if (!certificate_chain_file.empty()) {
-      if (SSL_CTX_use_certificate_chain_file(ctx, certificate_chain_file.c_str()) != 1) {
-        print_openssl_error();
-        ec = asio::error::bad_descriptor;
-        return;
-      }
-
-      VLOG(1) << "Using upstream certificate file: " << certificate_chain_file;
+    if (upstream_certificate_.empty()) {
+      upstream_certificate_ = g_certificate_chain_content;
     }
+
     const auto& cert = upstream_certificate_;
     if (!cert.empty()) {
       if (ec) {

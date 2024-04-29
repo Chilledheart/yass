@@ -73,42 +73,6 @@ int main(int argc, const char* argv[]) {
   auto work_guard =
       std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
-  // raise some early warning on SSL server setups
-  auto method = absl::GetFlag(FLAGS_method).method;
-  if (CIPHER_METHOD_IS_TLS(method)) {
-    ssize_t ret;
-    std::string private_key, private_key_path = absl::GetFlag(FLAGS_private_key_file);
-    if (private_key_path.empty()) {
-      LOG(WARNING) << "No private key file for certificate provided";
-      return -1;
-    }
-    static constexpr const size_t kBufferSize = 256 * 1024;
-    private_key.resize(kBufferSize);
-    ret = ReadFileToBuffer(private_key_path, absl::MakeSpan(private_key));
-    if (ret <= 0) {
-      LOG(WARNING) << "private key " << private_key_path << " failed to read";
-      return -1;
-    }
-    private_key.resize(ret);
-    g_private_key_content = private_key;
-    VLOG(1) << "Using private key file: " << private_key_path;
-
-    std::string certificate_chain, certificate_chain_path = absl::GetFlag(FLAGS_certificate_chain_file);
-    if (certificate_chain_path.empty()) {
-      LOG(WARNING) << "No certificate file provided";
-      return -1;
-    }
-    certificate_chain.resize(kBufferSize);
-    ret = ReadFileToBuffer(certificate_chain_path, absl::MakeSpan(certificate_chain));
-    if (ret <= 0) {
-      LOG(WARNING) << "certificate file " << certificate_chain_path << " failed to read";
-      return -1;
-    }
-    certificate_chain.resize(ret);
-    g_certificate_chain_content = certificate_chain;
-    VLOG(1) << "Using certificate chain file: " << certificate_chain_path;
-  }
-
   std::vector<asio::ip::tcp::endpoint> endpoints;
   std::string host_name = absl::GetFlag(FLAGS_server_host);
   std::string host_sni = host_name;

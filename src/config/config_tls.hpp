@@ -16,4 +16,8 @@ ABSL_DECLARE_FLAG(bool, insecure_mode);
 ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
 
+namespace config {
+bool ReadTLSConfigFile();
+}  // namespace config
+
 #endif  // H_CONFIG_CONFIG_TLS
