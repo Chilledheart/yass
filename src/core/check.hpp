@@ -101,7 +101,7 @@ class CheckError {
 // This is not calling BreakDebugger since this is called frequently, and
 // calling an out-of-line function instead of a noreturn inline macro prevents
 // compiler optimizations.
-#define CHECK(condition) UNLIKELY(!(condition)) ? IMMEDIATE_CRASH() : EAT_CHECK_STREAM_PARAMS()
+#define CHECK(condition) UNLIKELY(!(condition)) ? ImmediateCrash() : EAT_CHECK_STREAM_PARAMS()
 
 #define PCHECK(condition) \
   LAZY_CHECK_STREAM(::yass::CheckError::PCheck(__FILE__, __LINE__).stream(), UNLIKELY(!(condition)))
