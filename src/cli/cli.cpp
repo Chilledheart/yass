@@ -69,7 +69,18 @@ int main(int argc, const char* argv[]) {
   }
 #endif
 
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
+  // Set C library locale to make sure CommandLine can parse
+  // argument values in the correct encoding and to make sure
+  // generated file names (think downloads) are in the file system's
+  // encoding.
   setlocale(LC_ALL, "");
+  // For numbers we never want the C library's locale sensitive
+  // conversion from number to string because the only thing it
+  // changes is the decimal separator which is not good enough for
+  // the UI and can be harmful elsewhere.
+  setlocale(LC_NUMERIC, "C");
+#endif
 
   // Major routine
   // - Read config from ss config file
@@ -195,8 +206,8 @@ int main(int argc, const char* argv[]) {
   };
   signals.async_wait(cb);
 
-#ifdef SIGPIPE
-  signal(SIGPIPE, SIG_IGN);
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
+  CHECK_NE(SIG_ERR, signal(SIGPIPE, SIG_IGN));
 #endif
 
   io_context.run();

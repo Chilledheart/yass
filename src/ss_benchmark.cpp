@@ -631,8 +631,8 @@ int main(int argc, char** argv) {
 
   CRYPTO_library_init();
 
-#ifdef SIGPIPE
-  signal(SIGPIPE, SIG_IGN);
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
+  CHECK_NE(SIG_ERR, signal(SIGPIPE, SIG_IGN));
 #endif
 
   if (absl::GetFlag(FLAGS_ipv6_mode)) {
