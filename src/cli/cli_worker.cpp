@@ -41,8 +41,8 @@ Worker::Worker()
 
   CRYPTO_library_init();
 
-#ifdef SIGPIPE
-  signal(SIGPIPE, SIG_IGN);
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
+  CHECK_NE(SIG_ERR, signal(SIGPIPE, SIG_IGN));
 #endif
 
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });

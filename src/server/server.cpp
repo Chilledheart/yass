@@ -165,8 +165,8 @@ int main(int argc, const char* argv[]) {
   };
   signals.async_wait(cb);
 
-#ifdef SIGPIPE
-  signal(SIGPIPE, SIG_IGN);
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
+  CHECK_NE(SIG_ERR, signal(SIGPIPE, SIG_IGN));
 #endif
 
 #ifndef _WIN32
