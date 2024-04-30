@@ -43,7 +43,16 @@ int main(int argc, const char** argv) {
   size_t rpos = exec_path.rfind('/');
   if (rpos != std::string::npos)
     locale_path = exec_path.substr(0, rpos + 1) + locale_path;
+  // Set C library locale to make sure CommandLine can parse
+  // argument values in the correct encoding and to make sure
+  // generated file names (think downloads) are in the file system's
+  // encoding.
   setlocale(LC_ALL, "");
+  // For numbers we never want the C library's locale sensitive
+  // conversion from number to string because the only thing it
+  // changes is the decimal separator which is not good enough for
+  // the UI and can be harmful elsewhere.
+  setlocale(LC_NUMERIC, "C");
   bindtextdomain("yass", locale_path.c_str());
   textdomain("yass");
 

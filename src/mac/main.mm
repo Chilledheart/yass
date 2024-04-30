@@ -43,7 +43,15 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
+  // argument values in the correct encoding and to make sure
+  // generated file names (think downloads) are in the file system's
+  // encoding.
   setlocale(LC_ALL, "");
+  // For numbers we never want the C library's locale sensitive
+  // conversion from number to string because the only thing it
+  // changes is the decimal separator which is not good enough for
+  // the UI and can be harmful elsewhere.
+  setlocale(LC_NUMERIC, "C");
 
   absl::InitializeSymbolizer(exec_path.c_str());
 #ifdef HAVE_CRASHPAD

@@ -67,10 +67,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     fflush(stderr);
   }
 
-  // Sets the locale to the default,
-  // which is the user-default ANSI code page obtained from the operating system.
-  setlocale(LC_ALL, "");
-
   absl::InitializeSymbolizer(exec_path.c_str());
 #ifdef HAVE_CRASHPAD
   CHECK(InitializeCrashpad(exec_path));
