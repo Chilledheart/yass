@@ -2,9 +2,9 @@
 /* Copyright (c) 2023-2024 Chilledheart  */
 
 #include "net/ssl_socket.hpp"
-#include "config/config_network.hpp"
 
 #include <absl/container/flat_hash_map.h>
+#include "config/config_tls.hpp"
 
 using namespace std::string_view_literals;
 
@@ -54,6 +54,12 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
       int ret = SSL_set_tlsext_host_name(ssl_.get(), host_name.c_str());
       CHECK_EQ(ret, 1) << "SSL_set_tlsext_host_name failure";
     }
+  }
+
+  if (absl::GetFlag(FLAGS_enable_post_quantum_kyber)) {
+    static constexpr const int kCurves[] = {NID_X25519Kyber768Draft00, NID_X25519, NID_X9_62_prime256v1, NID_secp384r1};
+    int ret = SSL_set1_curves(ssl_.get(), kCurves, std::size(kCurves));
+    CHECK_EQ(ret, 1) << "SSL_set1_curves failure";
   }
 
   SSL_set_early_data_enabled(ssl_.get(), early_data_enabled_);
