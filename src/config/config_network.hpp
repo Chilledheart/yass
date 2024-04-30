@@ -23,7 +23,6 @@ ABSL_DECLARE_FLAG(bool, tcp_keep_alive);
 ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_cnt);
 ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_idle_timeout);
 ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_interval);
-ABSL_DECLARE_FLAG(bool, tls13_early_data);
 ABSL_DECLARE_FLAG(bool, redir_mode);
 
 ABSL_DECLARE_FLAG(std::string, doh_url);

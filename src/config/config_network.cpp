@@ -22,7 +22,6 @@ ABSL_FLAG(int32_t,
           7200,
           "The number of seconds a connection needs to be idle before TCP begins sending out keep-alive probes.");
 ABSL_FLAG(int32_t, tcp_keep_alive_interval, 75, "The number of seconds between TCP keep-alive probes.");
-ABSL_FLAG(bool, tls13_early_data, true, "Enable 0RTTI Early Data (risk at production)");
 ABSL_FLAG(bool, redir_mode, false, "Enable TCP Redir mode support (linux only)");
 
 ABSL_FLAG(std::string, doh_url, "", "Resolve host names over DoH");

@@ -160,12 +160,14 @@ commands:
             # TODO remove this once upstream fix is available
             # msan fix is here https://github.com/llvm/llvm-project/pull/85142
             sudo sysctl -w vm.mmap_rnd_bits=28
-            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure
+            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=3 --gtest_throw_on_failure
+            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=3 --gtest_throw_on_failure --enable_post_quantum_kyber
             # somehow inside the container DNS hosts file resolves localhost to 127.0.0.1 only not ::1
             # due to the incompleteness
             grep localhost /etc/hosts
             sudo sed -i s/ip6-localhost/localhost/g /etc/hosts
-            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure --ipv6_mode
+            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=3 --gtest_throw_on_failure --ipv6_mode
+            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=3 --gtest_throw_on_failure --ipv6_mode --enable_post_quantum_kyber
             # alternative for ninja -C build run_tests
             ninja -C build check_boringssl
 

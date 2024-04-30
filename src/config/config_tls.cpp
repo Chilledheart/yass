@@ -24,6 +24,13 @@ ABSL_FLAG(std::string,
           "You can override it with YASS_CA_BUNDLE environment variable");
 ABSL_FLAG(std::string, capath, "", "Tells where to use the specified certificate directory to verify the peer.");
 
+ABSL_FLAG(bool, tls13_early_data, true, "Enable 0RTTI Early Data (risk at production)");
+ABSL_FLAG(bool,
+          enable_post_quantum_kyber,
+          false,
+          "Enable post-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard "
+          "(ML-KEM) (Client only)");
+
 namespace config {
 bool ReadTLSConfigFile() {
   do {
