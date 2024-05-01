@@ -63,7 +63,7 @@ bool ReadConfig() {
   /* optional tls fields */
   config_impl->Read("certificate_chain_file", &FLAGS_certificate_chain_file);
   config_impl->Read("private_key_file", &FLAGS_private_key_file);
-  config_impl->Read("private_key_password", &FLAGS_private_key_password);
+  config_impl->Read("private_key_password", &FLAGS_private_key_password, true);
   config_impl->Read("insecure_mode", &FLAGS_insecure_mode);
   config_impl->Read("cacert", &FLAGS_cacert);
   config_impl->Read("capath", &FLAGS_capath);
