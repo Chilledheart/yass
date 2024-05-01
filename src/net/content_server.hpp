@@ -328,9 +328,20 @@ class ContentServer {
 
       bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(certificate_.data(), certificate_.size()));
 
-      // TODO implement private_key_password flag
-      pem_password_cb* callback = SSL_CTX_get_default_passwd_cb(ctx);
-      void* cb_userdata = SSL_CTX_get_default_passwd_cb_userdata(ctx);
+      static pem_password_cb* callback = [](char *buf, int size, int rwflag, void *userdata) -> int {
+        std::string password = absl::GetFlag(FLAGS_private_key_password);
+        /* not enough buffer size */
+        if (size < (int)password.size()) {
+          return -1;
+        }
+        /* empty password */
+        if (password.empty()) {
+          return 0;
+        }
+        memcpy(buf, password.c_str(), password.size());
+        return password.size();
+      };
+      static void* cb_userdata = nullptr;
       bssl::UniquePtr<X509> cert(PEM_read_bio_X509_AUX(bio.get(), nullptr, callback, cb_userdata));
       if (!cert) {
         print_openssl_error();

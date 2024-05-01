@@ -53,40 +53,44 @@ std::mutex g_in_provider_mutex;
 std::unique_ptr<IOBuf> g_recv_buffer;
 constexpr const std::string_view kConnectResponse = "HTTP/1.1 200 Connection established\r\n\r\n";
 
-// openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
+// openssl req -newkey rsa:1024 -keyout private_key.pem -x509 -out ca.cer -days 3650 -subj /C=XX
 constexpr const std::string_view kCertificate = R"(
 -----BEGIN CERTIFICATE-----
-MIIB9jCCAV+gAwIBAgIUM03bTKd+A2WwrfolXJC+L9AsxI8wDQYJKoZIhvcNAQEL
-BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI5MjA1MDU5WhcNMzMwMTI2MjA1MDU5
-WjANMQswCQYDVQQGEwJYWDCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA3GGZ
-pQbdPh22uCMIes5GUJfDqsAda5I7JeUt1Uq0KebsQ1rxM9QUgzsvVktYqKGxZW57
-djPlcWthfUGlUQAPpZ3/njWter81vy7oj/SfiEvZXk9LyrEA7vf9XIpFJhVrucpI
-wzX1KmQAJdpc0yYmVvG+59PNI9SF6mGUWDGBhukCAwEAAaNTMFEwHQYDVR0OBBYE
-FPFt885ocZzO8rQ7gu6vr+i/nrEEMB8GA1UdIwQYMBaAFPFt885ocZzO8rQ7gu6v
-r+i/nrEEMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADgYEApAMdus13
-9A4wGjtSmI1qsh/+nBeVrQWUOQH8eb0Oe7dDYg58EtzjhlvpLQ7nAOVO8fsioja7
-Hine/sjADd7nGUrsIP+JIxplayLXcrP37KwaWxyRHoh/Bqa+7D3RpCv0SrNsIvlt
-yyvnIm8njIJSin7Vf4tD1PfY6Obyc8ygUSw=
+MIIB9jCCAV+gAwIBAgIUIO3vro1ogQk2h7OUSciXA1QKqZgwDQYJKoZIhvcNAQEL
+BQAwDTELMAkGA1UEBhMCWFgwHhcNMjQwNTAxMDA1MzI3WhcNMzQwNDI5MDA1MzI3
+WjANMQswCQYDVQQGEwJYWDCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEArmow
+8HP8dNF4redHLbfN9BdUFIgHsOgydxnDkZ7BypQ8Q2Mys2SAwwWCyMC2jhZW1b8G
+Pw9xCnjHaeVL63LfN6zUxJf/UyiMSFZIFcvR3M+PZBn8fzXTwPQZjXvyp5CA39rN
+jBx5UiRlVPzEiM2TPfZsL8IXx6ZPW7fEyKUH1/UCAwEAAaNTMFEwHQYDVR0OBBYE
+FO7GvhpAUoOLR7cRxiLcjcUZY2jyMB8GA1UdIwQYMBaAFO7GvhpAUoOLR7cRxiLc
+jcUZY2jyMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADgYEAHRsLeR8+
+7UbBuXh/05smxLLg29J5k+7SKj6L75qikPCnryHabPZznnETAiUag3uMMA681guh
+xMi9tL7ERvFqAGjuoVFjTXCdmG62lOSp+pZrED7m+rZwXvXXh9DeSlS6qH1HQtIk
+X8Ip5gh9SPTEHiSrq2HG8ZoMZg60sd+MmCA=
 -----END CERTIFICATE-----
 )";
 
+constexpr const std::string_view kPrivateKeyPassword = "abc123";
+
 constexpr const std::string_view kPrivateKey = R"(
------BEGIN PRIVATE KEY-----
-MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBANxhmaUG3T4dtrgj
-CHrORlCXw6rAHWuSOyXlLdVKtCnm7ENa8TPUFIM7L1ZLWKihsWVue3Yz5XFrYX1B
-pVEAD6Wd/541rXq/Nb8u6I/0n4hL2V5PS8qxAO73/VyKRSYVa7nKSMM19SpkACXa
-XNMmJlbxvufTzSPUhephlFgxgYbpAgMBAAECgYBprRuB+NKqcJEnpxTv3m31Q3D+
-NfVlmc9nEohx2MqftS3h9n/m/HGBpCXE2YiABFkObHYjbis9weITsCDXwJG/UtEO
-yv8DqTEVcFYAg7fBu6dRaPsAvuDt4MDnk82/M9ZbtXqG7REp7hMxk3uKSThUfMoR
-lIJiUhu2TCHHsw25IQJBAPzNPtn4peug9wXQcd7n1fFXOvjELHX011JFgAYQRoJu
-Jmdfpz0+mzqLaagIPEENqwfGAMYkfOSPJWQhfcpeq70CQQDfK1qNNCqJzciGD/K7
-xBEliKFGTKBI0Ru5FVPJQjEzorez/sIjsPqqEvfenJ6LyyfKgeaoWpsB5sRnn+Li
-ZESdAkANa3vVqFxueLoERf91fMsfp6jKwec2T8wKYwQbzktf6ycAv9Qp7SPiZLo0
-IFPKhEY7AGjUG+XBYFP0z85UqtflAkBSp8r8+3I54dbAGI4NjzvOjAE3eU/wSEqd
-TVHf+70fY8foSZX8BCOC9E2LzLRIEHFnZp9YgV5h4OejfatZsEtdAkAZU+hVlaJD
-GxqmgkJNSUluJFKduxyhdSB/cPmN0N/CFPxgfMEuRuJW3+POWfzQvLCxQ6m1+BpG
-kMmiIVi25B8z
------END PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----
+MIIC1DBOBgkqhkiG9w0BBQ0wQTApBgkqhkiG9w0BBQwwHAQIYCKfVAAIczACAggA
+MAwGCCqGSIb3DQIJBQAwFAYIKoZIhvcNAwcECFBjISAKzdo1BIICgFd5nHofaZ8R
+fq/zg2eLjZbyS3gcHSx/ktk00fCQ6l4l6ka0cxDzplEto7O0AbVdcgSFnrRJ4VQa
+g55iJeHu5ppGAoW53GyUrLYlDzt6VPvqH7/rouL9M8TSEpJIBXUwEWxdVa/1NYJY
+WRi+ZQndhykIZa/UTkCwgreLql1sizJ+eb7Nw0VZ39PP/Nj90/gm6znAzQwPkYxA
++P7qcbqQmn1m6TJ+8X1hPNePdjJaEWqqsWvTWje3AsLFS6+GltHpsuDJTmSg9Iat
+/f10kQ3uaIuil9lpC+tGxdKIc0bbRTXpJoknxxEUL1slmiM72LyUr311/kIArF+K
+moDGw1iVXM0m8Y5IgLo0hrEzh+tYObytNFd3SQ8DnAvVMWyHNpdDxgTAuJ2aRN+n
+/o/Wbxk1zz2KiFGXTT4e7afumoR5aoT4DXpJ6Qvqs6/O7jYrxTC3ErjgZPu0vHsH
+KwJt9bYo6fJUxxYdaNR2sXzTFcFhpG0kLkBnbRLidpWbZ6Op0BNGGpivEe2mVmLZ
+ICkT6UQ4FkGHup7AX+IuNFtvM/7X182QAm43cVi2HgeIjaTH4aln9HwZg+iYIZe6
+XDaPa7d0QUV/7B+pfvgM7i4biBgzd6ubTwR1KP0NATnAhivuflklV4Nfxjrq8Os7
+KxLhM/gx9zp8OzitrswtJhyGHXM99yC0PRXo256g6/kBiq0Wshihej2cy49AyPvn
+6HLIp9f0p4RpLcF7RYy8uYSu4ZfgigWPeQ7qBtN/3xkLqhgOqGCkEMheR0kinmBD
+N/IG+PMjBdw2nQ6ADXMiJqaqYcO78Bm6CJq/j9I2NnePAGsouyj0DK8De+VTNNIL
+mNWq6Mvwz5w=
+-----END ENCRYPTED PRIVATE KEY-----
 )";
 
 void GenerateRandContent(int size) {
@@ -789,6 +793,8 @@ int main(int argc, char** argv) {
   if (absl::GetFlag(FLAGS_ipv6_mode)) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
   }
+
+  absl::SetFlag(&FLAGS_private_key_password, kPrivateKeyPassword);
 
   int ret = RUN_ALL_TESTS();
 
