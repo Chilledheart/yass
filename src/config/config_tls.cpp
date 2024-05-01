@@ -48,7 +48,7 @@ bool ReadTLSConfigFile() {
       ret = ReadFileToBuffer(private_key_path, absl::MakeSpan(private_key));
       if (ret <= 0) {
         std::cerr << "private key " << private_key_path << " failed to read" << std::endl;
-        return -1;
+        return false;
       }
       private_key.resize(ret);
       g_private_key_content = private_key;
