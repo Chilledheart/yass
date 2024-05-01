@@ -1,3 +1,8 @@
+yass (1.8.6-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: update for 20240203.3.98 release.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 1 May 2024 16:59:35 +0800
 yass (1.8.5-1) UNRELEASED; urgency=medium
 
   * net: fix broken --certificate_chain_file flag
