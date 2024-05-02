@@ -4,5 +4,7 @@
     "server_port": 443,
     "timeout": 0,
     "username": "username",
-    "password": "password"
+    "password": "password",
+    "private_key_file": "/etc/yass/private_key.pem",
+    "certificate_chain_file": "/etc/yass/pubkey.crt"
 }

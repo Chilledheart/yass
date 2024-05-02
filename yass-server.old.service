@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=exec
 User=root
-ExecStart=/usr/bin/yass_server -c /etc/yass/server.json -logtostderr --private_key_file /etc/yass/private_key.pem --certificate_chain_file /etc/yass/pubkey.crt --user nobody --group nogroup
+ExecStart=/usr/bin/yass_server -c /etc/yass/server.json -logtostderr --user nobody --group nogroup
 Restart=on-failure
 RestartSec=5s
 RestartPreventExitStatus=23
