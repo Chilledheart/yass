@@ -61,14 +61,18 @@ bool ReadConfig() {
   config_impl->Read("tcp_keep_alive_interval", &FLAGS_tcp_keep_alive_interval);
 
   /* optional tls fields */
-  config_impl->Read("certificate_chain_file", &FLAGS_certificate_chain_file);
-  config_impl->Read("private_key_file", &FLAGS_private_key_file);
-  config_impl->Read("private_key_password", &FLAGS_private_key_password, true);
-  config_impl->Read("insecure_mode", &FLAGS_insecure_mode);
   config_impl->Read("cacert", &FLAGS_cacert);
   config_impl->Read("capath", &FLAGS_capath);
+  config_impl->Read("certificate_chain_file", &FLAGS_certificate_chain_file);
+  if (pType == YASS_SERVER) {
+    config_impl->Read("private_key_file", &FLAGS_private_key_file);
+    config_impl->Read("private_key_password", &FLAGS_private_key_password, true);
+  }
+  if (pType == YASS_CLIENT || pType == YASS_CLIENT_SLAVE) {
+    config_impl->Read("insecure_mode", &FLAGS_insecure_mode);
+    config_impl->Read("enable_post_quantum_kyber", &FLAGS_enable_post_quantum_kyber);
+  }
   config_impl->Read("tls13_early_data", &FLAGS_tls13_early_data);
-  config_impl->Read("enable_post_quantum_kyber", &FLAGS_enable_post_quantum_kyber);
 
   /* close fields */
   config_impl->Close();
@@ -122,14 +126,18 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("tcp_keep_alive_idle_timeout", FLAGS_tcp_keep_alive_idle_timeout);
   all_fields_written &= config_impl->Write("tcp_keep_alive_interval", FLAGS_tcp_keep_alive_interval);
 
-  all_fields_written &= config_impl->Write("certificate_chain_file", FLAGS_certificate_chain_file);
-  all_fields_written &= config_impl->Write("private_key_file", FLAGS_private_key_file);
-  all_fields_written &= config_impl->Write("private_key_password", FLAGS_private_key_password);
-  all_fields_written &= config_impl->Write("insecure_mode", FLAGS_insecure_mode);
   all_fields_written &= config_impl->Write("cacert", FLAGS_cacert);
   all_fields_written &= config_impl->Write("capath", FLAGS_capath);
+  all_fields_written &= config_impl->Write("certificate_chain_file", FLAGS_certificate_chain_file);
+  if (pType == YASS_SERVER) {
+    all_fields_written &= config_impl->Write("private_key_file", FLAGS_private_key_file);
+    all_fields_written &= config_impl->Write("private_key_password", FLAGS_private_key_password);
+  }
+  if (pType == YASS_CLIENT || pType == YASS_CLIENT_SLAVE) {
+    all_fields_written &= config_impl->Write("insecure_mode", FLAGS_insecure_mode);
+    all_fields_written &= config_impl->Write("enable_post_quantum_kyber", FLAGS_enable_post_quantum_kyber);
+  }
   all_fields_written &= config_impl->Write("tls13_early_data", FLAGS_tls13_early_data);
-  all_fields_written &= config_impl->Write("enable_post_quantum_kyber", FLAGS_enable_post_quantum_kyber);
 
   all_fields_written &= config_impl->Close();
 

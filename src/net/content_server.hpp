@@ -328,7 +328,7 @@ class ContentServer {
 
       bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(certificate_.data(), certificate_.size()));
 
-      static pem_password_cb* callback = [](char *buf, int size, int rwflag, void *userdata) -> int {
+      static pem_password_cb* callback = [](char* buf, int size, int rwflag, void* userdata) -> int {
         std::string password = absl::GetFlag(FLAGS_private_key_password);
         /* not enough buffer size */
         if (size < (int)password.size()) {
