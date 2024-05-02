@@ -77,7 +77,7 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
   Enable padding support.
 
 * `--use_ca_bundle_crt`:
-  Use internal ca-bundle.crt instead of system CA store.
+  Use builtin ca-bundle.crt instead of system CA store.
 
 * `--cacert` _file_:
   Tells where to use the specified certificate _file_ to verify the peer.
@@ -91,6 +91,12 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 * `--redir_mode`:
   Enable TCP Redir mode support (Linux only).
 
+* `--tls13_early_data`:
+  Enable 0RTTI Early Data.
+
+* `--enable_post_quantum_kyber`:
+  Enable post-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard (ML-KEM).
+
 ## ENVIRONMENT VARIABLES
 
 * `YASS_CA_BUNDLE`:
@@ -98,7 +104,7 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 
 ## COPYRIGHT
 
-Copyright (C) 2019-2023 Chilledheart. All rights reserved.
+Copyright (C) 2019-2024 Chilledheart. All rights reserved.
 
 ## SEE ALSO
 

@@ -76,7 +76,7 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
   Enable padding support.
 
 * `--use_ca_bundle_crt`:
-  Use internal ca-bundle.crt instead of system CA store.
+  Use builtin ca-bundle.crt instead of system CA store.
 
 * `--cacert` _file_:
   Tells where to use the specified certificate _file_ to verify the peer.
@@ -112,7 +112,7 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 
 ## COPYRIGHT
 
-Copyright (C) 2019-2023 Chilledheart. All rights reserved.
+Copyright (C) 2019-2024 Chilledheart. All rights reserved.
 
 ## SEE ALSO
 

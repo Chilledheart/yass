@@ -305,20 +305,35 @@ void SetClientUsageMessage(std::string_view exec_path) {
   --username <username> Server user
   --password <pasword> Server password
   --method <method> Specify encrypt of method to use
+  --limit_rate Limits the rate of response transmission to a client. Uint can be (none), k, m.
+  --padding_support Enable padding support
+  --use_ca_bundle_crt Use builtin ca-bundle.crt instead of system CA store
+  --cacert <file> Tells where to use the specified certificate file to verify the peer
+  --capath <dir> Tells where to use the specified certificate dir to verify the peer
+  --certificate_chain_file <file> Specify Certificate Chain File Path
+  -k, --insecure_mode Skip the verification step and proceed without checking
+  --tls13_early_data Enable 0RTTI Early Data
+  --enable_post_quantum_kyber Enable post-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard (ML-KEM)
 )"));
 }
 
 void SetServerUsageMessage(std::string_view exec_path) {
   absl::SetProgramUsageMessage(absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n", R"(
   -K, --config <file> Read config from a file
-  --certificate_chain_file <file> (TLS) Certificate Chain File Path
-  --private_key_file <file> (TLS) Private Key File Path
-  --private_key_password <password> (TLS) Private Key Password
   --server_host <host> Server on given host
   --server_port <port> Server on given port
   --username <username> Server user
   --password <pasword> Server password
   --method <method> Specify encrypt of method to use
+  --limit_rate Limits the rate of response transmission to a client. Uint can be (none), k, m.
+  --padding_support Enable padding support
+  --use_ca_bundle_crt Use builtin ca-bundle.crt instead of system CA store
+  --cacert <file> Tells where to use the specified certificate file to verify the peer
+  --capath <dir> Tells where to use the specified certificate dir to verify the peer
+  --certificate_chain_file <file> Specify Certificate Chain File Path
+  --private_key_file <file> Specify Private Key File Path
+  --private_key_password <password> Specify Private Key Password
+  --tls13_early_data Enable 0RTTI Early Data
 )"));
 }
 
