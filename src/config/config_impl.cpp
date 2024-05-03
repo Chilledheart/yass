@@ -8,7 +8,7 @@
 #include <cassert>
 #include <iostream>
 
-#include "config/config_core.hpp"
+#include "config/config_export.hpp"
 #include "config/config_impl_apple.hpp"
 #include "config/config_impl_local.hpp"
 #include "config/config_impl_windows.hpp"

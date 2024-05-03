@@ -9,23 +9,7 @@
 #include <string>
 #include <string_view>
 
-#include "crypto/crypter_export.hpp"
-
-struct PortFlag {
-  explicit PortFlag(uint16_t p) : port(p) {}
-  operator uint16_t() const { return port; }
-  uint16_t port;
-};
-
-struct CipherMethodFlag {
-  explicit CipherMethodFlag(cipher_method m) : method(m) {}
-  cipher_method method;
-};
-
-struct RateFlag {
-  explicit RateFlag(uint64_t r) : rate(r) {}
-  uint64_t rate;
-};
+#include "config/config_export.hpp"
 
 ABSL_DECLARE_FLAG(std::string, server_host);
 ABSL_DECLARE_FLAG(std::string, server_sni);
