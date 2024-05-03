@@ -28,7 +28,6 @@
 #
 # For more information, please refer to <http://unlicense.org/>
 
-from distutils.sysconfig import get_python_inc
 import platform
 import os.path as p
 import subprocess
