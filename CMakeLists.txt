@@ -3614,6 +3614,7 @@ add_library(yass_core STATIC
     src/config/config_impl_local.hpp
     src/config/config_impl_windows.hpp
     src/config/config_core.hpp
+    src/config/config_export.hpp
     src/config/config_network.hpp
     src/config/config_tls.hpp
     src/core/logging.cpp
