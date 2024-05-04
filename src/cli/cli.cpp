@@ -22,7 +22,7 @@
 
 const ProgramType pType = YASS_CLIENT;
 
-using namespace cli;
+using namespace net::cli;
 
 static asio::ip::tcp::resolver::results_type ResolveAddress(const std::string& domain_name, int port) {
   asio::error_code ec;

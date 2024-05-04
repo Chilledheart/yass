@@ -256,11 +256,6 @@ void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(dot_host_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), false);
 
-  last_sync_time_ = GetMonotonicTime();
-  last_rx_bytes_ = 0U;
-  last_tx_bytes_ = 0U;
-  cli::total_rx_bytes = 0U;
-  cli::total_tx_bytes = 0U;
   mApp->OnStart();
 }
 
@@ -332,8 +327,8 @@ std::string YASSWindow::GetStatusMessage() {
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
   if (delta_time > NS_PER_SECOND) {
-    uint64_t rx_bytes = cli::total_rx_bytes;
-    uint64_t tx_bytes = cli::total_tx_bytes;
+    uint64_t rx_bytes = net::cli::total_rx_bytes;
+    uint64_t tx_bytes = net::cli::total_tx_bytes;
     rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time * NS_PER_SECOND;
     tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time * NS_PER_SECOND;
     last_sync_time_ = sync_time;

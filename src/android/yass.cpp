@@ -170,17 +170,11 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv* env
   g_activity_obj = nullptr;
 }
 
-static uint64_t g_last_sync_time;
-static uint64_t g_last_tx_bytes;
-static uint64_t g_last_rx_bytes;
+static uint64_t g_last_sync_time = 0;
+static uint64_t g_last_tx_bytes = 0;
+static uint64_t g_last_rx_bytes = 0;
 
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv* env, jobject obj) {
-  g_last_sync_time = GetMonotonicTime();
-  g_last_tx_bytes = 0;
-  g_last_rx_bytes = 0;
-  cli::total_tx_bytes = 0;
-  cli::total_rx_bytes = 0;
-
   g_worker->Start([&](asio::error_code ec) {
     if (!ec) {
       config::SaveConfig();
@@ -204,8 +198,8 @@ JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRa
   static uint64_t rx_rate = 0;
   static uint64_t tx_rate = 0;
   if (delta_time > NS_PER_SECOND) {
-    uint64_t rx_bytes = cli::total_rx_bytes;
-    uint64_t tx_bytes = cli::total_tx_bytes;
+    uint64_t rx_bytes = net::cli::total_rx_bytes;
+    uint64_t tx_bytes = net::cli::total_tx_bytes;
     rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time * NS_PER_SECOND;
     tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time * NS_PER_SECOND;
     g_last_sync_time = sync_time;

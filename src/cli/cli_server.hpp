@@ -7,11 +7,11 @@
 #include "cli/cli_connection.hpp"
 #include "net/content_server.hpp"
 
-namespace cli {
+namespace net::cli {
 
-using CliConnectionFactory = net::ConnectionFactory<CliConnection>;
-using CliServer = net::ContentServer<CliConnectionFactory>;
+using CliConnectionFactory = ConnectionFactory<CliConnection>;
+using CliServer = ContentServer<CliConnectionFactory>;
 
-}  // namespace cli
+}  // namespace net::cli
 
 #endif  // H_CLI_SERVER

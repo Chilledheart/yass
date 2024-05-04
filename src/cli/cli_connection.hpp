@@ -37,11 +37,7 @@
 #endif
 #endif
 
-namespace cli {
-
-using IOBuf = net::IOBuf;
-using cipher = net::cipher;
-using IoQueue = net::IoQueue;
+namespace net::cli {
 
 #ifdef HAVE_QUICHE
 using StreamId = http2::adapter::Http2StreamId;
@@ -92,11 +88,11 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 #ifdef HAVE_QUICHE
                       public http2::adapter::Http2VisitorInterface,
 #endif  // HAVE_QUICHE
-                      public net::Channel,
-                      public net::Connection,
-                      public net::cipher_visitor_interface {
+                      public Channel,
+                      public Connection,
+                      public cipher_visitor_interface {
  public:
-  static constexpr const net::ConnectionFactoryType Type = net::CONNECTION_FACTORY_CLIENT;
+  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_CLIENT;
   static constexpr const std::string_view Name = "client";
 
  public:
@@ -306,12 +302,12 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV5(const net::socks5::request* request, net::socks5::reply* reply);
+  asio::error_code PerformCmdOpsV5(const socks5::request* request, socks5::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV4(const net::socks4::request* request, net::socks4::reply* reply);
+  asio::error_code PerformCmdOpsV4(const socks4::request* request, socks4::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -331,27 +327,27 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   state state_;
 
   /// parser of method select request
-  net::socks5::method_select_request_parser method_select_request_parser_;
+  socks5::method_select_request_parser method_select_request_parser_;
   /// copy of method select request
-  net::socks5::method_select_request method_select_request_;
+  socks5::method_select_request method_select_request_;
 
   /// parser of handshake request
-  net::socks5::request_parser request_parser_;
+  socks5::request_parser request_parser_;
   /// copy of handshake request
-  net::socks5::request s5_request_;
+  socks5::request s5_request_;
 
   /// copy of method select response
-  net::socks5::method_select_response method_select_reply_;
+  socks5::method_select_response method_select_reply_;
   /// copy of handshake response
-  net::socks5::reply s5_reply_;
+  socks5::reply s5_reply_;
 
   /// parser of handshake request
-  net::socks4::request_parser s4_request_parser_;
+  socks4::request_parser s4_request_parser_;
   /// copy of handshake request
-  net::socks4::request s4_request_;
+  socks4::request s4_request_;
 
   /// copy of handshake response
-  net::socks4::reply s4_reply_;
+  socks4::reply s4_reply_;
 
   /// copy of parsed connect host or host field
   std::string http_host_;
@@ -363,7 +359,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   static const std::string_view http_connect_reply_;
 
   /// copy of upstream request
-  std::unique_ptr<net::ss::request> ss_request_;
+  std::unique_ptr<ss::request> ss_request_;
   /// copy of padding support
   bool padding_support_ = false;
   int num_padding_send_ = 0;
@@ -375,7 +371,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   std::string remote_domain() const {
     std::ostringstream ss;
-    if (ss_request_->address_type() == net::ss::domain) {
+    if (ss_request_->address_type() == ss::domain) {
       ss << ss_request_->domain_name() << ":" << ss_request_->port();
     } else {
       ss << ss_request_->endpoint();
@@ -426,7 +422,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   uint64_t yield_upstream_after_time_ = 0U;
 
   /// the upstream the service bound with
-  scoped_refptr<net::stream> channel_;
+  scoped_refptr<stream> channel_;
 
 #ifdef HAVE_QUICHE
   /// the http2 upstream adapter
@@ -482,6 +478,6 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   friend class DataFrameSource;
 };
 
-}  // namespace cli
+}  // namespace net::cli
 
 #endif  // H_CLI_CONNECTION
