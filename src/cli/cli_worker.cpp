@@ -17,7 +17,7 @@
 using namespace std::string_literals;
 const ProgramType pType = YASS_CLIENT_SLAVE;
 
-using namespace cli;
+using namespace net::cli;
 
 class WorkerPrivate {
  public:

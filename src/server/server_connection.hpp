@@ -33,11 +33,7 @@
 #endif
 
 class cipher;
-namespace server {
-
-using IOBuf = net::IOBuf;
-using cipher = net::cipher;
-using IoQueue = net::IoQueue;
+namespace net::server {
 
 #ifdef HAVE_QUICHE
 using StreamId = http2::adapter::Http2StreamId;
@@ -88,11 +84,11 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 #ifdef HAVE_QUICHE
                          public http2::adapter::Http2VisitorInterface,
 #endif
-                         public net::Channel,
-                         public net::Connection,
-                         public net::cipher_visitor_interface {
+                         public Channel,
+                         public Connection,
+                         public cipher_visitor_interface {
  public:
-  static constexpr const net::ConnectionFactoryType Type = net::CONNECTION_FACTORY_SERVER;
+  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_SERVER;
   static constexpr const std::string_view Name = "server";
 
  public:
@@ -281,9 +277,9 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   state state_;
 
   /// parser of handshake request
-  net::ss::request_parser request_parser_;
+  ss::request_parser request_parser_;
   /// copy of handshake request
-  net::ss::request request_;
+  ss::request request_;
 
   /// copy of parsed connect host or host field
   std::string http_host_;
@@ -301,7 +297,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
   std::string remote_domain() const {
     std::ostringstream ss;
-    if (request_.address_type() == net::ss::domain) {
+    if (request_.address_type() == ss::domain) {
       ss << request_.domain_name() << ":" << request_.port();
     } else {
       ss << request_.endpoint();
@@ -350,7 +346,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   uint64_t yield_upstream_after_time_ = 0U;
 
   /// the upstream the service bound with
-  scoped_refptr<net::stream> channel_;
+  scoped_refptr<stream> channel_;
 
 #ifdef HAVE_QUICHE
   /// the http2 upstream adapter
@@ -403,6 +399,6 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   friend class DataFrameSource;
 };
 
-}  // namespace server
+}  // namespace net::server
 
 #endif  // H_SS_CONNECTION

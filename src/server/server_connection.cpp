@@ -55,7 +55,7 @@ static std::string GetProxyAuthorizationIdentity() {
 
 #endif
 
-namespace server {
+namespace net::server {
 
 constexpr const std::string_view ServerConnection::http_connect_reply_ = "HTTP/1.1 200 Connection established\r\n\r\n";
 
@@ -1385,4 +1385,4 @@ void ServerConnection::EncryptData(IoQueue* queue, std::shared_ptr<IOBuf> plaint
   }
 }
 
-}  // namespace server
+}  // namespace net::server

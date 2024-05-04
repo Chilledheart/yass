@@ -83,7 +83,7 @@ static void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
 }
 #endif
 
-namespace cli {
+namespace net::cli {
 
 constexpr const std::string_view CliConnection::http_connect_reply_ = "HTTP/1.1 200 Connection established\r\n\r\n";
 
@@ -1791,4 +1791,4 @@ void CliConnection::EncryptData(IoQueue* queue, std::shared_ptr<IOBuf> plaintext
   }
 }
 
-}  // namespace cli
+}  // namespace net::cli

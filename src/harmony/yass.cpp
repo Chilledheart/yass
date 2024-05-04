@@ -760,9 +760,9 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
   return nullptr;
 }
 
-static uint64_t g_last_sync_time;
-static uint64_t g_last_tx_bytes;
-static uint64_t g_last_rx_bytes;
+static uint64_t g_last_sync_time = 0;
+static uint64_t g_last_tx_bytes = 0;
+static uint64_t g_last_rx_bytes = 0;
 
 // return { tx_rate, rx_rate }
 static napi_value getTransferRate(napi_env env, napi_callback_info info) {
@@ -771,8 +771,8 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
   static uint64_t rx_rate = 0;
   static uint64_t tx_rate = 0;
   if (delta_time > NS_PER_SECOND) {
-    uint64_t rx_bytes = cli::total_rx_bytes;
-    uint64_t tx_bytes = cli::total_tx_bytes;
+    uint64_t rx_bytes = net::cli::total_rx_bytes;
+    uint64_t tx_bytes = net::cli::total_tx_bytes;
     rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time * NS_PER_SECOND;
     tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time * NS_PER_SECOND;
     g_last_sync_time = sync_time;

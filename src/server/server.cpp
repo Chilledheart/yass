@@ -32,7 +32,7 @@ ABSL_FLAG(std::string, group, "", "set non-privileged group for worker");
 
 const ProgramType pType = YASS_SERVER;
 
-using namespace server;
+using namespace net::server;
 
 int main(int argc, const char* argv[]) {
   SetExecutablePath(argv[0]);

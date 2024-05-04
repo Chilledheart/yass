@@ -242,7 +242,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 - (void)handleAppMessage:(NSData*)messageData completionHandler:(void (^)(NSData*))completionHandler {
   NSString* request = [[NSString alloc] initWithData:messageData encoding:NSUTF8StringEncoding];
   if ([request isEqualToString:@(kAppMessageGetTelemetry)]) {
-    std::string response = serializeTelemetryJson(cli::total_rx_bytes, cli::total_tx_bytes);
+    std::string response = serializeTelemetryJson(net::cli::total_rx_bytes, net::cli::total_tx_bytes);
     NSData* responseData = [NSData dataWithBytes:response.c_str() length:response.size()];
     completionHandler(responseData);
   }

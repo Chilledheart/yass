@@ -7,11 +7,11 @@
 #include "net/content_server.hpp"
 #include "server/server_connection.hpp"
 
-namespace server {
+namespace net::server {
 
-using ServerConnectionFactory = net::ConnectionFactory<ServerConnection>;
-using ServerServer = net::ContentServer<ServerConnectionFactory>;
+using ServerConnectionFactory = ConnectionFactory<ServerConnection>;
+using ServerServer = ContentServer<ServerConnectionFactory>;
 
-}  // namespace server
+}  // namespace net::server
 
 #endif  // H_SS_SERVER
