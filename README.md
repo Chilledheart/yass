@@ -7,6 +7,7 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
 [![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
+[![homebrew cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
 yass is client-server model based and efficient forward proxy
 supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
