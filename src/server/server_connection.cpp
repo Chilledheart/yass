@@ -15,6 +15,7 @@
 #include "net/base64.hpp"
 #include "net/http_parser.hpp"
 #include "net/padding.hpp"
+#include "version.h"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
@@ -32,7 +33,7 @@ static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair
                                                            int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
-    response_vector.emplace_back(http2::adapter::HeaderRep(std::string(":status")),
+    response_vector.emplace_back(http2::adapter::HeaderRep(":status"s),
                                  http2::adapter::HeaderRep(std::to_string(status)));
   }
   for (const auto& header : headers) {
@@ -1158,6 +1159,7 @@ void ServerConnection::OnConnect() {
     std::unique_ptr<DataFrameSource> data_frame = std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
+    headers.emplace_back("server"s, "YASS/" YASS_APP_PRODUCT_VERSION);
     // Send "Padding" header
     // originated from forwardproxy.go;func ServeHTTP
     if (padding_support_) {

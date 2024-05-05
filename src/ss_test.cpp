@@ -236,7 +236,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
     // Write HTTP Response Header, Part 2
     http_response_hdr2 = absl::StrFormat(
         "HTTP/1.1 200 OK\r\n"
-        "Server: asio/1.0.0\r\n"
+        "Server: YASS/cp\r\n"
         "Content-Type: application/octet-stream\r\n"
         "Content-Length: %llu\r\n"
         "Connection: close\r\n\r\n",
