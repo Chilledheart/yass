@@ -247,10 +247,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   if (FREEBSD_ABI_VERSION)
     list(APPEND YASS_APP_FEATURES "freebsd ${FREEBSD_ABI_VERSION}")
   else()
-    list(APPEND YASS_APP_FEATURES "freebsd")
+    list(APPEND YASS_APP_FEATURES "freebsd unknown")
   endif()
 else()
-  list(APPEND YASS_APP_FEATURES "system ${CMAKE_SYSTEM_NAME}")
+  list(APPEND YASS_APP_FEATURES "${CMAKE_SYSTEM_NAME}")
 endif()
 
 if (MSVC)
@@ -396,10 +396,6 @@ else()
 
   message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
   list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_SYSTEM_PROCESSOR}")
-endif()
-
-if (OS_X86)
-  list(APPEND YASS_APP_FEATURES "x86")
 endif()
 
 # handling bug with cmake+clang-cl
@@ -2327,7 +2323,6 @@ if (ABSL_BUILD_TESTING)
 endif()
 add_subdirectory(third_party/abseil-cpp)
 
-list(APPEND YASS_APP_FEATURES "abseil-cpp")
 set(SUPPORT_LIBS
   absl::base
   absl::core_headers
@@ -2393,7 +2388,6 @@ endif()
 
 message(STATUS "Compiling with bundled re2 library")
 add_subdirectory(third_party)
-list(APPEND YASS_APP_FEATURES "re2")
 set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2401,7 +2395,6 @@ set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 # *****************************************************************************************
 
 message(STATUS "Compiling with bundled googleurl library")
-list(APPEND YASS_APP_FEATURES "googleurl")
 set(SUPPORT_LIBS url ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2635,7 +2628,6 @@ if (MINGW AND USE_LIBCXX)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
-list(APPEND YASS_APP_FEATURES "boringssl")
 set(SUPPORT_LIBS crypto ssl ${SUPPORT_LIBS})
 foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
@@ -2803,7 +2795,7 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
   target_compile_definitions(asio_ca_bundle_crt PUBLIC HAVE_BUILTIN_CA_BUNDLE_CRT=1)
   target_include_directories(asio_ca_bundle_crt PRIVATE third_party/ca-certificates)
 
-  list(APPEND YASS_APP_FEATURES "builtin ca-bundle")
+  list(APPEND YASS_APP_FEATURES "ca-certificates 20240203.3.98")
   target_link_libraries(asio PRIVATE asio_ca_bundle_crt)
 endif()
 
@@ -2850,7 +2842,6 @@ target_include_directories(asio_supplementary_ca_bundle_crt PRIVATE third_party/
 
 target_link_libraries(asio PRIVATE asio_supplementary_ca_bundle_crt)
 
-list(APPEND YASS_APP_FEATURES "asio")
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2871,10 +2862,8 @@ endif()
 
 if (USE_SYSTEM_JSON)
   message(STATUS "Compiling with system nlohmann json library")
-  list(APPEND YASS_APP_FEATURES "system nlohmann json")
 else()
   message(STATUS "Compiling with bundled nlohmann json library")
-  list(APPEND YASS_APP_FEATURES "nlohmann json")
   set(SUPPORT_INCLUDE_DIRS
     third_party/json/include
     ${SUPPORT_INCLUDE_DIRS}
@@ -2998,7 +2987,7 @@ set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 set(protobuf_BUILD_SHARED_LIBS "OFF" CACHE STRING "")
 add_subdirectory(third_party/protobuf)
 # required because it is not bound with libproto/libproto-lite targets
-list(APPEND YASS_APP_FEATURES "protobuf")
+#list(APPEND YASS_APP_FEATURES "protobuf")
 set(SUPPORT_DEFINITIONS
   GOOGLE_PROTOBUF_NO_RTTI=1
   PROTOBUF_USE_EXCEPTIONS=0
@@ -3223,7 +3212,6 @@ if (USE_LEVELDB)
   message(STATUS "Compiling with bundled snappy library")
   add_subdirectory(third_party/snappy)
   include_directories(third_party/snappy/src)
-  list(APPEND YASS_APP_FEATURES "snappy")
 endif()
 
 # *****************************************************************************************
@@ -3242,7 +3230,6 @@ if (USE_LEVELDB)
   set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
   add_subdirectory(third_party/zstd/build/cmake)
   include_directories(third_party/zstd/lib)
-  list(APPEND YASS_APP_FEATURES "zstd")
 endif()
 
 # *****************************************************************************************
