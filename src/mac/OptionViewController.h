@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #ifndef YASS_OPTION_VIEW_CONTROLLER
 #define YASS_OPTION_VIEW_CONTROLLER
@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(weak) IBOutlet NSTextField* tcpKeepAliveCnt;
 @property(weak) IBOutlet NSTextField* tcpKeepAliveIdleTimeout;
 @property(weak) IBOutlet NSTextField* tcpKeepAliveInterval;
+@property(weak) IBOutlet NSButton* enablePostQuantumKyber;
 
 @end
 
