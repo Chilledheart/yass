@@ -20,17 +20,26 @@
 /* Class = "NSMenu"; title = "Main Menu"; ObjectID = "AYu-sK-qS6"; */
 "AYu-sK-qS6.title" = "主菜单";
 
+/* Class = "NSTextFieldCell"; title = "TCP Keep Alive"; ObjectID = "z0q-m8-6KJ"; */
+"z0q-m8-6KJ.title" = "TCP 保活";
+
+/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "IpF-Ur-Zlh"; */
+"IpF-Ur-Zlh.title" = "启用";
+
 /* Class = "NSTextFieldCell"; title = "TCP Keep Alive Count"; ObjectID = "DwU-MU-ncE"; */
 "DwU-MU-ncE.title" = "TCP 保活数目";
 
 /* Class = "NSTextFieldCell"; title = "TCP Keep Alive Idle Timeout"; ObjectID = "EnC-Oa-kda"; */
 "EnC-Oa-kda.title" = "TCP 在闲置以后的保活次数";
 
+/* Class = "NSTextFieldCell"; title = "Kyber post-quantum key agreement for TLS"; ObjectID = "EY5-8C-G6C"; */
+"EY5-8C-G6C.title" = "TLS的Kyber后量子密钥协商";
+
+/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "aFJ-Zj-eao"; */
+"aFJ-Zj-eao.title" = "启用";
+
 /* Class = "NSWindow"; title = "Yet Another Shadow Socket"; ObjectID = "IQv-IB-iLA"; */
 "IQv-IB-iLA.title" = "YASS";
-
-/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "IpF-Ur-Zlh"; */
-"IpF-Ur-Zlh.title" = "启用";
 
 /* Class = "NSButtonCell"; title = "Stop"; ObjectID = "JYa-MA-4KH"; */
 "JYa-MA-4KH.title" = "停止";
@@ -79,9 +88,6 @@
 
 /* Class = "NSButtonCell"; title = "OK"; ObjectID = "yzs-Gu-p7Y"; */
 "yzs-Gu-p7Y.title" = "确认";
-
-/* Class = "NSTextFieldCell"; title = "TCP Keep Alive"; ObjectID = "z0q-m8-6KJ"; */
-"z0q-m8-6KJ.title" = "TCP 保活";
 
 /* Class = "NSTextFieldCell"; title = "DNS over HTTPS URL"; ObjectID = "yxt-ql-TD8"; */
 "yxt-ql-TD8.title" = "基于 HTTPS 的 DNS (DoH) URL";

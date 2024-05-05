@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021-2022 Chilledheart  */
+/* Copyright (c) 2021-2024 Chilledheart  */
 #ifndef OPTION_DIALOG
 #define OPTION_DIALOG
 
@@ -19,12 +19,13 @@ class OptionDialog {
 
  private:
   void LoadChanges();
-  void OnSave();
+  bool OnSave();
 
   GtkCheckButton* tcp_keep_alive_;
   GtkEntry* tcp_keep_alive_cnt_;
   GtkEntry* tcp_keep_alive_idle_timeout_;
   GtkEntry* tcp_keep_alive_interval_;
+  GtkCheckButton* enable_post_quantum_kyber_;
 
   GtkButton* okay_button_;
   GtkButton* cancel_button_;
