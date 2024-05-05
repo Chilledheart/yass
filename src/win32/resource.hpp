@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021 Chilledheart  */
+/* Copyright (c) 2021-2024 Chilledheart  */
 // Used by yass.rc
 
 #ifndef YASS_WIN32_RESOURCE_H
@@ -96,6 +96,7 @@
 #define IDC_CHECKBOX_TCP_KEEP_ALIVE 1025
 #define IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT 1026
 #define IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL 1027
+#define IDC_CHECKBOX_ENABLE_POST_QUANTUM_KYBER 1028
 
 #define IDC_YASS 2000
 #define IDC_CONTEXTMENU 2500

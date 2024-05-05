@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #import "mac/OptionViewController.h"
 
@@ -22,6 +22,8 @@
   self.tcpKeepAliveCnt.intValue = absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
   self.tcpKeepAliveIdleTimeout.intValue = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
   self.tcpKeepAliveInterval.intValue = absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+  [self.enablePostQuantumKyber
+      setState:(absl::GetFlag(FLAGS_enable_post_quantum_kyber) ? NSControlStateValueOn : NSControlStateValueOff)];
 }
 
 - (void)viewDidDisappear {
@@ -33,6 +35,8 @@
   absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, self.tcpKeepAliveCnt.intValue);
   absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, self.tcpKeepAliveIdleTimeout.intValue);
   absl::SetFlag(&FLAGS_tcp_keep_alive_interval, self.tcpKeepAliveInterval.intValue);
+  absl::SetFlag(&FLAGS_enable_post_quantum_kyber, self.enablePostQuantumKyber.state == NSControlStateValueOn);
+  config::SaveConfig();
   [self dismissViewController:self];
 }
 

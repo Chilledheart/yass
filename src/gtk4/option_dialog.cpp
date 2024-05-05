@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021-2023 Chilledheart  */
+/* Copyright (c) 2021-2024 Chilledheart  */
 
 #include "gtk4/option_dialog.hpp"
 
@@ -19,6 +19,7 @@ struct _OptionGtkDialog {
   GtkWidget* tcp_keep_alive_cnt;
   GtkWidget* tcp_keep_alive_idle_timeout;
   GtkWidget* tcp_keep_alive_interval;
+  GtkWidget* enable_post_quantum_kyber;
 
   GtkWidget* okay_button;
   GtkWidget* cancel_button;
@@ -40,6 +41,7 @@ static void option_dialog_class_init(OptionGtkDialogClass* cls) {
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_keep_alive_cnt);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_keep_alive_idle_timeout);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_keep_alive_interval);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, enable_post_quantum_kyber);
 
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, okay_button);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, cancel_button);
@@ -96,7 +98,10 @@ OptionDialog::~OptionDialog() {
 }
 
 void OptionDialog::OnOkayButtonClicked() {
-  OnSave();
+  if (!OnSave()) {
+    return;
+  }
+  config::SaveConfig();
   gtk_dialog_response(GTK_DIALOG(impl_), GTK_RESPONSE_ACCEPT);
 }
 
@@ -116,23 +121,31 @@ void OptionDialog::LoadChanges() {
   gtk_editable_set_text(GTK_EDITABLE(impl_->tcp_keep_alive_cnt), tcp_keep_alive_cnt_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->tcp_keep_alive_idle_timeout), tcp_keep_alive_idle_timeout_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval), tcp_keep_alive_interval_str.c_str());
+
+  gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->enable_post_quantum_kyber),
+                              absl::GetFlag(FLAGS_enable_post_quantum_kyber));
 }
 
-void OptionDialog::OnSave() {
+bool OptionDialog::OnSave() {
   auto tcp_keep_alive = gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->tcp_keep_alive_check));
   auto tcp_keep_alive_cnt = StringToIntegerU(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_cnt)));
   auto tcp_keep_alive_idle_timeout =
       StringToIntegerU(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_idle_timeout)));
   auto tcp_keep_alive_interval = StringToIntegerU(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval)));
 
+  auto enable_post_quantum_kyber = gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->enable_post_quantum_kyber));
+
   if (!tcp_keep_alive_cnt.has_value() || !tcp_keep_alive_idle_timeout.has_value() ||
       !tcp_keep_alive_interval.has_value()) {
     LOG(WARNING) << "invalid options";
-    return;
+    return false;
   }
 
   absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
   absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, tcp_keep_alive_cnt.value());
   absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, tcp_keep_alive_idle_timeout.value());
   absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval.value());
+
+  absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber);
+  return true;
 }

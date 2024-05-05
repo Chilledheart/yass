@@ -37,6 +37,10 @@ msgstr "TCP keep alive after idle:"
 msgid "TCP keep alive interval:"
 msgstr "TCP keep alive interval:"
 
+#: option_dialog.ui:50
+msgid "Kyber post-quantum key agreement for TLS:"
+msgstr "Kyber post-quantum key agreement for TLS:"
+
 #: option_dialog.ui:92
 msgid "Okay"
 msgstr "Okay"

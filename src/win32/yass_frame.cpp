@@ -1060,9 +1060,13 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message, WPARAM 
       auto tcp_keep_alive = absl::GetFlag(FLAGS_tcp_keep_alive);
       auto tcp_keep_alive_timeout = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
       auto tcp_keep_alive_interval = absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+
+      auto enable_post_quantum_kyber = absl::GetFlag(FLAGS_enable_post_quantum_kyber);
       CheckDlgButton(hDlg, IDC_CHECKBOX_TCP_KEEP_ALIVE, tcp_keep_alive ? BST_CHECKED : BST_UNCHECKED);
       SetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT, tcp_keep_alive_timeout, FALSE);
       SetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL, tcp_keep_alive_interval, FALSE);
+      CheckDlgButton(hDlg, IDC_CHECKBOX_ENABLE_POST_QUANTUM_KYBER,
+                     enable_post_quantum_kyber ? BST_CHECKED : BST_UNCHECKED);
       return static_cast<INT_PTR>(TRUE);
     }
     case WM_COMMAND:
@@ -1076,9 +1080,14 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message, WPARAM 
         auto tcp_keep_alive_interval = GetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL, &translated, FALSE);
         if (translated == FALSE)
           return static_cast<INT_PTR>(FALSE);
+        auto enable_post_quantum_kyber =
+            IsDlgButtonChecked(hDlg, IDC_CHECKBOX_ENABLE_POST_QUANTUM_KYBER) == BST_CHECKED;
         absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
         absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, tcp_keep_alive_timeout);
         absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval);
+
+        absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber);
+        config::SaveConfig();
       }
       if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
         EndDialog(hDlg, LOWORD(wParam));

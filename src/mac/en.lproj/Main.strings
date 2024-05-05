@@ -20,17 +20,26 @@
 /* Class = "NSMenu"; title = "Main Menu"; ObjectID = "AYu-sK-qS6"; */
 "AYu-sK-qS6.title" = "Main Menu";
 
+/* Class = "NSTextFieldCell"; title = "TCP Keep Alive"; ObjectID = "z0q-m8-6KJ"; */
+"z0q-m8-6KJ.title" = "TCP Keep Alive";
+
+/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "IpF-Ur-Zlh"; */
+"IpF-Ur-Zlh.title" = "Enable";
+
 /* Class = "NSTextFieldCell"; title = "TCP Keep Alive Count"; ObjectID = "DwU-MU-ncE"; */
 "DwU-MU-ncE.title" = "TCP Keep Alive Count";
 
 /* Class = "NSTextFieldCell"; title = "TCP Keep Alive Idle Timeout"; ObjectID = "EnC-Oa-kda"; */
 "EnC-Oa-kda.title" = "TCP Keep Alive Idle Timeout";
 
+/* Class = "NSTextFieldCell"; title = "Kyber post-quantum key agreement for TLS"; ObjectID = "EY5-8C-G6C"; */
+"EY5-8C-G6C.title" = "Kyber post-quantum key agreement for TLS";
+
+/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "aFJ-Zj-eao"; */
+"aFJ-Zj-eao.title" = "Enable";
+
 /* Class = "NSWindow"; title = "Yet Another Shadow Socket"; ObjectID = "IQv-IB-iLA"; */
 "IQv-IB-iLA.title" = "Yet Another Shadow Socket";
-
-/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "IpF-Ur-Zlh"; */
-"IpF-Ur-Zlh.title" = "Enable";
 
 /* Class = "NSButtonCell"; title = "Stop"; ObjectID = "JYa-MA-4KH"; */
 "JYa-MA-4KH.title" = "Stop";
@@ -79,9 +88,6 @@
 
 /* Class = "NSButtonCell"; title = "OK"; ObjectID = "yzs-Gu-p7Y"; */
 "yzs-Gu-p7Y.title" = "OK";
-
-/* Class = "NSTextFieldCell"; title = "TCP Keep Alive"; ObjectID = "z0q-m8-6KJ"; */
-"z0q-m8-6KJ.title" = "TCP Keep Alive";
 
 /* Class = "NSTextFieldCell"; title = "DNS over HTTPS URL"; ObjectID = "yxt-ql-TD8"; */
 "yxt-ql-TD8.title" = "DNS over HTTPS URL";

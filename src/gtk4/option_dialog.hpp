@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021-2023 Chilledheart  */
+/* Copyright (c) 2021-2024 Chilledheart  */
 #ifndef OPTION_DIALOG
 #define OPTION_DIALOG
 
@@ -26,7 +26,7 @@ class OptionDialog {
 
  private:
   void LoadChanges();
-  void OnSave();
+  bool OnSave();
 
  private:
   OptionGtkDialog* impl_;

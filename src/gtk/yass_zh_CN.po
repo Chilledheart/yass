@@ -34,6 +34,10 @@ msgstr "TCP 在闲置以后的保活次数"
 msgid "TCP keep alive interval"
 msgstr "TCP 保活间隔"
 
+#: option_dialog.ui:50
+msgid "Kyber post-quantum key agreement for TLS"
+msgstr "TLS的Kyber后量子密钥协商"
+
 #: option_dialog.cpp:54
 msgid "Okay"
 msgstr "确认"
