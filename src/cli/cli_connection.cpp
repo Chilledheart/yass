@@ -287,7 +287,10 @@ bool CliConnection::OnEndStream(StreamId stream_id) {
 }
 
 bool CliConnection::OnCloseStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) {
-  if (stream_id == stream_id_) {
+  if (stream_id == 0 || stream_id == stream_id_) {
+    if (stream_id_) {
+      adapter_->RemoveStream(stream_id_);
+    }
     data_frame_ = nullptr;
     stream_id_ = 0;
   }
