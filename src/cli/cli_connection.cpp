@@ -31,7 +31,7 @@ static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair
                                                            int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
-    response_vector.emplace_back(http2::adapter::HeaderRep(std::string(":status")),
+    response_vector.emplace_back(http2::adapter::HeaderRep(":status"sv),
                                  http2::adapter::HeaderRep(std::to_string(status)));
   }
   for (const auto& header : headers) {
@@ -263,12 +263,14 @@ http2::adapter::Http2VisitorInterface::OnHeaderResult CliConnection::OnHeaderFor
 
 bool CliConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId stream_id) {
   bool padding_support = request_map_.find("padding"s) != request_map_.end();
-  if (padding_support_ && padding_support) {
-    LOG(INFO) << "Connection (client) " << connection_id() << " for " << remote_domain() << " Padding support enabled.";
-  } else {
-    VLOG(1) << "Connection (client) " << connection_id() << " for " << remote_domain() << " Padding support disabled.";
-    padding_support_ = false;
+  padding_support_ &= padding_support;
+  std::string_view server_field = "(unknown)"sv;
+  auto it = request_map_.find("server"s);
+  if (it != request_map_.end()) {
+    server_field = it->second;
   }
+  LOG(INFO) << "Connection (client) " << connection_id() << " for " << remote_domain() << " Padding support "
+            << (padding_support_ ? "enabled" : "disabled") << " Backed by " << server_field << ".";
   return true;
 }
 
