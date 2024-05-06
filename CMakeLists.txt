@@ -444,6 +444,8 @@ option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
 
+option(USE_GTK4 "Build with gtk4 if possible (GUI)" ON)
+
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html
 if (USE_OLD_SYSTEMD_SERVICE)
@@ -2121,17 +2123,18 @@ elseif (GUI)
       set(GUI off)
     endif()
 
-    # fix up for loongarch gtk support
+    # fix up for loongarch64 gtk support
     # see https://github.com/microcai/gentoo-zh/pull/4486
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
       message(STATUS "Blacklist gtk4 for loongarch64 target")
-      set(BLACKLIST_GTK4 ON)
-    else()
-      set(BLACKLIST_GTK4 OFF)
+      set(USE_GTK4 OFF)
     endif()
 
-    pkg_check_modules(GTK4 gtk4)
-    if (GTK4_FOUND AND NOT BLACKLIST_GTK4)
+    if (GUI AND USE_GTK4)
+      pkg_check_modules(GTK4 gtk4)
+    endif()
+
+    if (GUI AND USE_GTK4 AND GTK4_FOUND)
       set(GUI_FLAVOUR "gtk4")
       set(GUI_OTHER_FLAGS -Wno-deprecated-declarations)
 
@@ -2151,7 +2154,7 @@ elseif (GUI)
         set(GUI_LIBRARY_DIRS ${GTK4_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
         set(GUI_LIBRARIES ${GTK4_LIBRARIES} ${FONTCONFIG_LIBRARIES})
       endif()
-    else()
+    elseif (GUI)
       pkg_check_modules(GTK gtk+-3.0)
       set(GUI_FLAVOUR "gtk3")
       set(GUI_OTHER_FLAGS -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED)
