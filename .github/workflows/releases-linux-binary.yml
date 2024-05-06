@@ -77,13 +77,9 @@ jobs:
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
       - name: Set SDK_ROOT
-        if: ${{ matrix.arch != 'loongarch64' && matrix.arch != 'riscv64' && matrix.arch != 'riscv32' }}
+        if: ${{ matrix.arch != 'riscv64' && matrix.arch != 'riscv32' }}
         run: |
           echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot" >> $GITHUB_ENV
-      - name: Set SDK_ROOT for loongarch64
-        if: ${{ matrix.arch == 'loongarch64' }}
-        run: |
-          echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot/target" >> $GITHUB_ENV
       - name: Set SDK_ROOT for riscv64 and riscv32
         if: ${{ matrix.arch == 'riscv64' || matrix.arch == 'riscv32' }}
         run: |
@@ -117,7 +113,7 @@ jobs:
         with:
           path: |
             ${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot
-          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v2
+          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v3
       - name: Build build tool
         run: |
           cd tools
@@ -138,13 +134,7 @@ jobs:
       - name: "Install dependency: sysroot (loongarch64)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'loongarch64' }}
         run: |
-          mkdir -p debian_bullseye_loongarch64-sysroot
-          cd debian_bullseye_loongarch64-sysroot
-          curl -L https://github.com/loongson/build-tools/releases/download/2023.08.08/CLFS-loongarch64-8.1-x86_64-cross-tools-gcc-glibc.tar.xz | tar --strip-components=1 --xz -xf -
-          cp -fv ./loongarch64-unknown-linux-gnu/lib/libgcc_s.so target/lib64/
-          cp -fv ./loongarch64-unknown-linux-gnu/lib/libgcc_s.so.1 target/lib64/
-          rm -rf bin include libexec loongarch64-unknown-linux-gnu share
-          cd ..
+          curl -L https://github.com/Chilledheart/loongson-chromium/releases/download/chromium120/debian_bullseye_loongarch64-sysroot.tar.bz2 | tar --bzip2 -xf -
       - name: "Install dependency: sysroot (riscv64 and riscv32)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && (matrix.arch == 'riscv64' || matrix.arch == 'riscv32') }}
         run: |
@@ -172,7 +162,7 @@ jobs:
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
       - name: Build TGZ packages (GUI)
-        if: ${{ matrix.arch != 'loongarch64' && matrix.arch != 'riscv64' && matrix.arch != 'riscv32' }}
+        if: ${{ matrix.arch != 'riscv64' && matrix.arch != 'riscv32' }}
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
       - name: Run tests (i386 and amd64)
