@@ -89,24 +89,6 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
-  constexpr std::string_view kDefaultLocalePath = "../share/locale";
-  std::string locale_path = std::string(kDefaultLocalePath);
-  size_t rpos = exec_path.rfind('/');
-  if (rpos != std::string::npos)
-    locale_path = exec_path.substr(0, rpos + 1) + locale_path;
-  // Set C library locale to make sure CommandLine can parse
-  // argument values in the correct encoding and to make sure
-  // generated file names (think downloads) are in the file system's
-  // encoding.
-  setlocale(LC_ALL, "");
-  // For numbers we never want the C library's locale sensitive
-  // conversion from number to string because the only thing it
-  // changes is the decimal separator which is not good enough for
-  // the UI and can be harmful elsewhere.
-  setlocale(LC_NUMERIC, "C");
-  bindtextdomain("yass", locale_path.c_str());
-  textdomain("yass");
-
   absl::InitializeSymbolizer(exec_path.c_str());
 #ifdef HAVE_CRASHPAD
   CHECK(InitializeCrashpad(exec_path));
@@ -126,6 +108,28 @@ int main(int argc, const char** argv) {
   // to do this. It's definitely harmless, so it's retained here.
   g_type_init();
 #endif  // !GLIB_CHECK_VERSION(2, 35, 0)
+
+  // Set C library locale to make sure CommandLine can parse
+  // argument values in the correct encoding and to make sure
+  // generated file names (think downloads) are in the file system's
+  // encoding.
+  setlocale(LC_ALL, "");
+  // For numbers we never want the C library's locale sensitive
+  // conversion from number to string because the only thing it
+  // changes is the decimal separator which is not good enough for
+  // the UI and can be harmful elsewhere.
+  setlocale(LC_NUMERIC, "C");
+  // This prevents GTK from calling setlocale(LC_ALL, ""), which potentially
+  // overwrites the LC_NUMERIC locale to something other than "C".
+  gtk_disable_setlocale();
+
+  constexpr std::string_view kDefaultLocalePath = "../share/locale";
+  std::string locale_path = std::string(kDefaultLocalePath);
+  size_t rpos = exec_path.rfind('/');
+  if (rpos != std::string::npos)
+    locale_path = exec_path.substr(0, rpos + 1) + locale_path;
+  bindtextdomain("yass", locale_path.c_str());
+  textdomain("yass");
 
   SetUpGLibLogHandler();
 
