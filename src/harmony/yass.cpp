@@ -188,12 +188,10 @@ static void setProtectFdCallingJS(napi_env env, napi_value /*js_cb*/, void* cont
 }
 
 static napi_value setProtectFdCallback(napi_env env, napi_callback_info info) {
-  napi_status status;
-
-  size_t argc = 1;
-  napi_value args[1] = {nullptr};
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  if (status != napi_ok || argc != 1) {
+  napi_value args[1]{};
+  size_t argc = std::size(args);
+  auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  if (status != napi_ok || argc != std::size(args)) {
     napi_throw_error(env, nullptr, "napi_get_cb_info failed");
     return nullptr;
   }
@@ -548,11 +546,9 @@ static void startWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void* conte
 static std::unique_ptr<Worker> g_worker;
 
 static napi_value startWorker(napi_env env, napi_callback_info info) {
-  napi_status status;
-
   napi_value args[1]{};
   size_t argc = std::size(args);
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != std::size(args)) {
     napi_throw_error(env, nullptr, "napi_get_cb_info failed");
     return nullptr;
@@ -684,11 +680,9 @@ static void stopWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void* contex
 }
 
 static napi_value stopWorker(napi_env env, napi_callback_info info) {
-  napi_status status;
-
   napi_value args[1]{};
   size_t argc = std::size(args);
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != std::size(args)) {
     napi_throw_error(env, nullptr, "napi_get_cb_info failed");
     return nullptr;
