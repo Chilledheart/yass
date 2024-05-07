@@ -23,14 +23,14 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki).
 ## Usages
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-android-release-arm64-1.9.4.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-android-release-arm-1.9.4.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-ios-release-arm64-1.9.4.ipa)
-- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-mingw-win7-release-x86_64-1.9.4-system-installer.exe) or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-mingw-winxp-release-i686-1.9.4-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-mingw-release-aarch64-1.9.4-system-installer.exe)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-macos-release-x64-1.9.4.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-macos-release-arm64-1.9.4.dmg)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-android-release-arm64-1.9.5.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-android-release-arm-1.9.5.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-ios-release-arm64-1.9.5.ipa)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-win7-release-x86_64-1.9.5-system-installer.exe) or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-winxp-release-i686-1.9.5-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-release-aarch64-1.9.5-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-macos-release-x64-1.9.5.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-macos-release-arm64-1.9.5.dmg)
 > via homebrew: `brew install --cask yass`
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass.el7.x86_64.1.9.4-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.9.4/yass-client-ubuntu-16.04-xenial_amd64.1.9.4.deb)
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass.el7.x86_64.1.9.5-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-client-ubuntu-16.04-xenial_amd64.1.9.5.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.9.4)
+View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.9.5)
 
 ### Status of Package Store
 Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
