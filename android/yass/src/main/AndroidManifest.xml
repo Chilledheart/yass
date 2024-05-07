@@ -31,8 +31,11 @@
 
         <activity
             android:name=".SettingsActivity"
-            android:label="@string/title_options"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/title_options">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
         </activity>
 
         <service
