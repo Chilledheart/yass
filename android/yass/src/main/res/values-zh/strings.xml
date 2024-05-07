@@ -24,4 +24,7 @@
     <string name="label_doh_url">基于 HTTPS 的 DNS (DoH) URL</string>
     <string name="label_dot_host">基于 TLS 的 DNS (DoT) 域名</string>
     <string name="status_start_failed">启动失败</string>
+    <string name="post_quantum_kyber">TLS的Kyber后量子密钥协商</string>
+    <string name="button_options">选项</string>
+    <string name="title_options">选项</string>
 </resources>

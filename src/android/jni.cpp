@@ -25,27 +25,27 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
   g_jvm = nullptr;
 }
 
-JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv* env, jobject obj) {
+JNIEXPORT jobject JNICALL Java_it_gui_yass_YassUtils_getServerHost(JNIEnv* env, jobject obj) {
   return env->NewStringUTF(absl::GetFlag(FLAGS_server_host).c_str());
 }
 
-JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerSNI(JNIEnv* env, jobject obj) {
+JNIEXPORT jobject JNICALL Java_it_gui_yass_YassUtils_getServerSNI(JNIEnv* env, jobject obj) {
   return env->NewStringUTF(absl::GetFlag(FLAGS_server_sni).c_str());
 }
 
-JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv* env, jobject obj) {
+JNIEXPORT jint JNICALL Java_it_gui_yass_YassUtils_getServerPort(JNIEnv* env, jobject obj) {
   return absl::GetFlag(FLAGS_server_port);
 }
 
-JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getUsername(JNIEnv* env, jobject obj) {
+JNIEXPORT jobject JNICALL Java_it_gui_yass_YassUtils_getUsername(JNIEnv* env, jobject obj) {
   return env->NewStringUTF(absl::GetFlag(FLAGS_username).c_str());
 }
 
-JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(JNIEnv* env, jobject obj) {
+JNIEXPORT jobject JNICALL Java_it_gui_yass_YassUtils_getPassword(JNIEnv* env, jobject obj) {
   return env->NewStringUTF(absl::GetFlag(FLAGS_password).c_str());
 }
 
-JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv* env, jobject obj) {
+JNIEXPORT jint JNICALL Java_it_gui_yass_YassUtils_getCipher(JNIEnv* env, jobject obj) {
   static constexpr const uint32_t method_ids[] = {
 #define XX(num, name, string) num,
       CIPHER_METHOD_VALID_MAP(XX)
@@ -61,7 +61,7 @@ JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv* env, jobj
   return method_idx;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv* env, jobject obj) {
+JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_YassUtils_getCipherStrings(JNIEnv* env, jobject obj) {
   static constexpr const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_VALID_MAP(XX)
@@ -75,29 +75,29 @@ JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JN
   return jarray;
 }
 
-JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getDoHUrl(JNIEnv* env, jobject obj) {
+JNIEXPORT jobject JNICALL Java_it_gui_yass_YassUtils_getDoHUrl(JNIEnv* env, jobject obj) {
   return env->NewStringUTF(absl::GetFlag(FLAGS_doh_url).c_str());
 }
 
-JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getDoTHost(JNIEnv* env, jobject obj) {
+JNIEXPORT jobject JNICALL Java_it_gui_yass_YassUtils_getDoTHost(JNIEnv* env, jobject obj) {
   return env->NewStringUTF(absl::GetFlag(FLAGS_dot_host).c_str());
 }
 
-JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv* env, jobject obj) {
+JNIEXPORT jint JNICALL Java_it_gui_yass_YassUtils_getTimeout(JNIEnv* env, jobject obj) {
   return absl::GetFlag(FLAGS_connect_timeout);
 }
 
-JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv* env,
-                                                                   jobject obj,
-                                                                   jobject _server_host,
-                                                                   jobject _server_sni,
-                                                                   jobject _server_port,
-                                                                   jobject _username,
-                                                                   jobject _password,
-                                                                   jint _method_idx,
-                                                                   jobject _doh_url,
-                                                                   jobject _dot_host,
-                                                                   jobject _timeout) {
+JNIEXPORT jobject JNICALL Java_it_gui_yass_YassUtils_saveConfig(JNIEnv* env,
+                                                                jobject obj,
+                                                                jobject _server_host,
+                                                                jobject _server_sni,
+                                                                jobject _server_port,
+                                                                jobject _username,
+                                                                jobject _password,
+                                                                jint _method_idx,
+                                                                jobject _doh_url,
+                                                                jobject _dot_host,
+                                                                jobject _timeout) {
   const char* server_host_str = env->GetStringUTFChars((jstring)_server_host, nullptr);
   std::string server_host = server_host_str != nullptr ? server_host_str : std::string();
   env->ReleaseStringUTFChars((jstring)_server_host, server_host_str);
@@ -148,6 +148,12 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv* env,
     return nullptr;
   }
   return env->NewStringUTF(err_msg.c_str());
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_YassUtils_setEnablePostQuantumKyber(JNIEnv* env,
+                                                                            jobject obj,
+                                                                            jboolean enable_post_quantum_kyber) {
+  absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber);
 }
 
 #endif  // __ANDROID__
