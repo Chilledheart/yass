@@ -5,7 +5,7 @@ RUN sed -i 's|^mirrorlist|#mirrorlist|g' /etc/yum.repos.d/CentOS-* && \
     sed -i 's|^#baseurl=http://mirror.centos.org/centos|baseurl=http://d36uatko69830t.cloudfront.net/centos|g' /etc/yum.repos.d/CentOS-*
 
 # Install requirements : update repo and install all requirements
-RUN yum clean all && \
+RUN ulimit -n 1024 && yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
   yum install -y epel-release && \
   yum clean all && \
@@ -16,7 +16,7 @@ RUN sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/epel* && \
     sed -i 's|^#baseurl=http://download.fedoraproject.org/pub|baseurl=http://dl.fedoraproject.org/pub|g' /etc/yum.repos.d/epel*
 
 # Install requirements : update repo and install all requirements
-RUN yum clean all && \
+RUN ulimit -n 1024 && yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
   yum install -y yum-utils && \
   yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \

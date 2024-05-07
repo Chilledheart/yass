@@ -33,7 +33,7 @@ static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair
                                                            int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
-    response_vector.emplace_back(http2::adapter::HeaderRep(":status"s),
+    response_vector.emplace_back(http2::adapter::HeaderRep(":status"sv),
                                  http2::adapter::HeaderRep(std::to_string(status)));
   }
   for (const auto& header : headers) {

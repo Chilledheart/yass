@@ -7,7 +7,7 @@
 
 #include <thread>
 
-#include "core/asio.hpp"
+#include "net/asio.hpp"
 #include "core/utils.hpp"
 
 namespace quiche {
@@ -21,7 +21,7 @@ inline void QuicheRunSystemEventLoopIterationImpl() {
 class QuicheSystemEventLoopImpl {
  public:
   explicit QuicheSystemEventLoopImpl(std::string context_name) {
-    SetThreadName(0, context_name);
+    SetCurrentThreadName(context_name);
     current_context = &io_context_;
   }
 

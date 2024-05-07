@@ -15,7 +15,7 @@
 #endif
 
 #ifdef HAVE_TCMALLOC
-#include <tcmalloc/malloc_extension.h>
+#include <gperftools/malloc_extension.h>
 #endif
 
 #include <absl/flags/flag.h>
@@ -387,15 +387,19 @@ bool IsProgramConsole(int fd) {
 
 #ifdef HAVE_TCMALLOC
 void PrintTcmallocStats() {
-  std::vector<const char*> properties = {
-      "generic.current_allocated_bytes",       "generic.heap_size",
-      "tcmalloc.max_total_thread_cache_bytes", "tcmalloc.current_total_thread_cache_bytes",
-      "tcmalloc.pageheap_free_bytes",          "tcmalloc.pageheap_unmapped_bytes",
+  constexpr const char* properties[] = {
+      "generic.current_allocated_bytes",
+      "generic.heap_size",
+      "generic.total_physical_bytes",
+      "tcmalloc.max_total_thread_cache_bytes",
+      "tcmalloc.current_total_thread_cache_bytes",
+      "tcmalloc.pageheap_free_bytes",
+      "tcmalloc.pageheap_unmapped_bytes",
   };
   for (auto property : properties) {
-    absl::optional<size_t> size = tcmalloc::MallocExtension::GetNumericProperty(property);
-    if (size.has_value()) {
-      LOG(INFO) << "TCMALLOC: " << property << " = " << *size << " bytes";
+    size_t size;
+    if (MallocExtension::instance()->GetNumericProperty(property, &size)) {
+      LOG(ERROR) << "TCMALLOC: " << property << " = " << size << " bytes";
     }
   }
 }

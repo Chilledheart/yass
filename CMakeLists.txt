@@ -2011,12 +2011,18 @@ int main() {
   check_c_source_compiles("${SOCKETPAIR_C_CXX_TEST_SOURCE}"
       HAVE_SOCKETPAIR)
   if (HAVE_SOCKETPAIR)
-      add_definitions(-DHAVE_SOCKETPAIR)
+    set(SUPPORT_DEFINITIONS
+      HAVE_SOCKETPAIR
+      ${SUPPORT_DEFINITIONS}
+    )
   endif()
 
   check_include_file(pwd.h HAVE_PWD_INCLUDE)
   if (HAVE_PWD_INCLUDE)
-    add_definitions(-DHAVE_PWD_H)
+    set(SUPPORT_DEFINITIONS
+      HAVE_PWD_H
+      ${SUPPORT_DEFINITIONS}
+    )
   endif()
 
   # linux-syscall-support
@@ -2351,38 +2357,95 @@ set(SUPPORT_LIBS
 # *****************************************************************************************
 
 # only support platform: linux
-if (USE_TCMALLOC)
-  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    if (NOT (OS_X64 OR OS_AARCH64 OR OS_RISCV64))
+# mac: __thread limitation
+#
+if (USE_TCMALLOC AND NOT USE_SYSTEM_TCMALLOC)
+  if (WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    if (NOT (OS_X86 OR OS_X64 OR OS_ARM OR OS_AARCH64 OR OS_MIPS OR OS_MIPS64 OR OS_RISCV64 OR OS_LOONGARCH64))
       message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
       set(USE_TCMALLOC OFF)
     endif()
+    # FIXME tcmalloc's preamble patcher doesn't support arm64 assembly
+    if (WIN32 AND OS_AARCH64)
+      message(WARNING "tcmalloc: arm64 windows is not supported, disabling...")
+      set(USE_TCMALLOC OFF)
+    endif()
+    # FIXME windows binaries doesn't pass UtilsTest.GetHomeDir for both mingw and msvc builds
+    if (WIN32)
+      message(WARNING "tcmalloc: mingw and msvc builds are not supported, disabling...")
+      set(USE_TCMALLOC OFF)
+    endif()
   else()
-    message(WARNING "tcmalloc: only Linux is supported, disabling...")
+    message(WARNING "tcmalloc: only Linux and FreeBSD are supported, disabling...")
     set(USE_TCMALLOC OFF)
   endif()
 endif()
 
-# tunings:
-# default pages: nop
-# large pages: -DTCMALLOC_LARGE_PAGES
-# 256k pages: -DTCMALLOC_256K_PAGES
-# small pages: -DTCMALLOC_SMALL_BUT_SLOW
-# numa pages: -DTCMALLOC_NUMA_AWARE
-if (USE_TCMALLOC)
-  message(STATUS "Compiling with bundled tcmalloc support")
+if (USE_SYSTEM_TCMALLOC)
+  check_library_exists(tcmalloc_minimal tc_malloc "" HAVE_SYSTEM_TCMALLOC)
+  if (NOT HAVE_SYSTEM_TCMALLOC)
+    message(STATUS "System tcmalloc not found, using bundled one")
+    set(USE_SYSTEM_TCMALLOC FALSE)
+  endif()
+  if (USE_LIBCXX)
+    message(STATUS "Cannot use system tcmalloc with custom libc++, using bundled one")
+    set(USE_SYSTEM_TCMALLOC FALSE)
+  endif()
+endif()
 
-  add_subdirectory(third_party/tcmalloc)
+if (USE_SYSTEM_TCMALLOC AND USE_TCMALLOC)
+  message(STATUS "Compiling with system tcmalloc support")
 
-  list(APPEND YASS_APP_FEATURES "tcmalloc")
+  list(APPEND YASS_APP_FEATURES "system tcmalloc_minimal")
+
+  set(TCMALLOC_LIB tcmalloc_minimal)
+
   set(SUPPORT_DEFINITIONS
     HAVE_TCMALLOC
     ${SUPPORT_DEFINITIONS}
   )
   set(SUPPORT_LIBS
-    tcmalloc
+    ${TCMALLOC_LIB}
     ${SUPPORT_LIBS}
     )
+elseif (USE_TCMALLOC)
+  message(STATUS "Compiling with bundled tcmalloc support")
+
+  set(GPERFTOOLS_BUILD_DEBUGALLOC OFF)
+  set(gperftools_build_minimal ON)
+  set(gperftools_build_benchmark OFF)
+  set(GPERFTOOLS_BUILD_STATIC ON)
+  set(GPERFTOOLS_ENABLE_INSTALL OFF)
+  set(GPERFTOOLS_BUILD_TESTING OFF)
+  add_subdirectory(third_party/gperftools)
+
+  set_target_properties(tcmalloc_minimal PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  list(APPEND YASS_APP_FEATURES "tcmalloc_minimal")
+
+  set(TCMALLOC_LIB tcmalloc_minimal_static)
+
+  set(SUPPORT_DEFINITIONS
+    HAVE_TCMALLOC
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_INCLUDE_DIRS
+    third_party/gperftools/src
+    ${SUPPORT_INCLUDE_DIRS}
+  )
+  set(SUPPORT_LIBS
+    ${TCMALLOC_LIB}
+    ${SUPPORT_LIBS}
+    )
+
+  # patching manually, see tcmalloc's README_windows.txt
+  if (MSVC)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
+  endif()
+  if (MINGW)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-u__tcmalloc")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-u__tcmalloc")
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -3666,7 +3729,7 @@ if (USE_CRASHPAD)
 endif()
 
 if (USE_TCMALLOC)
-  target_link_libraries(yass_core PUBLIC tcmalloc)
+  target_link_libraries(yass_core PUBLIC ${TCMALLOC_LIB})
 endif()
 
 target_include_directories(yass_core PUBLIC
@@ -4571,7 +4634,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/re2/LICENSE                         _RE2_LICENSE)
   file(READ third_party/snappy/src/COPYING                  _SNAPPY_LICENSE)
   file(READ third_party/sqlite/LICENSE                      _SQLITE_LICENSE)
-  file(READ third_party/tcmalloc/src/LICENSE                _TCMALLOC_LICENSE)
+  file(READ third_party/gperftools/COPYING                  _TCMALLOC_LICENSE)
   file(READ third_party/tun2proxy/LICENSE                   _TUN2PROXY_LICENSE)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 

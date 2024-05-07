@@ -33,7 +33,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 124-1
+  CACHE_EPOCH: 125-2
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
@@ -211,7 +211,7 @@ jobs:
           sudo apt-get install -y cmake ninja-build nasm zip
       - name: Build
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test -use-tcmalloc=false \
             --clang-path $PWD/third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64 -no-packaging
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}

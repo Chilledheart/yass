@@ -64,7 +64,7 @@
 
 @_SQLITE_LICENSE@
 
-=== tcmalloc ==
+=== tcmalloc_minimal ==
 
 @_TCMALLOC_LICENSE@
 

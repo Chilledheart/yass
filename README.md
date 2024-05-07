@@ -7,6 +7,7 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
 [![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
+[![homebrew cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
 yass is client-server model based and efficient forward proxy
 supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
@@ -17,18 +18,19 @@ supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
 - Easier to maintain and adopt new features.
 - Safe memory layout.
 
-More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki) and [NaïveProxy][naiveproxy]-compatible protocol support.
+More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki).
 
 ## Usages
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-android-release-arm64-1.8.3.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-android-release-arm-1.8.3.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-ios-release-arm64-1.8.3.ipa)
-- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-mingw-winxp-release-x86_64-1.8.3-system-installer.exe) or [download 32-bit installer (require runtime)](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-mingw-winxp-release-i686-1.8.3-system-installer.exe) or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-mingw-release-aarch64-1.8.3-system-installer.exe)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-macos-release-x64-1.8.3.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-macos-release-arm64-1.8.3.dmg)
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass.el7.x86_64.1.8.3-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.8.3/yass-client-ubuntu-16.04-xenial_amd64.1.8.3.deb)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-android-release-arm64-1.9.5.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-android-release-arm-1.9.5.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-ios-release-arm64-1.9.5.ipa)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-win7-release-x86_64-1.9.5-system-installer.exe) or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-winxp-release-i686-1.9.5-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-release-aarch64-1.9.5-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-macos-release-x64-1.9.5.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-macos-release-arm64-1.9.5.dmg)
+> via homebrew: `brew install --cask yass`
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass.el7.x86_64.1.9.5-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-client-ubuntu-16.04-xenial_amd64.1.9.5.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.8.3)
+View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.9.5)
 
 ### Status of Package Store
 Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
@@ -46,6 +48,8 @@ Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Serv
 
 #### NaïveProxy Protocol Support
 It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
+#### Fix disk space occupation issue for mobile users
+Starting with release 1.9.2 and 1.8.5, it will no longer keep log file and will not occupy extra disk space for Android/iOS/HarmonyOS client.
 #### Android vpn service support
 Android releases from 1.5.24 are signed and have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
 #### iOS packet tunnel support

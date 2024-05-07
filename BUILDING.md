@@ -43,7 +43,7 @@ cd yass
 
   * Choose `Add LLVM to System Path`.
 
-Notes: please make sure you have [LLVM][llvm-win64] (16.0 or above).
+Notes: please make sure you have [LLVM][llvm-win64] (17.0 or above).
 
 5. Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu.
 
@@ -180,7 +180,7 @@ sudo apt-get install -y \
     libgtk-3-dev
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.13 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (17.0 or above) and [CMake] (3.13 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -225,7 +225,7 @@ sudo yum install -y \
     golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.13 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (17.0 or above) and [CMake] (3.13 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -264,7 +264,7 @@ so you can install latest [Clang]:
 ```
 pkg install llvm17-lite
 ```
-Notes: please make sure you have [Clang] (16.0 or above) and [CMake] (3.13 or above).
+Notes: please make sure you have [Clang] (17.0 or above) and [CMake] (3.13 or above).
 
 2. Install required dependencies:
 ```

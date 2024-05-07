@@ -148,12 +148,12 @@ int main(int argc, const char* argv[]) {
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-#ifdef HAVE_TCMALLOC
+#if defined(HAVE_TCMALLOC) && defined(SIGUSR1)
   signals.add(SIGUSR1, ec);
 #endif
   std::function<void(asio::error_code, int)> cb;
   cb = [&](asio::error_code /*ec*/, int signal_number) {
-#ifdef HAVE_TCMALLOC
+#if defined(HAVE_TCMALLOC) && defined(SIGUSR1)
     if (signal_number == SIGUSR1) {
       PrintTcmallocStats();
       signals.async_wait(cb);
