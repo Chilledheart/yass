@@ -23,10 +23,4 @@ public class SettingsActivity extends AppCompatActivity {
             getFragmentManager().beginTransaction().add(R.id.idFrameLayout, new YassSettingsFragment()).commit();
         }
     }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        finish();
-        return true;
-    }
 }
