@@ -1,3 +1,8 @@
+yass (1.8.7-1) UNRELEASED; urgency=medium
+
+  * ui: provide an option to turn on post quantum kyber.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 7 May 2024 16:33:33 +0800
 yass (1.8.6-1) UNRELEASED; urgency=medium
 
   * ca-certificates: update for 20240203.3.98 release.
