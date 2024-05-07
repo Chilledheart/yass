@@ -241,5 +241,12 @@
             android:onClick="onStopClicked"
             android:text="@string/button_stop" />
 
+        <Button
+            android:id="@+id/optionsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="onOptionsClicked"
+            android:text="@string/button_options" />
+
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

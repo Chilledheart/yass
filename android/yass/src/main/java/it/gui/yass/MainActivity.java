@@ -2,7 +2,6 @@
 /* Copyright (c) 2023 Chilledheart  */
 package it.gui.yass;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.UiModeManager;
@@ -15,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -23,6 +23,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import java.io.IOException;
@@ -30,17 +31,19 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import it.gui.yass.databinding.ActivityMainBinding;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
     static {
         // Load native library
         System.loadLibrary("yass");
     }
+
     private static final String TAG = "MainActivity";
     private static final String YASS_TAG = "yass";
     private static final String TUN2PROXY_TAG = "tun2proxy";
@@ -58,7 +61,7 @@ public class MainActivity extends Activity {
         loadSettingsFromNative();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            UiModeManager manager = (UiModeManager)getSystemService(UI_MODE_SERVICE);
+            UiModeManager manager = (UiModeManager) getSystemService(UI_MODE_SERVICE);
             manager.setApplicationNightMode(UiModeManager.MODE_NIGHT_AUTO);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
@@ -83,59 +86,44 @@ public class MainActivity extends Activity {
 
     private native void onNativeDestroy();
 
-    private native String getServerHost();
-
-    private native String getServerSNI();
-
-    private native int getServerPort();
-
-    private native String getUsername();
-
-    private native String getPassword();
-
-    private native int getCipher();
-
-    private native String[] getCipherStrings();
-
-    private native String getDoHUrl();
-
-    private native String getDoTHost();
-
-    private native int getTimeout();
-
-    private native String saveConfig(String serverHost, String serverSNI, String serverPort,
-                                     String username, String password, int cipher, String doh_url,
-                                     String dot_host, String timeout);
-
     private void loadSettingsFromNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
-        serverHostEditText.setText(getServerHost());
+        serverHostEditText.setText(YassUtils.getServerHost());
         EditText serverSNIEditText = findViewById(R.id.serverSNIEditText);
-        serverSNIEditText.setText(getServerSNI());
+        serverSNIEditText.setText(YassUtils.getServerSNI());
         EditText serverPortEditText = findViewById(R.id.serverPortEditText);
-        serverPortEditText.setText(String.format(getLocale(), "%d", getServerPort()));
+        serverPortEditText.setText(String.format(getLocale(), "%d", YassUtils.getServerPort()));
         EditText usernameEditText = findViewById(R.id.usernameEditText);
-        usernameEditText.setText(getUsername());
+        usernameEditText.setText(YassUtils.getUsername());
         EditText passwordEditText = findViewById(R.id.passwordEditText);
-        passwordEditText.setText(getPassword());
+        passwordEditText.setText(YassUtils.getPassword());
 
         Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, getCipherStrings());
+                android.R.layout.simple_spinner_item, YassUtils.getCipherStrings());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         cipherSpinner.setAdapter(adapter);
-        cipherSpinner.setSelection(getCipher());
+        cipherSpinner.setSelection(YassUtils.getCipher());
 
         EditText dohUrlEditText = findViewById(R.id.dohUrlEditText);
-        dohUrlEditText.setText(String.format(getLocale(), "%s", getDoHUrl()));
+        dohUrlEditText.setText(String.format(getLocale(), "%s", YassUtils.getDoHUrl()));
 
         EditText dotHostEditText = findViewById(R.id.dotHostEditText);
-        dotHostEditText.setText(String.format(getLocale(), "%s", getDoTHost()));
+        dotHostEditText.setText(String.format(getLocale(), "%s", YassUtils.getDoTHost()));
 
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
-        timeoutEditText.setText(String.format(getLocale(), "%d", getTimeout()));
+        timeoutEditText.setText(String.format(getLocale(), "%d", YassUtils.getTimeout()));
 
         loadSettingsFromNativeCurrentIp();
+
+        HashMap preferences = (HashMap) PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getAll();
+
+        preferences.forEach((key, value) -> {
+            Log.d("Preferences", String.format("Loading Preferences: %s -> %s", key, value));
+            if (key.equals(YassSettingsFragment.EnablePostQuantumKyberPreferenceKey)) {
+                YassUtils.setEnablePostQuantumKyber((Boolean) value);
+            }
+        });
 
         Button stopButton = findViewById(R.id.stopButton);
         stopButton.setEnabled(false);
@@ -169,15 +157,15 @@ public class MainActivity extends Activity {
         EditText dotHostEditText = findViewById(R.id.dotHostEditText);
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
 
-        return saveConfig(serverHostEditText.getText().toString(),
-                          serverSNIEditText.getText().toString(),
-                          serverPortEditText.getText().toString(),
-                          usernameEditText.getText().toString(),
-                          passwordEditText.getText().toString(),
-                          cipherSpinner.getSelectedItemPosition(),
-                          dohUrlEditText.getText().toString(),
-                          dotHostEditText.getText().toString(),
-                          timeoutEditText.getText().toString());
+        return YassUtils.saveConfig(serverHostEditText.getText().toString(),
+                serverSNIEditText.getText().toString(),
+                serverPortEditText.getText().toString(),
+                usernameEditText.getText().toString(),
+                passwordEditText.getText().toString(),
+                cipherSpinner.getSelectedItemPosition(),
+                dohUrlEditText.getText().toString(),
+                dotHostEditText.getText().toString(),
+                timeoutEditText.getText().toString());
     }
 
     private final YassVpnService vpnService = new YassVpnService();
@@ -234,6 +222,7 @@ public class MainActivity extends Activity {
     }
 
     private int nativeLocalPort = 0;
+
     @SuppressWarnings("unused")
     private void onNativeStarted(String error_msg, int local_port) {
         if (error_msg != null) {
@@ -264,7 +253,7 @@ public class MainActivity extends Activity {
                 startButton.setEnabled(true);
 
                 TextView statusTextView = findViewById(R.id.statusTextView);
-                statusTextView.setText(String.format(getString(R.string.status_stopped), getServerHost(), getServerPort()));
+                statusTextView.setText(String.format(getString(R.string.status_stopped), YassUtils.getServerHost(), YassUtils.getServerPort()));
             }
         });
     }
@@ -286,6 +275,7 @@ public class MainActivity extends Activity {
     private final int VPN_REQUEST_CODE = 10000;
     private long tun2proxyPtr = 0;
     private Thread tun2proxyThread;
+
     private void onStartVpn() {
         ParcelFileDescriptor tunFd = vpnService.connect(getString(R.string.app_name), getApplicationContext(), nativeLocalPort);
         if (tunFd == null) {
@@ -321,7 +311,7 @@ public class MainActivity extends Activity {
         }
 
         Log.v(TUN2PROXY_TAG, String.format("Init with proxy url: %s", proxyUrl));
-        tun2proxyThread = new Thread(){
+        tun2proxyThread = new Thread() {
             public void run() {
                 Log.v(TUN2PROXY_TAG, "tun2proxy thr started");
                 int ret = tun2ProxyRun(tun2proxyPtr);
@@ -378,6 +368,7 @@ public class MainActivity extends Activity {
         statusTextView.setText(R.string.status_stopping);
         state = NativeMachineState.STOPPING;
     }
+
     public void onStopClicked(View view) {
         if (state == NativeMachineState.STARTED) {
             stopRefreshPoll();
@@ -385,9 +376,18 @@ public class MainActivity extends Activity {
         }
     }
 
+    public void onOptionsClicked(View view) {
+        // opening a new intent to open settings activity.
+        Intent i = new Intent(MainActivity.this, SettingsActivity.class);
+        startActivity(i);
+    }
+
     private native long tun2ProxyInit(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);
+
     private native int tun2ProxyRun(long context);
+
     private native int tun2ProxyShutdown(long context);
+
     private native void tun2ProxyDestroy(long context);
 
     // first connection number, then rx rate, then tx rate
@@ -409,6 +409,7 @@ public class MainActivity extends Activity {
     }
 
     private final Handler handler = new Handler();
+
     private void startRefreshPoll() {
         mRefreshTimer = new Timer();
         Log.v(TAG, "refresh polling timer started");
