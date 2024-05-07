@@ -48,6 +48,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   auto doh_url = SysNSStringToUTF8(dict[@(kDoHURLFieldName)]);
   auto dot_host = SysNSStringToUTF8(dict[@(kDoTHostFieldName)]);
   auto connect_timeout = SysNSStringToUTF8(dict[@(kConnectTimeoutFieldName)]);
+  auto enable_post_quantum_kyber = [dict[@(kEnablePostQuantumKyberKey)] boolValue];
 
   auto err_msg =
       config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
@@ -58,6 +59,8 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
                                       userInfo:@{@"Error reason" : @(err_msg.c_str())}]);
     return;
   }
+
+  absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber);
 
   absl::AnyInvocable<void(asio::error_code)> callback = [self, completionHandler](asio::error_code ec) {
     bool successed = false;
