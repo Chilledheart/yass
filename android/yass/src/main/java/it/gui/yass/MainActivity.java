@@ -57,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
         it.gui.yass.databinding.ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        getSupportActionBar().hide();
+
         onNativeCreate();
         loadSettingsFromNative();
 
