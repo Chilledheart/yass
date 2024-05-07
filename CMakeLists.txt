@@ -4018,12 +4018,14 @@ if (GUI)
     elseif (GUI_FLAVOUR STREQUAL "ios")
         set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/Main.storyboard)
         set(LAUNCH_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/LaunchScreen.storyboard)
+        file(GLOB SETTINGS_BUNDLE ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Settings.bundle)
         set(ALLRESOURCES)
         if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
           set(ALLRESOURCES
             ${ALLRESOURCES}
             ${MAIN_STORYBOARD}
             ${LAUNCH_STORYBOARD}
+            ${SETTINGS_BUNDLE}
             src/ios/PrivacyInfo.xcprivacy
             src/ios/en.lproj/Localizable.strings
             src/ios/en.lproj/Main.strings
@@ -4377,6 +4379,8 @@ if (GUI)
             MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
           set_source_files_properties("${LAUNCH_STORYBOARD}" PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
+          set_source_files_properties(${SETTINGS_BUNDLE} PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
           set_source_files_properties("src/ios/en.lproj/Localizable.strings" PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
           set_source_files_properties("src/ios/en.lproj/Main.strings" PROPERTIES

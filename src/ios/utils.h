@@ -22,4 +22,6 @@ constexpr const char kDoHURLFieldName[] = "doh_url";
 constexpr const char kDoTHostFieldName[] = "dot_host";
 constexpr const char kConnectTimeoutFieldName[] = "connect_timeout";
 
+constexpr const char kEnablePostQuantumKyberKey[] = "ENABLE_POST_QUANTUM_KYBER";
+
 #endif  //  YASS_IOS_UTILS

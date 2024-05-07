@@ -46,11 +46,18 @@
   NSString* doh_url_;
   NSString* dot_host_;
   NSString* connect_timeout_;
+  BOOL enable_post_quantum_kyber_;
 }
 
 - (BOOL)application:(UIApplication*)application
     didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey, id>*)launchOptions {
   state_ = STOPPED;
+  [self didDefaultsChanged:nil];
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(didDefaultsChanged:)
+                                               name:NSUserDefaultsDidChangeNotification
+                                             object:nil];
+
   [[NSNotificationCenter defaultCenter] addObserver:self
                                            selector:@selector(didChangeVpnStatus:)
                                                name:NEVPNStatusDidChangeNotification
@@ -256,6 +263,7 @@
     @(kDoHURLFieldName) : doh_url_,
     @(kDoTHostFieldName) : dot_host_,
     @(kConnectTimeoutFieldName) : connect_timeout_,
+    @(kEnablePostQuantumKyberKey) : @(enable_post_quantum_kyber_),
   };
   tunnelProtocol.username = @"";
   tunnelProtocol.identityDataPassword = @"";
@@ -286,6 +294,13 @@
 }
 
 #pragma mark - Notification
+
+- (void)didDefaultsChanged:(NSNotification*)notification {
+  // Use standard one for data that is only for Host App.
+  // Use suiteName for data that you want to share between Extension and Host App.
+  enable_post_quantum_kyber_ = [[NSUserDefaults standardUserDefaults] boolForKey:@(kEnablePostQuantumKyberKey)];
+  absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber_);
+}
 
 - (void)didChangeVpnStatus:(NSNotification*)notification {
   if (!vpn_manager_) {
