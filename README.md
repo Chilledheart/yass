@@ -46,6 +46,10 @@ Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Serv
 
 ### Important notes before use
 
+#### Post Quantum Kyber Support
+Starting with release 1.9.5 and 1.8.7, Post Quantum Kyber Support is added on all of supported Platforms.You can enable it via Options Dialog(non-iOS)/Settings(iOS) manually.
+
+This option will be enabled by default in the future (M128).
 #### NaïveProxy Protocol Support
 It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
 #### Fix disk space occupation issue for mobile users
