@@ -7,7 +7,11 @@
 #include <string_view>
 #include <vector>
 
+void initNetworkPathMonitor();
+void deinitNetworkPathMonitor();
+
 bool connectedToNetwork();
+
 std::string serializeTelemetryJson(uint64_t total_rx_bytes, uint64_t total_tx_bytes);
 bool parseTelemetryJson(std::string_view resp, uint64_t* total_rx_bytes, uint64_t* total_tx_bytes);
 
