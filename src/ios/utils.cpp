@@ -3,7 +3,6 @@
 
 #include "ios/utils.h"
 
-#include <SystemConfiguration/SCNetworkReachability.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if.h>
@@ -13,31 +12,6 @@
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
-
-bool connectedToNetwork() {
-  // Create zero addy
-  struct sockaddr_in zeroAddress;
-  bzero(&zeroAddress, sizeof(zeroAddress));
-  zeroAddress.sin_len = sizeof(zeroAddress);
-  zeroAddress.sin_family = AF_INET;
-
-  // Recover reachability flags
-  SCNetworkReachabilityRef defaultRouteReachability =
-      SCNetworkReachabilityCreateWithAddress(NULL, (struct sockaddr*)&zeroAddress);
-  SCNetworkReachabilityFlags flags;
-
-  Boolean didRetrieveFlags = SCNetworkReachabilityGetFlags(defaultRouteReachability, &flags);
-  CFRelease(defaultRouteReachability);
-
-  if (!didRetrieveFlags) {
-    return false;
-  }
-
-  Boolean isReachable = flags & kSCNetworkFlagsReachable;
-  Boolean needsConnection = flags & kSCNetworkFlagsConnectionRequired;
-
-  return (isReachable && !needsConnection) ? true : false;
-}
 
 std::string serializeTelemetryJson(uint64_t total_rx_bytes, uint64_t total_tx_bytes) {
   json j;
