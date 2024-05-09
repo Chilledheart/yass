@@ -107,6 +107,14 @@ class reply {
   asio::ip::address_v4::bytes_type address_;
 };
 
+PACK(struct reply_header {
+  uint8_t null_byte;
+  uint8_t status;
+  uint8_t port_high_byte;
+  uint8_t port_low_byte;
+  asio::ip::address_v4::bytes_type address;
+});
+
 }  // namespace socks4
 
 }  // namespace net

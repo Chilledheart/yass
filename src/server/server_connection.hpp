@@ -249,6 +249,15 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// Start to read handshake request (via https fallback)
   void ReadHandshakeViaHttps();
   void OnReadHandshakeViaHttps();
+  /// Start to read handshake request (via socks)
+  void ReadHandshakeViaSocks();
+  void OnReadHandshakeViaSocks();
+  void WriteHandshakeResponse();
+  std::shared_ptr<IOBuf> handshake_pending_buf_;
+  /// Start to read handshake request (via socks5)
+  void WriteMethodSelect();
+  void ReadHandshakeViaSocks5();
+  void OnReadHandshakeViaSocks5();
 
   /// Start to read stream
   void ReadStream(bool yield);

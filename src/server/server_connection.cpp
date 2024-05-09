@@ -15,6 +15,12 @@
 #include "net/base64.hpp"
 #include "net/http_parser.hpp"
 #include "net/padding.hpp"
+#include "net/socks4.hpp"
+#include "net/socks4_request.hpp"
+#include "net/socks4_request_parser.hpp"
+#include "net/socks5.hpp"
+#include "net/socks5_request.hpp"
+#include "net/socks5_request_parser.hpp"
 #include "version.h"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
@@ -239,10 +245,15 @@ void ServerConnection::Start() {
     ReadHandshakeViaHttps();
   } else {
     DCHECK(!http2);
-    encoder_ =
-        std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
-    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
-    ReadHandshake();
+    auto method = absl::GetFlag(FLAGS_method).method;
+    if (CIPHER_METHOD_IS_SOCKS(method)) {
+      ReadHandshakeViaSocks();
+    } else {
+      encoder_ =
+          std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
+      decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
+      ReadHandshake();
+    }
   }
 }
 
@@ -645,6 +656,276 @@ void ServerConnection::OnReadHandshakeViaHttps() {
   }
 }
 
+void ServerConnection::ReadHandshakeViaSocks() {
+  scoped_refptr<ServerConnection> self(this);
+
+  if (DoPeek()) {
+    OnReadHandshakeViaSocks();
+    return;
+  }
+
+  downlink_->async_read_some([this, self](asio::error_code ec) {
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    OnReadHandshakeViaSocks();
+  });
+}
+
+void ServerConnection::OnReadHandshakeViaSocks() {
+  asio::error_code ec;
+  size_t bytes_transferred;
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  do {
+    bytes_transferred = downlink_->read_some(buf, ec);
+    if (ec == asio::error::interrupted) {
+      continue;
+    }
+  } while (false);
+  if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    DCHECK_EQ(bytes_transferred, 0u);
+    ReadHandshakeViaSocks();
+    return;
+  }
+  if (ec) {
+    OnDisconnect(ec);
+    return;
+  }
+  buf->append(bytes_transferred);
+
+  auto method = absl::GetFlag(FLAGS_method).method;
+  switch (method) {
+    case CRYPTO_SOCKS4:
+    case CRYPTO_SOCKS4A: {
+      socks4::request_parser request_parser;
+      socks4::request request;
+
+      socks4::request_parser::result_type result;
+      std::tie(result, std::ignore) = request_parser.parse(request, buf->data(), buf->data() + buf->length());
+      if (result == socks4::request_parser::good) {
+        DCHECK_LE(request.length(), buf->length());
+        buf->trimStart(request.length());
+        buf->retreat(request.length());
+      } else {
+        OnDisconnect(asio::error::invalid_argument);
+        return;
+      }
+      if (request.is_socks4a()) {
+        if (request.domain_name().size() > TLSEXT_MAXLEN_host_name) {
+          LOG(WARNING) << "Connection (client) " << connection_id()
+                       << " socks4a: too long domain name: " << request.domain_name();
+          OnDisconnect(asio::error::invalid_argument);
+          return;
+        }
+        request_ = {request.domain_name(), request.port()};
+      } else {
+        request_ = {request.endpoint()};
+      }
+      VLOG(2) << "Connection (server) " << connection_id() << " socks4 handshake";
+      handshake_pending_buf_ = buf;
+      WriteHandshakeResponse();
+      break;
+    };
+    case CRYPTO_SOCKS5:
+    case CRYPTO_SOCKS5H: {
+      socks5::method_select_request_parser method_select_request_parser;
+      socks5::method_select_request method_select_request;
+
+      socks5::method_select_request_parser::result_type result;
+
+      std::tie(result, std::ignore) =
+          method_select_request_parser.parse(method_select_request, buf->data(), buf->data() + buf->length());
+
+      if (result == socks5::method_select_request_parser::good) {
+        DCHECK_LE(method_select_request.length(), buf->length());
+        buf->trimStart(method_select_request.length());
+        buf->retreat(method_select_request.length());
+        VLOG(2) << "Connection (server) " << connection_id() << " socks5 method select";
+      } else {
+        OnDisconnect(asio::error::invalid_argument);
+        return;
+      }
+      handshake_pending_buf_ = buf;
+      WriteMethodSelect();
+      break;
+    };
+    default:
+      break;
+  }
+}
+
+void ServerConnection::WriteHandshakeResponse() {
+  scoped_refptr<ServerConnection> self(this);
+
+  downlink_->async_write_some([this, self](asio::error_code ec) {
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessSentData(ec, 0);
+      return;
+    }
+    std::shared_ptr<IOBuf> buf;
+    auto method = absl::GetFlag(FLAGS_method).method;
+    DCHECK(CIPHER_METHOD_IS_SOCKS(method));
+    if (method == CRYPTO_SOCKS4 || method == CRYPTO_SOCKS4A) {
+      socks4::reply reply;
+      asio::ip::tcp::endpoint endpoint{asio::ip::tcp::v4(), 0};
+      reply.set_endpoint(endpoint);
+      reply.mutable_status() = socks4::reply::request_granted;
+      buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+      for (const auto& buffer : reply.buffers()) {
+        buf->reserve(0, buffer.size());
+        memcpy(buf->mutable_tail(), buffer.data(), buffer.size());
+        buf->append(buffer.size());
+      }
+    } else {
+      socks5::reply reply;
+      asio::ip::tcp::endpoint endpoint{asio::ip::tcp::v4(), 0};
+      if (request_.address_type() == ss::domain) {
+        endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
+      } else {
+        endpoint = request_.endpoint();
+      }
+      reply.set_endpoint(endpoint);
+      reply.mutable_status() = socks5::reply::request_granted;
+      buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+      for (const auto& buffer : reply.buffers()) {
+        buf->reserve(0, buffer.size());
+        memcpy(buf->mutable_tail(), buffer.data(), buffer.size());
+        buf->append(buffer.size());
+      }
+    }
+    auto written = downlink_->write_some(buf, ec);
+    // TODO improve it
+    if (ec || written != buf->length()) {
+      OnDisconnect(asio::error::connection_refused);
+      return;
+    }
+    buf = std::move(handshake_pending_buf_);
+    ProcessReceivedData(buf, {}, buf->length());
+  });
+}
+
+void ServerConnection::WriteMethodSelect() {
+  scoped_refptr<ServerConnection> self(this);
+
+  downlink_->async_write_some([this, self](asio::error_code ec) {
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessSentData(ec, 0);
+      return;
+    }
+    auto method_select_reply = socks5::method_select_response_stock_reply();
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(&method_select_reply, sizeof(method_select_reply));
+    auto written = downlink_->write_some(buf, ec);
+    // TODO improve it
+    if (ec || written != buf->length()) {
+      OnDisconnect(asio::error::connection_refused);
+      return;
+    }
+    LOG(WARNING) << handshake_pending_buf_->length();
+    if (!handshake_pending_buf_->empty()) {
+      OnReadHandshakeViaSocks5();
+    } else {
+      ReadHandshakeViaSocks5();
+    }
+  });
+}
+
+void ServerConnection::ReadHandshakeViaSocks5() {
+  scoped_refptr<ServerConnection> self(this);
+
+  if (DoPeek()) {
+    OnReadHandshakeViaSocks5();
+    return;
+  }
+
+  downlink_->async_read_some([this, self](asio::error_code ec) {
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    OnReadHandshakeViaSocks5();
+  });
+}
+
+void ServerConnection::OnReadHandshakeViaSocks5() {
+  std::shared_ptr<IOBuf> buf = std::move(handshake_pending_buf_);
+  if (buf->empty()) {
+    asio::error_code ec;
+    size_t bytes_transferred;
+    buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+    do {
+      bytes_transferred = downlink_->read_some(buf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while (false);
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      DCHECK_EQ(bytes_transferred, 0u);
+      ReadHandshakeViaSocks();
+      return;
+    }
+    if (ec) {
+      OnDisconnect(ec);
+      return;
+    }
+    buf->append(bytes_transferred);
+  }
+
+  auto method = absl::GetFlag(FLAGS_method).method;
+  DCHECK(CIPHER_METHOD_IS_SOCKS5(method));
+  socks5::request_parser request_parser;
+  socks5::request request;
+
+  socks5::request_parser::result_type result;
+  std::tie(result, std::ignore) = request_parser.parse(request, buf->data(), buf->data() + buf->length());
+  if (result == socks5::request_parser::good) {
+    DCHECK_LE(request.length(), buf->length());
+    buf->trimStart(request.length());
+    buf->retreat(request.length());
+    VLOG(2) << "Connection (server) " << connection_id() << " socks5 handshake";
+  } else {
+    OnDisconnect(asio::error::invalid_argument);
+    return;
+  }
+  if (request.address_type() == socks5::domain) {
+    if (request.domain_name().size() > TLSEXT_MAXLEN_host_name) {
+      LOG(WARNING) << "Connection (client) " << connection_id()
+                   << " socks5: too long domain name: " << request.domain_name();
+      OnDisconnect(asio::error::invalid_argument);
+      return;
+    }
+    request_ = {request.domain_name(), request.port()};
+  } else {
+    request_ = {request.endpoint()};
+  }
+  handshake_pending_buf_ = std::move(buf);
+  WriteHandshakeResponse();
+}
+
 void ServerConnection::ReadStream(bool yield) {
   scoped_refptr<ServerConnection> self(this);
   DCHECK_EQ(downstream_read_inprogress_, false);
@@ -863,7 +1144,12 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& 
       if (downlink_->https_fallback()) {
     downstream_.push_back(buf);
   } else {
-    EncryptData(&downstream_, buf);
+    const auto method = absl::GetFlag(FLAGS_method).method;
+    if (CIPHER_METHOD_IS_SOCKS(method)) {
+      downstream_.push_back(buf);
+    } else {
+      EncryptData(&downstream_, buf);
+    }
   }
 
 out:
@@ -1030,7 +1316,12 @@ try_again:
       if (downlink_->https_fallback()) {
     upstream_.push_back(buf);
   } else {
-    decoder_->process_bytes(buf);
+    const auto method = absl::GetFlag(FLAGS_method).method;
+    if (CIPHER_METHOD_IS_SOCKS(method)) {
+      upstream_.push_back(buf);
+    } else {
+      decoder_->process_bytes(buf);
+    }
   }
 
 out:
