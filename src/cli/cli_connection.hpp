@@ -14,6 +14,7 @@
 #include "net/io_queue.hpp"
 #include "net/iobuf.hpp"
 #include "net/protocol.hpp"
+#include "net/resolver.hpp"
 #include "net/socks4.hpp"
 #include "net/socks4_request.hpp"
 #include "net/socks4_request_parser.hpp"
@@ -368,6 +369,9 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   /// the state of https fallback handshake (upstream)
   bool upstream_handshake_ = true;
+  /// the state of socks5 method select handshake (upstream)
+  bool socks5_method_select_handshake_ = true;
+  bool socks_handshake_ = true;
 
   std::string remote_domain() const {
     std::ostringstream ss;
@@ -378,6 +382,10 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
     }
     return ss.str();
   }
+
+ private:
+  /// used to resolve local and remote endpoint
+  net::Resolver resolver_;
 
  private:
   /// perform cmd connect request

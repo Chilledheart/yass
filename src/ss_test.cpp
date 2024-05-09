@@ -386,6 +386,10 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
   }
 
   void SendRequestAndCheckResponse() {
+    if (GetParam() == CRYPTO_SOCKS4 && absl::GetFlag(FLAGS_ipv6_mode)) {
+      GTEST_SKIP() << "skipped as socks4 not supporint ipv6 address";
+      return;
+    }
 #ifdef HAVE_CURL
     CURL* curl;
     char errbuf[CURL_ERROR_SIZE];
