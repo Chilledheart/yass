@@ -52,6 +52,7 @@
 - (BOOL)application:(UIApplication*)application
     didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey, id>*)launchOptions {
   state_ = STOPPED;
+  initNetworkPathMonitor();
   [self didDefaultsChanged:nil];
   [[NSNotificationCenter defaultCenter] addObserver:self
                                            selector:@selector(didDefaultsChanged:)
