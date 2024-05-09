@@ -252,6 +252,13 @@ class reply {
   uint8_t port_low_byte_;
 };
 
+PACK(struct reply_header {
+  uint8_t version;
+  uint8_t status;
+  uint8_t null_byte;
+  uint8_t address_type;
+});
+
 }  // namespace socks5
 
 }  // namespace net

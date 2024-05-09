@@ -20,6 +20,12 @@ class IoQueue {
 
   bool empty() const { return idx_ == end_idx_; }
 
+  void replace_front(T buf) {
+    DCHECK(!empty());
+    dirty_front_ = true;
+    queue_[idx_] = buf;
+  }
+
   void push_back(T buf) {
     queue_[end_idx_] = buf;
     end_idx_ = (end_idx_ + 1) % queue_.size();
