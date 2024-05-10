@@ -26,13 +26,13 @@ rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-andro
 echo "Adding rustup android target...done"
 
 mkdir -p ~/.cargo
-HAS_CARGO_ANDROID="$(grep target.aarch64-linux-android ~/.cargo/config || :)"
+HAS_CARGO_ANDROID="$(grep target.aarch64-linux-android ~/.cargo/config.toml || :)"
 if [ ! -z "$HAS_CARGO_ANDROID" ]; then
-  echo "Skip patching cargo config..."
+  echo "Skip patching cargo config.toml ..."
   exit 0
 fi
 
-echo "Patching cargo config..."
+echo "Patching cargo config.toml ..."
 
 ARCH=$(uname -s)
 case "$ARCH" in
@@ -51,7 +51,7 @@ case "$ARCH" in
     ;;
 esac
 
-cat >> ~/.cargo/config << EOF
+cat >> ~/.cargo/config.toml << EOF
 
 [target.aarch64-linux-android]
 ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
@@ -70,4 +70,4 @@ ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
 linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/x86_64-linux-android24-clang"
 EOF
 
-echo "Patching cargo config...done"
+echo "Patching cargo config.toml ...done"
