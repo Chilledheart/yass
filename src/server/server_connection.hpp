@@ -15,7 +15,6 @@
 #include "net/protocol.hpp"
 #include "net/ss.hpp"
 #include "net/ss_request.hpp"
-#include "net/ss_request_parser.hpp"
 #include "net/ssl_stream.hpp"
 #include "net/stream.hpp"
 
@@ -285,8 +284,6 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// state machine
   state state_;
 
-  /// parser of handshake request
-  ss::request_parser request_parser_;
   /// copy of handshake request
   ss::request request_;
 

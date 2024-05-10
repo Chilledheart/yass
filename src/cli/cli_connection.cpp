@@ -13,6 +13,8 @@
 #include "net/base64.hpp"
 #include "net/http_parser.hpp"
 #include "net/padding.hpp"
+#include "net/socks4_request_parser.hpp"
+#include "net/socks5_request_parser.hpp"
 
 #include <build/build_config.h>
 
@@ -629,9 +631,9 @@ asio::error_code CliConnection::OnReadRedirHandshake(std::shared_ptr<IOBuf> buf)
 
 asio::error_code CliConnection::OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf) {
   scoped_refptr<CliConnection> self(this);
+  socks5::method_select_request_parser parser;
   socks5::method_select_request_parser::result_type result;
-  std::tie(result, std::ignore) =
-      method_select_request_parser_.parse(method_select_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = parser.parse(method_select_request_, buf->data(), buf->data() + buf->length());
 
   if (result == socks5::method_select_request_parser::good) {
     DCHECK_LE(method_select_request_.length(), buf->length());
@@ -647,8 +649,9 @@ asio::error_code CliConnection::OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> 
 
 asio::error_code CliConnection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
   VLOG(2) << "Connection (client) " << connection_id() << " try socks5 handshake";
+  socks5::request_parser parser;
   socks5::request_parser::result_type result;
-  std::tie(result, std::ignore) = request_parser_.parse(s5_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = parser.parse(s5_request_, buf->data(), buf->data() + buf->length());
 
   if (result == socks5::request_parser::good) {
     DCHECK_LE(s5_request_.length(), buf->length());
@@ -664,9 +667,9 @@ asio::error_code CliConnection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf
 
 asio::error_code CliConnection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
   VLOG(2) << "Connection (client) " << connection_id() << " try socks4 handshake";
-
+  socks4::request_parser parser;
   socks4::request_parser::result_type result;
-  std::tie(result, std::ignore) = s4_request_parser_.parse(s4_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = parser.parse(s4_request_, buf->data(), buf->data() + buf->length());
   if (result == socks4::request_parser::good) {
     DCHECK_LE(s4_request_.length(), buf->length());
     buf->trimStart(s4_request_.length());
