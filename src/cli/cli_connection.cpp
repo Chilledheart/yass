@@ -1222,6 +1222,7 @@ try_again:
           break;
       }
       if (buf->empty()) {
+        ec = asio::error::try_again;
         goto out;
       }
     }
