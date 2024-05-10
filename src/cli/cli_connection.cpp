@@ -1844,9 +1844,8 @@ void CliConnection::connected() {
   } else {
     DCHECK(!http2);
     if (!CIPHER_METHOD_IS_SOCKS(method())) {
-      encoder_ =
-          std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
-      decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
+      encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), method(), this, true);
+      decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), method(), this);
     }
   }
 
