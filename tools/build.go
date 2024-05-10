@@ -515,7 +515,7 @@ func getAndFixMinGWLibunwind(mingwDir string) {
 }
 
 func getAndFixAndroidLibunwind(ndkDir string) {
-	getAndFixLibunwind(fmt.Sprintf("%s/toolchains/llvm/prebuilt/%s-x86_64/lib64/clang/14.0.7/lib/linux", ndkDir, runtime.GOOS), "linux")
+	getAndFixLibunwind(fmt.Sprintf("%s/toolchains/llvm/prebuilt/%s-x86_64/lib/clang/17/lib/linux", ndkDir, runtime.GOOS), "linux")
 }
 
 func getAndFixHarmonyLibunwind() {
