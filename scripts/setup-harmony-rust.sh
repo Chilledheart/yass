@@ -24,15 +24,15 @@ fi
 echo "Adding rustup toolchain...done"
 
 mkdir -p ~/.cargo
-HAS_CARGO_HARMONY="$(grep target.aarch64-unknown-linux-ohos ~/.cargo/config || :)"
+HAS_CARGO_HARMONY="$(grep target.aarch64-unknown-linux-ohos ~/.cargo/config.toml || :)"
 if [ ! -z "$HAS_CARGO_HARMONY" ]; then
-  echo "Skip patching cargo config..."
+  echo "Skip patching cargo config.toml ..."
   exit 0
 fi
 
-echo "Patching cargo config..."
+echo "Patching cargo config.toml ..."
 
-cat >> ~/.cargo/config << EOF
+cat >> ~/.cargo/config.toml << EOF
 [target.aarch64-unknown-linux-ohos]
 ar = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ar"
 linker = "$PWD/scripts/aarch64-unknown-linux-ohos-clang.sh"
@@ -46,4 +46,4 @@ ar = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ar"
 linker = "$PWD/scripts/x86_64-unknown-linux-ohos-clang.sh"
 EOF
 
-echo "Patching cargo config...done"
+echo "Patching cargo config.toml ...done"
