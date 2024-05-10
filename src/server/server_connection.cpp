@@ -206,8 +206,7 @@ void ServerConnection::close() {
 }
 
 void ServerConnection::Start() {
-  const auto method = absl::GetFlag(FLAGS_method).method;
-  bool http2 = CIPHER_METHOD_IS_HTTP2(method);
+  bool http2 = CIPHER_METHOD_IS_HTTP2(method());
   if (http2 && downlink_->https_fallback()) {
     http2 = false;
   }
@@ -245,8 +244,7 @@ void ServerConnection::Start() {
     ReadHandshakeViaHttps();
   } else {
     DCHECK(!http2);
-    auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS(method)) {
+    if (CIPHER_METHOD_IS_SOCKS(method())) {
       ReadHandshakeViaSocks();
     } else {
       encoder_ =
@@ -700,8 +698,7 @@ void ServerConnection::OnReadHandshakeViaSocks() {
   }
   buf->append(bytes_transferred);
 
-  auto method = absl::GetFlag(FLAGS_method).method;
-  switch (method) {
+  switch (method()) {
     case CRYPTO_SOCKS4:
     case CRYPTO_SOCKS4A: {
       socks4::request_parser request_parser;
@@ -757,12 +754,14 @@ void ServerConnection::OnReadHandshakeViaSocks() {
       break;
     };
     default:
+      CHECK(false);
       break;
   }
 }
 
 void ServerConnection::WriteHandshakeResponse() {
   scoped_refptr<ServerConnection> self(this);
+  DCHECK(CIPHER_METHOD_IS_SOCKS(method()));
 
   downlink_->async_write_some([this, self](asio::error_code ec) {
     if (closed_ || closing_) {
@@ -776,9 +775,8 @@ void ServerConnection::WriteHandshakeResponse() {
       return;
     }
     std::shared_ptr<IOBuf> buf;
-    auto method = absl::GetFlag(FLAGS_method).method;
-    DCHECK(CIPHER_METHOD_IS_SOCKS(method));
-    if (method == CRYPTO_SOCKS4 || method == CRYPTO_SOCKS4A) {
+    DCHECK(CIPHER_METHOD_IS_SOCKS(method()));
+    if (method() == CRYPTO_SOCKS4 || method() == CRYPTO_SOCKS4A) {
       socks4::reply reply;
       asio::ip::tcp::endpoint endpoint{asio::ip::tcp::v4(), 0};
       reply.set_endpoint(endpoint);
@@ -895,8 +893,7 @@ void ServerConnection::OnReadHandshakeViaSocks5() {
     buf->append(bytes_transferred);
   }
 
-  auto method = absl::GetFlag(FLAGS_method).method;
-  DCHECK(CIPHER_METHOD_IS_SOCKS5(method));
+  DCHECK(CIPHER_METHOD_IS_SOCKS5(method()));
   socks5::request_parser request_parser;
   socks5::request request;
 
@@ -1144,8 +1141,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& 
       if (downlink_->https_fallback()) {
     downstream_.push_back(buf);
   } else {
-    const auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS(method)) {
+    if (CIPHER_METHOD_IS_SOCKS(method())) {
       downstream_.push_back(buf);
     } else {
       EncryptData(&downstream_, buf);
@@ -1316,8 +1312,7 @@ try_again:
       if (downlink_->https_fallback()) {
     upstream_.push_back(buf);
   } else {
-    const auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS(method)) {
+    if (CIPHER_METHOD_IS_SOCKS(method())) {
       upstream_.push_back(buf);
     } else {
       decoder_->process_bytes(buf);

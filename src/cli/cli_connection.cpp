@@ -1036,197 +1036,26 @@ try_again:
 #endif
       if (upstream_https_fallback_) {
     if (upstream_handshake_) {
-      upstream_handshake_ = false;
-      HttpResponseParser parser;
-
-      bool ok;
-      int nparsed = parser.Parse(buf, &ok);
-
-      if (nparsed) {
-        VLOG(3) << "Connection (client) " << connection_id()
-                << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
-      }
-      if (ok && parser.status_code() == 200) {
-        buf->trimStart(nparsed);
-        buf->retreat(nparsed);
-        if (buf->empty()) {
-          ec = asio::error::try_again;
-          return nullptr;
-        }
-      } else {
-        if (!ok) {
-          LOG(WARNING) << "Connection (client) " << connection_id()
-                       << " upstream server unhandled: " << parser.ErrorMessage() << ": "
-                       << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
-        } else {
-          LOG(WARNING) << "Connection (client) " << connection_id()
-                       << " upstream server returns: " << parser.status_code();
-        }
-        ec = asio::error::connection_refused;
-        disconnected(ec);
+      ReadUpstreamHttpsHandshake(buf, ec);
+      if (ec) {
         return nullptr;
       }
     }
     downstream_.push_back(buf);
   } else {
-    auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS5(method) && socks5_method_select_handshake_) {
-      if (buf->length() < sizeof(socks5::method_select_response)) {
-        ec = asio::error::connection_refused;
-        disconnected(ec);
+    if (CIPHER_METHOD_IS_SOCKS5(method()) && socks5_method_select_handshake_) {
+      ReadUpstreamMethodSelectHandshake(buf, ec);
+      if (ec) {
         return nullptr;
       }
-      socks5_method_select_handshake_ = false;
-      auto response = reinterpret_cast<const socks5::method_select_response*>(buf->data());
-      if (response->ver != socks5::version && response->method != socks5::no_auth_required) {
-        ec = asio::error::connection_refused;
-        disconnected(ec);
+    }
+    if (CIPHER_METHOD_IS_SOCKS(method()) && socks_handshake_) {
+      ReadUpstreamSocksHandshake(buf, ec);
+      if (ec) {
         return nullptr;
       }
-      VLOG(2) << "Connection (client) " << connection_id() << " socks5 method select response";
-      buf->trimStart(sizeof(socks5::method_select_response));
-
-      {
-        socks5::request_header header;
-        header.version = socks5::version;
-        header.command = socks5::cmd_connect;
-        header.null_byte = 0;
-
-        ByteRange req(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
-        std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-
-        absl::Span<uint8_t> address;
-        std::string domain_name;
-
-        uint8_t address_type = socks5::ipv4;
-        if (ss_request_->address_type() == ss::domain) {
-          address_type = socks5::domain;
-          domain_name = ss_request_->domain_name();
-          address = absl::Span<uint8_t>((uint8_t*)domain_name.c_str(), domain_name.size());
-        } else if (ss_request_->address_type() == ss::ipv6) {
-          address_type = socks5::ipv6;
-          address = absl::Span<uint8_t>((uint8_t*)&ss_request_->address6(), sizeof(ss_request_->address6()));
-        } else {
-          address_type = socks5::ipv4;
-          address = absl::Span<uint8_t>((uint8_t*)&ss_request_->address4(), sizeof(ss_request_->address4()));
-        }
-
-        buf->reserve(0, sizeof(address_type));
-        memcpy(buf->mutable_tail(), &address_type, sizeof(address_type));
-        buf->append(sizeof(address_type));
-
-        if (ss_request_->address_type() == ss::domain) {
-          uint8_t address_len = address.size();
-          buf->reserve(0, sizeof(address_len));
-          memcpy(buf->mutable_tail(), &address_len, sizeof(address_len));
-          buf->append(sizeof(address_len));
-        }
-
-        buf->reserve(0, address.size());
-        memcpy(buf->mutable_tail(), address.data(), address.size());
-        buf->append(address.size());
-
-        uint8_t port_high_byte = ss_request_->port_high_byte();
-        uint8_t port_low_byte = ss_request_->port_low_byte();
-
-        buf->reserve(0, sizeof(uint16_t));
-        *buf->mutable_tail() = port_high_byte;
-        buf->append(sizeof(port_high_byte));
-        *buf->mutable_tail() = port_low_byte;
-        buf->append(sizeof(port_low_byte));
-        upstream_.replace_front(buf);
-        WriteUpstreamInPipe();
-      }
-
-      if (buf->empty()) {
-        ec = asio::error::try_again;
-        goto out;
-      }
     }
-    if (CIPHER_METHOD_IS_SOCKS(method) && socks_handshake_) {
-      switch (method) {
-        case CRYPTO_SOCKS4:
-        case CRYPTO_SOCKS4A: {
-          if (buf->length() < sizeof(socks4::reply_header)) {
-            ec = asio::error::connection_refused;
-            disconnected(ec);
-            return nullptr;
-          }
-          socks_handshake_ = false;
-          auto response = reinterpret_cast<const socks4::reply_header*>(buf->data());
-          if (response->null_byte != 0 || response->status != socks4::reply::request_granted) {
-            ec = asio::error::connection_refused;
-            disconnected(ec);
-            return nullptr;
-          }
-          VLOG(2) << "Connection (client) " << connection_id() << " socks4 handshake response";
-          buf->trimStart(sizeof(socks4::reply_header));
-          break;
-        };
-        case CRYPTO_SOCKS5:
-        case CRYPTO_SOCKS5H: {
-          if (buf->length() < sizeof(socks5::reply_header)) {
-            ec = asio::error::connection_refused;
-            disconnected(ec);
-            return nullptr;
-          }
-          socks_handshake_ = false;
-          auto response = reinterpret_cast<const socks5::reply_header*>(buf->data());
-          if (response->version != socks5::version || response->status != socks5::reply::request_granted ||
-              response->null_byte != 0) {
-            ec = asio::error::connection_refused;
-            disconnected(ec);
-            return nullptr;
-          }
-          if (response->address_type == socks5::ipv4) {
-            uint32_t expected_len =
-                sizeof(socks5::reply_header) + sizeof(asio::ip::address_v4::bytes_type) + sizeof(uint16_t);
-            if (buf->length() < expected_len) {
-              ec = asio::error::connection_refused;
-              disconnected(ec);
-              return nullptr;
-            }
-            buf->trimStart(expected_len);
-          } else if (response->address_type == socks5::ipv6) {
-            uint32_t expected_len =
-                sizeof(socks5::reply_header) + sizeof(asio::ip::address_v6::bytes_type) + sizeof(uint16_t);
-            if (buf->length() < expected_len) {
-              ec = asio::error::connection_refused;
-              disconnected(ec);
-              return nullptr;
-            }
-            buf->trimStart(expected_len);
-          } else if (response->address_type == socks5::domain) {
-            uint32_t expected_len = sizeof(socks5::reply_header) + sizeof(uint8_t) + sizeof(uint16_t);
-            if (buf->length() < expected_len) {
-              ec = asio::error::connection_refused;
-              disconnected(ec);
-              return nullptr;
-            }
-            expected_len += *reinterpret_cast<const uint8_t*>(buf->data() + sizeof(*response));
-            if (buf->length() < expected_len) {
-              ec = asio::error::connection_refused;
-              disconnected(ec);
-              return nullptr;
-            }
-            buf->trimStart(expected_len);
-          } else {
-            ec = asio::error::connection_refused;
-            disconnected(ec);
-            return nullptr;
-          }
-          VLOG(2) << "Connection (client) " << connection_id() << " socks5 handshake response";
-          break;
-        };
-        default:
-          break;
-      }
-      if (buf->empty()) {
-        ec = asio::error::try_again;
-        goto out;
-      }
-    }
-    if (CIPHER_METHOD_IS_SOCKS(method)) {
+    if (CIPHER_METHOD_IS_SOCKS(method())) {
       downstream_.push_back(buf);
     } else {
       decoder_->process_bytes(buf);
@@ -1251,6 +1080,202 @@ out:
     pending_downstream_read_error_ = std::move(ec);
   }
   return downstream_.front();
+}
+
+void CliConnection::ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
+  DCHECK(upstream_handshake_);
+
+  upstream_handshake_ = false;
+  HttpResponseParser parser;
+
+  bool ok;
+  int nparsed = parser.Parse(buf, &ok);
+
+  if (nparsed) {
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+  }
+  if (ok && parser.status_code() == 200) {
+    buf->trimStart(nparsed);
+    buf->retreat(nparsed);
+  } else {
+    if (!ok) {
+      LOG(WARNING) << "Connection (client) " << connection_id()
+                   << " upstream server unhandled: " << parser.ErrorMessage() << ": "
+                   << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+    } else {
+      LOG(WARNING) << "Connection (client) " << connection_id() << " upstream server returns: " << parser.status_code();
+    }
+    ec = asio::error::connection_refused;
+    disconnected(ec);
+    return;
+  }
+  if (buf->empty()) {
+    ec = asio::error::try_again;
+    return;
+  }
+}
+
+void CliConnection::ReadUpstreamMethodSelectHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
+  DCHECK(socks5_method_select_handshake_);
+  socks5_method_select_handshake_ = false;
+  auto response = reinterpret_cast<const socks5::method_select_response*>(buf->data());
+  if (buf->length() < sizeof(socks5::method_select_response)) {
+    goto err_out;
+  }
+  if (response->ver != socks5::version && response->method != socks5::no_auth_required) {
+    goto err_out;
+  }
+  VLOG(2) << "Connection (client) " << connection_id() << " upstream socks5 method select response";
+  buf->trimStart(sizeof(socks5::method_select_response));
+  buf->retreat(sizeof(socks5::method_select_response));
+
+  WriteUpstreamMethodSelectResponse();
+
+  if (buf->empty()) {
+    ec = asio::error::try_again;
+    return;
+  }
+
+  return;
+
+err_out:
+  LOG(WARNING) << "Connection (client) " << connection_id() << " malformed upstream method select handshake response";
+  ec = asio::error::connection_refused;
+  disconnected(ec);
+  return;
+}
+
+void CliConnection::WriteUpstreamMethodSelectResponse() {
+  socks5::request_header header;
+  header.version = socks5::version;
+  header.command = socks5::cmd_connect;
+  header.null_byte = 0;
+
+  ByteRange req(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
+
+  absl::Span<uint8_t> address;
+  std::string domain_name;
+
+  uint8_t address_type = socks5::ipv4;
+  if (ss_request_->address_type() == ss::domain) {
+    address_type = socks5::domain;
+    domain_name = ss_request_->domain_name();
+    address = absl::Span<uint8_t>((uint8_t*)domain_name.c_str(), domain_name.size());
+  } else if (ss_request_->address_type() == ss::ipv6) {
+    address_type = socks5::ipv6;
+    address = absl::Span<uint8_t>((uint8_t*)&ss_request_->address6(), sizeof(ss_request_->address6()));
+  } else {
+    address_type = socks5::ipv4;
+    address = absl::Span<uint8_t>((uint8_t*)&ss_request_->address4(), sizeof(ss_request_->address4()));
+  }
+
+  buf->reserve(0, sizeof(address_type));
+  memcpy(buf->mutable_tail(), &address_type, sizeof(address_type));
+  buf->append(sizeof(address_type));
+
+  if (ss_request_->address_type() == ss::domain) {
+    uint8_t address_len = address.size();
+    buf->reserve(0, sizeof(address_len));
+    memcpy(buf->mutable_tail(), &address_len, sizeof(address_len));
+    buf->append(sizeof(address_len));
+  }
+
+  buf->reserve(0, address.size());
+  memcpy(buf->mutable_tail(), address.data(), address.size());
+  buf->append(address.size());
+
+  uint8_t port_high_byte = ss_request_->port_high_byte();
+  uint8_t port_low_byte = ss_request_->port_low_byte();
+
+  buf->reserve(0, sizeof(uint16_t));
+  *buf->mutable_tail() = port_high_byte;
+  buf->append(sizeof(port_high_byte));
+  *buf->mutable_tail() = port_low_byte;
+  buf->append(sizeof(port_low_byte));
+
+  upstream_.replace_front(buf);
+  WriteUpstreamInPipe();
+}
+
+void CliConnection::ReadUpstreamSocksHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
+  DCHECK(socks_handshake_);
+  socks_handshake_ = false;
+  switch (method()) {
+    case CRYPTO_SOCKS4:
+    case CRYPTO_SOCKS4A: {
+      if (buf->length() < sizeof(socks4::reply_header)) {
+        goto err_out;
+      }
+      auto response = reinterpret_cast<const socks4::reply_header*>(buf->data());
+      if (response->null_byte != 0 || response->status != socks4::reply::request_granted) {
+        goto err_out;
+      }
+      VLOG(2) << "Connection (client) " << connection_id() << " upstream socks4 handshake response";
+      buf->trimStart(sizeof(socks4::reply_header));
+      buf->retreat(sizeof(socks4::reply_header));
+      break;
+    };
+    case CRYPTO_SOCKS5:
+    case CRYPTO_SOCKS5H: {
+      if (buf->length() < sizeof(socks5::reply_header)) {
+        goto err_out;
+      }
+      auto response = reinterpret_cast<const socks5::reply_header*>(buf->data());
+      if (response->version != socks5::version || response->status != socks5::reply::request_granted ||
+          response->null_byte != 0) {
+        goto err_out;
+      }
+      if (response->address_type == socks5::ipv4) {
+        uint32_t expected_len =
+            sizeof(socks5::reply_header) + sizeof(asio::ip::address_v4::bytes_type) + sizeof(uint16_t);
+        if (buf->length() < expected_len) {
+          goto err_out;
+        }
+        buf->trimStart(expected_len);
+        buf->retreat(expected_len);
+      } else if (response->address_type == socks5::ipv6) {
+        uint32_t expected_len =
+            sizeof(socks5::reply_header) + sizeof(asio::ip::address_v6::bytes_type) + sizeof(uint16_t);
+        if (buf->length() < expected_len) {
+          goto err_out;
+        }
+        buf->trimStart(expected_len);
+        buf->retreat(expected_len);
+      } else if (response->address_type == socks5::domain) {
+        uint32_t expected_len = sizeof(socks5::reply_header) + sizeof(uint8_t) + sizeof(uint16_t);
+        if (buf->length() < expected_len) {
+          goto err_out;
+        }
+        expected_len += *reinterpret_cast<const uint8_t*>(buf->data() + sizeof(*response));
+        if (buf->length() < expected_len) {
+          goto err_out;
+        }
+        buf->trimStart(expected_len);
+        buf->retreat(expected_len);
+      } else {
+        goto err_out;
+        return;
+      }
+      VLOG(2) << "Connection (client) " << connection_id() << " upstream socks5 handshake response";
+      break;
+    };
+    default:
+      CHECK(false);
+      break;
+  }
+  if (buf->empty()) {
+    ec = asio::error::try_again;
+    return;
+  }
+  return;
+
+err_out:
+  LOG(WARNING) << "Connection (client) " << connection_id() << " malformed upstream socks handshake response";
+  ec = asio::error::connection_refused;
+  disconnected(ec);
+  return;
 }
 
 void CliConnection::WriteUpstreamInPipe() {
@@ -1340,8 +1365,7 @@ void CliConnection::WriteUpstreamInPipe() {
 std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
   if (!upstream_.empty()) {
     // pending on upstream handshake
-    auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS5(method) && socks5_method_select_handshake_ && upstream_.front()->empty()) {
+    if (CIPHER_METHOD_IS_SOCKS5(method()) && socks5_method_select_handshake_ && upstream_.front()->empty()) {
       ec = asio::error::try_again;
       return nullptr;
     }
@@ -1405,8 +1429,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, s
       if (upstream_https_fallback_) {
     upstream_.push_back(buf);
   } else {
-    auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS(method)) {
+    if (CIPHER_METHOD_IS_SOCKS(method())) {
       upstream_.push_back(buf);
     } else {
       EncryptData(&upstream_, buf);
@@ -1623,8 +1646,7 @@ void CliConnection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
 void CliConnection::OnCmdConnect(const std::string& domain_name, uint16_t port) {
   DCHECK_LE(domain_name.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
 
-  auto method = absl::GetFlag(FLAGS_method).method;
-  if (CIPHER_METHOD_IS_SOCKS_NON_DOMAIN_NAME(method)) {
+  if (CIPHER_METHOD_IS_SOCKS_NON_DOMAIN_NAME(method())) {
     scoped_refptr<CliConnection> self(this);
     resolver_.AsyncResolve(domain_name, port,
                            [this, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
@@ -1705,8 +1727,7 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
       if (upstream_https_fallback_) {
     upstream_.push_back(buf);
   } else {
-    auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS(method)) {
+    if (CIPHER_METHOD_IS_SOCKS(method())) {
       upstream_.push_back(buf);
     } else {
       EncryptData(&upstream_, buf);
@@ -1794,8 +1815,7 @@ void CliConnection::connected() {
   VLOG(2) << "Connection (client) " << connection_id()
           << " remote: established upstream connection with: " << remote_domain();
 
-  const auto method = absl::GetFlag(FLAGS_method).method;
-  bool http2 = CIPHER_METHOD_IS_HTTP2(method);
+  bool http2 = CIPHER_METHOD_IS_HTTP2(method());
   if (http2 && channel_->https_fallback()) {
     http2 = false;
     upstream_https_fallback_ = true;
@@ -1820,8 +1840,7 @@ void CliConnection::connected() {
     // padding_support_ = absl::GetFlag(FLAGS_padding_support);
   } else {
     DCHECK(!http2);
-    auto method = absl::GetFlag(FLAGS_method).method;
-    if (!CIPHER_METHOD_IS_SOCKS(method)) {
+    if (!CIPHER_METHOD_IS_SOCKS(method())) {
       encoder_ =
           std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
       decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
@@ -1916,9 +1935,8 @@ void CliConnection::connected() {
     // write variable address directly as https header
     upstream_.push_back(hdr.data(), hdr.size());
   } else {
-    auto method = absl::GetFlag(FLAGS_method).method;
-    if (CIPHER_METHOD_IS_SOCKS(method)) {
-      switch (method) {
+    if (CIPHER_METHOD_IS_SOCKS(method())) {
+      switch (method()) {
         case CRYPTO_SOCKS4: {
           socks4::request_header header;
           header.version = socks4::version;

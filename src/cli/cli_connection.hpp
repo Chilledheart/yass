@@ -327,6 +327,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// state machine
   state state_;
 
+ private:
   /// parser of method select request
   socks5::method_select_request_parser method_select_request_parser_;
   /// copy of method select request
@@ -366,6 +367,12 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   int num_padding_send_ = 0;
   int num_padding_recv_ = 0;
   std::shared_ptr<IOBuf> padding_in_middle_buf_;
+
+ private:
+  void ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
+  void ReadUpstreamMethodSelectHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
+  void WriteUpstreamMethodSelectResponse();
+  void ReadUpstreamSocksHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
 
   /// the state of https fallback handshake (upstream)
   bool upstream_handshake_ = true;

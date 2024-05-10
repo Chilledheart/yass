@@ -295,6 +295,12 @@ class Connection {
  private:
   /// the callback invoked when disconnect event happens
   absl::AnyInvocable<void()> disconnect_cb_;
+
+ public:
+  cipher_method method() const { return method_; }
+
+ private:
+  cipher_method method_ = absl::GetFlag(FLAGS_method).method;
 };
 
 enum ConnectionFactoryType {
