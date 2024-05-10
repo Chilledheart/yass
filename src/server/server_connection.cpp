@@ -21,6 +21,7 @@
 #include "net/socks5.hpp"
 #include "net/socks5_request.hpp"
 #include "net/socks5_request_parser.hpp"
+#include "net/ss_request_parser.hpp"
 #include "version.h"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
@@ -532,8 +533,9 @@ void ServerConnection::ReadHandshake() {
 
     DumpHex("HANDSHAKE->", buf.get());
 
+    ss::request_parser parser;
     ss::request_parser::result_type result;
-    std::tie(result, std::ignore) = request_parser_.parse(request_, buf->data(), buf->data() + bytes_transferred);
+    std::tie(result, std::ignore) = parser.parse(request_, buf->data(), buf->data() + bytes_transferred);
 
     if (result == ss::request_parser::good) {
       buf->trimStart(request_.length());
