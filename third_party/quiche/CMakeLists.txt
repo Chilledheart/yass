@@ -88,6 +88,8 @@ set(quiche_SRCS
   src/quiche/common/structured_headers.cc
   src/quiche/common/structured_headers.h
   src/quiche/common/wire_serialization.h
+  src/quiche/http2/adapter/chunked_buffer.h
+  src/quiche/http2/adapter/chunked_buffer.cc
   src/quiche/http2/adapter/data_source.h
   src/quiche/http2/adapter/event_forwarder.cc
   src/quiche/http2/adapter/event_forwarder.h
@@ -538,6 +540,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_bandwidth.cc
   src/quiche/quic/core/quic_bandwidth.h
   src/quiche/quic/core/quic_blocked_writer_interface.h
+  src/quiche/quic/core/quic_blocked_writer_list.h
+  src/quiche/quic/core/quic_blocked_writer_list.cc
   src/quiche/quic/core/quic_chaos_protector.cc
   src/quiche/quic/core/quic_chaos_protector.h
   src/quiche/quic/core/quic_clock.h
@@ -547,6 +551,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_config.h
   src/quiche/quic/core/quic_connection.cc
   src/quiche/quic/core/quic_connection.h
+  src/quiche/quic/core/quic_connection_alarms.h
+  src/quiche/quic/core/quic_connection_alarms.cc
   src/quiche/quic/core/quic_connection_context.cc
   src/quiche/quic/core/quic_connection_context.h
   src/quiche/quic/core/quic_connection_id.cc

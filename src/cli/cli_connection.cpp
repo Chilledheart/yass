@@ -1900,7 +1900,7 @@ void CliConnection::connected() {
       FillNonindexHeaderValue(RandUint64(), &padding[0], padding.size());
       headers.emplace_back("padding"s, padding);
     }
-    stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), nullptr);
+    stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), false, nullptr);
     data_frame_->set_stream_id(stream_id_);
     SendIfNotProcessing();
   } else
