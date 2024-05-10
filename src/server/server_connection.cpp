@@ -1460,7 +1460,8 @@ void ServerConnection::OnConnect() {
       }
       headers.emplace_back("padding"s, padding);
     }
-    int submit_result = adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame));
+    int submit_result =
+        adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame), false);
     SendIfNotProcessing();
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
