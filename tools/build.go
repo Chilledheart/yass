@@ -520,7 +520,7 @@ func getAndFixAndroidLibunwind(ndkDir string) {
 
 func getAndFixHarmonyLibunwind() {
 	// FIX Runtime
-	getAndFixLibunwind(fmt.Sprintf("%s/native/llvm/lib/clang/12.0.1/lib", harmonyNdkDir), "")
+	getAndFixLibunwind(fmt.Sprintf("%s/native/llvm/lib/clang/15.0.4/lib", harmonyNdkDir), "")
 	// FIX libunwind
 	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib"))
 	source_path := fmt.Sprintf("%s/native/llvm/lib", harmonyNdkDir)
@@ -580,6 +580,9 @@ func getAndFixLibunwind(source_path string, subdir string) {
 	}
 	for _, entry := range entries {
 		if subdir == "" && entry.Name() == "linux" {
+			continue
+		}
+		if subdir == "" && entry.Name() == "darwin" {
 			continue
 		}
 		if _, err = os.Lstat(filepath.Join(target_path, entry.Name())); err == nil {
