@@ -1,5 +1,5 @@
 diff --git a/include/__type_traits/remove_pointer.h b/include/__type_traits/remove_pointer.h
-index 54390a193..9b74cd723 100644
+index 54390a193..690a58068 100644
 --- a/include/__type_traits/remove_pointer.h
 +++ b/include/__type_traits/remove_pointer.h
 @@ -24,7 +24,7 @@ struct remove_pointer {
@@ -7,7 +7,7 @@ index 54390a193..9b74cd723 100644
  
  template <class _Tp>
 -using __remove_pointer_t = __remove_pointer(_Tp);
-+using __remove_pointer_t = remove_pointer<_Tp>::type;
++using __remove_pointer_t = typename remove_pointer<_Tp>::type;
  #else
  // clang-format off
  template <class _Tp> struct _LIBCPP_TEMPLATE_VIS remove_pointer                      {typedef _LIBCPP_NODEBUG _Tp type;};
