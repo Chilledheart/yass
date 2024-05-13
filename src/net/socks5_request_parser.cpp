@@ -12,6 +12,14 @@ void method_select_request_parser::reset() {
   state_ = request_start;
 }
 
+auth_request_parser::auth_request_parser() {
+  reset();
+}
+
+void auth_request_parser::reset() {
+  state_ = request_start;
+}
+
 request_parser::request_parser() {
   reset();
 }

@@ -44,19 +44,10 @@ class method_select_request_parser {
         state_ = request;
         return parse(req, i, end);
       case request: {
-        bool auth_checked = false;
         if (end - i < (int)req.nmethods() * (int)sizeof(uint8_t)) {
           return std::make_tuple(indeterminate, i);
         }
         memcpy(&req.methods_, &*i, req.nmethods() * sizeof(uint8_t));
-        for (uint32_t method = 0; method < req.nmethods(); ++method) {
-          if (req.methods_[method] == no_auth_required) {
-            auth_checked = true;
-          }
-        }
-        if (!auth_checked) {
-          return std::make_tuple(bad, i);
-        }
         i += req.nmethods() * sizeof(uint8_t);
         return std::make_tuple(good, i);
       }
@@ -68,6 +59,82 @@ class method_select_request_parser {
   enum state {
     request_start,
     request,
+  } state_;
+};
+
+class auth_request;
+class auth_request_parser {
+ public:
+  /// Construct ready to parse the request method.
+  auth_request_parser();
+
+  /// Reset to initial parser state.
+  void reset();
+
+  /// Result of parse.
+  enum result_type { good, bad, indeterminate };
+
+  /// Parse some data. The enum return value is good when a complete request has
+  /// been parsed, bad if the data is invalid, indeterminate when more data is
+  /// required. The InputIterator return value indicates how much of the input
+  /// has been consumed.
+  template <typename InputIterator>
+  std::tuple<result_type, InputIterator> parse(auth_request& req, InputIterator begin, InputIterator end) {
+    InputIterator i = begin;
+    switch (state_) {
+      case request_start:
+        if (end - i < (int)sizeof(auth_request_header)) {
+          return std::make_tuple(indeterminate, i);
+        }
+        memcpy(&req.req_, &*i, sizeof(auth_request_header));
+        if (req.ver() != version) {
+          return std::make_tuple(bad, i);
+        }
+        i += sizeof(auth_request_header);
+        state_ = request_username;
+        return parse(req, i, end);
+      case request_username: {
+        if (end - i < (int)sizeof(uint8_t)) {
+          return std::make_tuple(indeterminate, i);
+        }
+        uint8_t ulen = *i;
+        if (!ulen) {
+          return std::make_tuple(bad, i);
+        }
+        i += sizeof(uint8_t);
+        if (end - i < (int)ulen) {
+          return std::make_tuple(indeterminate, i);
+        }
+        req.username_ = std::string(reinterpret_cast<const char*>(&*i), ulen);
+        i += ulen;
+        state_ = request_password;
+        return parse(req, i, end);
+      }
+      case request_password: {
+        if (end - i < (int)sizeof(uint8_t)) {
+          return std::make_tuple(indeterminate, i);
+        }
+        uint8_t plen = *i;
+        if (!plen) {
+          return std::make_tuple(bad, i);
+        }
+        i += sizeof(uint8_t);
+        if (end - i < (int)plen) {
+          return std::make_tuple(indeterminate, i);
+        }
+        req.password_ = std::string(reinterpret_cast<const char*>(&*i), plen);
+        i += plen;
+        return std::make_tuple(good, i);
+      }
+    }
+    return std::make_tuple(indeterminate, begin);
+  }
+
+ private:
+  enum state {
+    request_start,
+    request_username,
+    request_password,
   } state_;
 };
 
