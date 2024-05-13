@@ -254,7 +254,10 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   void WriteHandshakeResponse();
   std::shared_ptr<IOBuf> handshake_pending_buf_;
   /// Start to read handshake request (via socks5)
-  void WriteMethodSelect();
+  void WriteMethodSelectResponse();
+  void ReadSocks5UsernamePasswordAuth();
+  void OnReadSocks5UsernamePasswordAuth();
+  void WriteUsernamePasswordAuthResponse();
   void ReadHandshakeViaSocks5();
   void OnReadHandshakeViaSocks5();
 
