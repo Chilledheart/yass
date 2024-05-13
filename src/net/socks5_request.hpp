@@ -20,12 +20,33 @@ class method_select_request {
   uint8_t ver() const { return req_.ver; }
   uint8_t nmethods() const { return req_.nmethods; }
 
+  typedef const uint8_t* const_iterator;
+  const_iterator begin() const { return methods_; }
+  const_iterator end() const { return &methods_[req_.nmethods]; }
+
   size_t length() const { return sizeof(req_) + req_.nmethods; }
 
  private:
   friend class method_select_request_parser;
   method_select_request_header req_;
   uint8_t methods_[255];
+};
+
+class auth_request {
+ public:
+  auth_request() : req_() {}
+
+  uint8_t ver() const { return req_.ver; }
+  const std::string& username() const { return username_; }
+  const std::string& password() const { return password_; }
+
+  size_t length() const { return sizeof(req_) + 1 + username_.size() + 1 + password_.size(); }
+
+ private:
+  friend class auth_request_parser;
+  auth_request_header req_;
+  std::string username_;
+  std::string password_;
 };
 
 class request {

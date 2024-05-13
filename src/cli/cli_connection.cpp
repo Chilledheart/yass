@@ -1046,14 +1046,20 @@ try_again:
     }
     downstream_.push_back(buf);
   } else {
-    if (CIPHER_METHOD_IS_SOCKS5(method()) && socks5_method_select_handshake_) {
-      ReadUpstreamMethodSelectHandshake(buf, ec);
+    if (socks5_method_select_handshake_) {
+      ReadUpstreamMethodSelectResponse(buf, ec);
       if (ec) {
         return nullptr;
       }
     }
-    if (CIPHER_METHOD_IS_SOCKS(method()) && socks_handshake_) {
-      ReadUpstreamSocksHandshake(buf, ec);
+    if (socks5_auth_handshake_) {
+      ReadUpstreamAuthResponse(buf, ec);
+      if (ec) {
+        return nullptr;
+      }
+    }
+    if (socks_handshake_) {
+      ReadUpstreamSocksResponse(buf, ec);
       if (ec) {
         return nullptr;
       }
@@ -1119,21 +1125,62 @@ void CliConnection::ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio:
   }
 }
 
-void CliConnection::ReadUpstreamMethodSelectHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
+void CliConnection::WriteUpstreamMethodSelectRequest() {
+  socks5::method_select_request_header method_select_header;
+  method_select_header.ver = socks5::version;
+  method_select_header.nmethods = 1;  // we only support auth or non-auth but not all of them.
+
+  bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+
+  ByteRange req(reinterpret_cast<const uint8_t*>(&method_select_header), sizeof(method_select_header));
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
+  buf->reserve(0, sizeof(uint8_t));
+  *buf->mutable_tail() = auth_required ? socks5::username_or_password : socks5::no_auth_required;
+  buf->append(sizeof(uint8_t));
+
+  upstream_.push_back(buf);
+  socks5_method_select_handshake_ = true;
+  socks5_auth_handshake_ = auth_required;
+  if (auth_required) {
+    /* alternative for socks5 auth request */
+    upstream_.push_back(IOBuf::create(SOCKET_DEBUF_SIZE));
+  }
+  /* alternative for socks5 request */
+  upstream_.push_back(IOBuf::create(SOCKET_DEBUF_SIZE));
+}
+
+void CliConnection::ReadUpstreamMethodSelectResponse(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
   DCHECK(socks5_method_select_handshake_);
   socks5_method_select_handshake_ = false;
   auto response = reinterpret_cast<const socks5::method_select_response*>(buf->data());
   if (buf->length() < sizeof(socks5::method_select_response)) {
+    LOG(INFO) << "Connection (client) " << connection_id()
+              << " malformed upstream socks5 method select handshake response.";
     goto err_out;
   }
-  if (response->ver != socks5::version && response->method != socks5::no_auth_required) {
+  if (response->ver != socks5::version) {
+    LOG(INFO) << "Connection (client) " << connection_id()
+              << " malformed upstream socks5 method select handshake response.";
     goto err_out;
   }
-  VLOG(2) << "Connection (client) " << connection_id() << " upstream socks5 method select response";
+  if (!socks5_auth_handshake_ && response->method != socks5::no_auth_required) {
+    LOG(INFO) << "Connection (server) " << connection_id() << " upstream socks5: noauth required.";
+    goto err_out;
+  }
+  if (socks5_auth_handshake_ && response->method != socks5::username_or_password) {
+    LOG(INFO) << "Connection (server) " << connection_id() << " upstream socks5: auth required.";
+    goto err_out;
+  }
+  VLOG(2) << "Connection (client) " << connection_id() << " upstream socks5 method select response "
+          << (socks5_auth_handshake_ ? "(auth)" : "(noauth)");
   buf->trimStart(sizeof(socks5::method_select_response));
   buf->retreat(sizeof(socks5::method_select_response));
 
-  WriteUpstreamMethodSelectResponse();
+  if (socks5_auth_handshake_) {
+    WriteUpstreamAuthRequest();
+  } else {
+    WriteUpstreamSocks5Request();
+  }
 
   if (buf->empty()) {
     ec = asio::error::try_again;
@@ -1143,13 +1190,148 @@ void CliConnection::ReadUpstreamMethodSelectHandshake(std::shared_ptr<IOBuf> buf
   return;
 
 err_out:
-  LOG(WARNING) << "Connection (client) " << connection_id() << " malformed upstream method select handshake response";
   ec = asio::error::connection_refused;
   disconnected(ec);
   return;
 }
 
-void CliConnection::WriteUpstreamMethodSelectResponse() {
+void CliConnection::WriteUpstreamAuthRequest() {
+  DCHECK(CIPHER_METHOD_IS_SOCKS5(method()));
+  socks5::auth_request_header header;
+  header.ver = socks5::version;
+  std::string username = absl::GetFlag(FLAGS_username);
+  std::string password = absl::GetFlag(FLAGS_password);
+
+  ByteRange req(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
+  buf->reserve(0, sizeof(uint8_t));
+  *buf->mutable_tail() = username.size();
+  buf->append(sizeof(uint8_t));
+
+  buf->reserve(0, username.size());
+  memcpy(buf->mutable_tail(), username.c_str(), username.size());
+  buf->append(username.size());
+
+  buf->reserve(0, sizeof(uint8_t));
+  *buf->mutable_tail() = password.size();
+  buf->append(sizeof(uint8_t));
+
+  buf->reserve(0, password.size());
+  memcpy(buf->mutable_tail(), password.c_str(), password.size());
+  buf->append(password.size());
+
+  upstream_.replace_front(buf);
+  WriteUpstreamInPipe();
+}
+
+void CliConnection::ReadUpstreamAuthResponse(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
+  DCHECK(socks5_auth_handshake_);
+  socks5_auth_handshake_ = false;
+  auto response = reinterpret_cast<const socks5::auth_response*>(buf->data());
+  if (buf->length() < sizeof(socks5::auth_response)) {
+    LOG(INFO) << "Connection (client) " << connection_id() << " malformed upstream socks5 auth response.";
+    goto err_out;
+  }
+  if (response->ver != socks5::version) {
+    LOG(INFO) << "Connection (client) " << connection_id() << " malformed upstream socks5 auth response.";
+    goto err_out;
+  }
+  if (response->status != socks5::auth_response_status::success) {
+    LOG(INFO) << "Connection (client) " << connection_id() << " rejected in upstream auth handshake response.";
+    goto err_out;
+  }
+  VLOG(2) << "Connection (client) " << connection_id() << " upstream socks5 auth response";
+  buf->trimStart(sizeof(socks5::auth_response));
+  buf->retreat(sizeof(socks5::auth_response));
+
+  WriteUpstreamSocks5Request();
+
+  if (buf->empty()) {
+    ec = asio::error::try_again;
+    return;
+  }
+
+  return;
+
+err_out:
+  ec = asio::error::connection_refused;
+  disconnected(ec);
+  return;
+}
+
+void CliConnection::WriteUpstreamSocks4Request() {
+  bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+  if (auth_required) {
+    LOG(WARNING) << "Client specifies username and password but SOCKS4 doesn't support it";
+  }
+  socks4::request_header header;
+  header.version = socks4::version;
+  header.command = socks4::cmd_connect;
+  header.port_high_byte = ss_request_->port_high_byte();
+  header.port_low_byte = ss_request_->port_low_byte();
+  if (ss_request_->address_type() == ss::domain) {
+    // impossible
+    CHECK(false);
+  } else if (ss_request_->address_type() == ss::ipv6) {
+    // not supported
+    LOG(WARNING) << "Unsupported IPv6 address for SOCKS4 server";
+    OnDisconnect(asio::error::access_denied);
+    return;
+  } else {
+    memcpy(&header.address, &ss_request_->address4(), sizeof(header.address));
+  }
+
+  ByteRange req(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
+  // append userid (variable)
+  buf->reserve(0, sizeof(uint8_t));
+  *buf->mutable_tail() = '\0';
+  buf->append(sizeof(uint8_t));
+
+  socks_handshake_ = true;
+
+  upstream_.push_back(buf);
+}
+
+void CliConnection::WriteUpstreamSocks4ARequest() {
+  bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+  if (auth_required) {
+    LOG(WARNING) << "Client specifies username and password but SOCKS4A doesn't support it";
+  }
+  socks4::request_header header;
+  header.version = socks4::version;
+  header.command = socks4::cmd_connect;
+  header.port_high_byte = ss_request_->port_high_byte();
+  header.port_low_byte = ss_request_->port_low_byte();
+  std::string domain_name;
+  if (ss_request_->address_type() == ss::domain) {
+    domain_name = ss_request_->domain_name();
+  } else if (ss_request_->address_type() == ss::ipv6) {
+    asio::ip::address_v6 address(ss_request_->address6());
+    domain_name = address.to_string();
+  } else {
+    asio::ip::address_v4 address(ss_request_->address4());
+    domain_name = address.to_string();
+  }
+  uint32_t address = 0x0f << 24;  // marked as SOCKS4A
+  memcpy(&header.address, &address, sizeof(address));
+
+  ByteRange req(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
+  // append userid (variable)
+  buf->reserve(0, sizeof(uint8_t));
+  *buf->mutable_tail() = '\0';
+  buf->append(sizeof(uint8_t));
+  buf->reserve(0, domain_name.size() + sizeof(uint8_t));
+  memcpy(buf->mutable_tail(), domain_name.c_str(), domain_name.size() + sizeof(uint8_t));
+  buf->append(domain_name.size() + sizeof(uint8_t));
+
+  socks_handshake_ = true;
+
+  upstream_.push_back(buf);
+}
+
+void CliConnection::WriteUpstreamSocks5Request() {
   socks5::request_header header;
   header.version = socks5::version;
   header.command = socks5::cmd_connect;
@@ -1198,11 +1380,13 @@ void CliConnection::WriteUpstreamMethodSelectResponse() {
   *buf->mutable_tail() = port_low_byte;
   buf->append(sizeof(port_low_byte));
 
+  socks_handshake_ = true;
+
   upstream_.replace_front(buf);
   WriteUpstreamInPipe();
 }
 
-void CliConnection::ReadUpstreamSocksHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
+void CliConnection::ReadUpstreamSocksResponse(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
   DCHECK(socks_handshake_);
   socks_handshake_ = false;
   switch (method()) {
@@ -1368,7 +1552,7 @@ void CliConnection::WriteUpstreamInPipe() {
 std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
   if (!upstream_.empty()) {
     // pending on upstream handshake
-    if (CIPHER_METHOD_IS_SOCKS5(method()) && socks5_method_select_handshake_ && upstream_.front()->empty()) {
+    if ((socks5_method_select_handshake_ || socks5_auth_handshake_) && upstream_.front()->empty()) {
       ec = asio::error::try_again;
       return nullptr;
     }
@@ -1939,81 +2123,19 @@ void CliConnection::connected() {
   } else {
     if (CIPHER_METHOD_IS_SOCKS(method())) {
       switch (method()) {
-        case CRYPTO_SOCKS4: {
-          socks4::request_header header;
-          header.version = socks4::version;
-          header.command = socks4::cmd_connect;
-          header.port_high_byte = ss_request_->port_high_byte();
-          header.port_low_byte = ss_request_->port_low_byte();
-          if (ss_request_->address_type() == ss::domain) {
-            // impossible
-            CHECK(false);
-          } else if (ss_request_->address_type() == ss::ipv6) {
-            // not supported
-            LOG(WARNING) << "Unsupported IPv6 address for SOCKS4 server";
-            OnDisconnect(asio::error::access_denied);
+        case CRYPTO_SOCKS4:
+          WriteUpstreamSocks4Request();
+          if (closed_) {
             return;
-          } else {
-            memcpy(&header.address, &ss_request_->address4(), sizeof(header.address));
           }
-
-          ByteRange req(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
-          std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-          // append userid (variable)
-          buf->reserve(0, sizeof(uint8_t));
-          *buf->mutable_tail() = '\0';
-          buf->append(sizeof(uint8_t));
-          upstream_.push_back(buf);
           break;
-        }
-        case CRYPTO_SOCKS4A: {
-          socks4::request_header header;
-          header.version = socks4::version;
-          header.command = socks4::cmd_connect;
-          header.port_high_byte = ss_request_->port_high_byte();
-          header.port_low_byte = ss_request_->port_low_byte();
-          std::string domain_name;
-          if (ss_request_->address_type() == ss::domain) {
-            domain_name = ss_request_->domain_name();
-          } else if (ss_request_->address_type() == ss::ipv6) {
-            asio::ip::address_v6 address(ss_request_->address6());
-            domain_name = address.to_string();
-          } else {
-            asio::ip::address_v4 address(ss_request_->address4());
-            domain_name = address.to_string();
-          }
-          uint32_t address = 0x0f << 24;  // marked as SOCKS4A
-          memcpy(&header.address, &address, sizeof(address));
-
-          ByteRange req(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
-          std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-          // append userid (variable)
-          buf->reserve(0, sizeof(uint8_t));
-          *buf->mutable_tail() = '\0';
-          buf->append(sizeof(uint8_t));
-          buf->reserve(0, domain_name.size() + sizeof(uint8_t));
-          memcpy(buf->mutable_tail(), domain_name.c_str(), domain_name.size() + sizeof(uint8_t));
-          buf->append(domain_name.size() + sizeof(uint8_t));
-          upstream_.push_back(buf);
+        case CRYPTO_SOCKS4A:
+          WriteUpstreamSocks4ARequest();
           break;
-        }
         case CRYPTO_SOCKS5:
-        case CRYPTO_SOCKS5H: {
-          socks5::method_select_request_header method_select_header;
-          method_select_header.ver = socks5::version;
-          method_select_header.nmethods = 1;
-
-          ByteRange req(reinterpret_cast<const uint8_t*>(&method_select_header), sizeof(method_select_header));
-          std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-          buf->reserve(0, sizeof(uint8_t));
-          *buf->mutable_tail() = socks5::no_auth_required;
-          buf->append(sizeof(uint8_t));
-
-          upstream_.push_back(buf);
-          /* alternative */
-          upstream_.push_back(IOBuf::create(SOCKET_DEBUF_SIZE));
+        case CRYPTO_SOCKS5H:
+          WriteUpstreamMethodSelectRequest();
           break;
-        }
         default:
           CHECK(false);
           break;

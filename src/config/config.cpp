@@ -174,6 +174,18 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     err_msg << ",Invalid Cipher: " << to_cipher_method_str(method);
   }
 
+  if (method == CRYPTO_SOCKS4 || method == CRYPTO_SOCKS4A) {
+    if (!username.empty() || !password.empty()) {
+      err_msg << ",SOCKS4/SOCKSA doesn't support username and passsword";
+    }
+  }
+
+  if (method == CRYPTO_SOCKS5 || method == CRYPTO_SOCKS5H) {
+    if (username.empty() ^ password.empty()) {
+      err_msg << ",SOCKS5/SOCKS5H requires both of username and passsword";
+    }
+  }
+
   if (local_host.empty() || local_host.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Local Host: " << local_host;
   }
@@ -252,6 +264,18 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   auto method = to_cipher_method(method_string);
   if (method == CRYPTO_INVALID) {
     err_msg << ",Invalid Cipher: " << method_string;
+  }
+
+  if (method == CRYPTO_SOCKS4 || method == CRYPTO_SOCKS4A) {
+    if (!username.empty() || !password.empty()) {
+      err_msg << ",SOCKS4/SOCKSA doesn't support username and passsword";
+    }
+  }
+
+  if (method == CRYPTO_SOCKS5 || method == CRYPTO_SOCKS5H) {
+    if (username.empty() ^ password.empty()) {
+      err_msg << ",SOCKS5/SOCKS5H requires both of username and passsword";
+    }
   }
 
   if (local_host.empty() || local_host.size() >= TLSEXT_MAXLEN_host_name) {

@@ -542,6 +542,7 @@ void ServerConnection::ReadHandshake() {
       DCHECK_LE(request_.length(), bytes_transferred);
       ProcessReceivedData(buf, ec, buf->length());
     } else {
+      LOG(INFO) << "Connection (server) " << connection_id() << " malformed ss request.";
       // FIXME better error code?
       ec = asio::error::connection_refused;
       OnDisconnect(ec);
@@ -702,26 +703,27 @@ void ServerConnection::OnReadHandshakeViaSocks() {
   switch (method()) {
     case CRYPTO_SOCKS4:
     case CRYPTO_SOCKS4A: {
-      socks4::request_parser request_parser;
+      bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+      if (auth_required) {
+        LOG(WARNING) << "Server specifies username and password but SOCKS4/SOCKS4A doesn't support it";
+      }
+
+      socks4::request_parser parser;
       socks4::request request;
 
       socks4::request_parser::result_type result;
-      std::tie(result, std::ignore) = request_parser.parse(request, buf->data(), buf->data() + buf->length());
+      std::tie(result, std::ignore) = parser.parse(request, buf->data(), buf->data() + buf->length());
       if (result == socks4::request_parser::good) {
         DCHECK_LE(request.length(), buf->length());
         buf->trimStart(request.length());
         buf->retreat(request.length());
       } else {
+        LOG(INFO) << "Connection (server) " << connection_id() << " malformed socks4/socks4a request.";
         OnDisconnect(asio::error::invalid_argument);
         return;
       }
       if (request.is_socks4a()) {
-        if (request.domain_name().size() > TLSEXT_MAXLEN_host_name) {
-          LOG(WARNING) << "Connection (client) " << connection_id()
-                       << " socks4a: too long domain name: " << request.domain_name();
-          OnDisconnect(asio::error::invalid_argument);
-          return;
-        }
+        static_assert(UINT8_MAX /* socks4's variable addr size*/ <= TLSEXT_MAXLEN_host_name);
         request_ = {request.domain_name(), request.port()};
       } else {
         request_ = {request.endpoint()};
@@ -733,25 +735,44 @@ void ServerConnection::OnReadHandshakeViaSocks() {
     };
     case CRYPTO_SOCKS5:
     case CRYPTO_SOCKS5H: {
-      socks5::method_select_request_parser method_select_request_parser;
-      socks5::method_select_request method_select_request;
+      socks5::method_select_request_parser parser;
+      socks5::method_select_request request;
 
       socks5::method_select_request_parser::result_type result;
 
-      std::tie(result, std::ignore) =
-          method_select_request_parser.parse(method_select_request, buf->data(), buf->data() + buf->length());
+      bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+      std::tie(result, std::ignore) = parser.parse(request, buf->data(), buf->data() + buf->length());
 
       if (result == socks5::method_select_request_parser::good) {
-        DCHECK_LE(method_select_request.length(), buf->length());
-        buf->trimStart(method_select_request.length());
-        buf->retreat(method_select_request.length());
-        VLOG(2) << "Connection (server) " << connection_id() << " socks5 method select";
+        DCHECK_LE(request.length(), buf->length());
+        buf->trimStart(request.length());
+        buf->retreat(request.length());
       } else {
+        LOG(INFO) << "Connection (server) " << connection_id() << " malformed socks5 method select request.";
         OnDisconnect(asio::error::invalid_argument);
         return;
       }
+      if (auth_required) {
+        auto it = std::find(request.begin(), request.end(), socks5::username_or_password);
+        if (it == request.end()) {
+          LOG(INFO) << "Connection (server) " << connection_id() << " socks5: auth required.";
+          OnDisconnect(asio::error::invalid_argument);
+          return;
+        }
+      } else {
+        auto it = std::find(request.begin(), request.end(), socks5::no_auth_required);
+        if (it == request.end()) {
+          LOG(INFO) << "Connection (server) " << connection_id() << " socks5: no auth required.";
+          OnDisconnect(asio::error::invalid_argument);
+          return;
+        }
+      }
+
+      VLOG(2) << "Connection (server) " << connection_id() << " socks5 method select "
+              << (auth_required ? "(auth)" : "(noauth)");
+
       handshake_pending_buf_ = buf;
-      WriteMethodSelect();
+      WriteMethodSelectResponse();
       break;
     };
     default:
@@ -816,7 +837,7 @@ void ServerConnection::WriteHandshakeResponse() {
   });
 }
 
-void ServerConnection::WriteMethodSelect() {
+void ServerConnection::WriteMethodSelectResponse() {
   scoped_refptr<ServerConnection> self(this);
 
   downlink_->async_write_some([this, self](asio::error_code ec) {
@@ -830,7 +851,9 @@ void ServerConnection::WriteMethodSelect() {
       ProcessSentData(ec, 0);
       return;
     }
-    auto method_select_reply = socks5::method_select_response_stock_reply();
+    bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+    auto method_select_reply = socks5::method_select_response_stock_reply(auth_required ? socks5::username_or_password
+                                                                                        : socks5::no_auth_required);
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(&method_select_reply, sizeof(method_select_reply));
     auto written = downlink_->write_some(buf, ec);
     // TODO improve it
@@ -838,19 +861,121 @@ void ServerConnection::WriteMethodSelect() {
       OnDisconnect(asio::error::connection_refused);
       return;
     }
-    LOG(WARNING) << handshake_pending_buf_->length();
-    if (!handshake_pending_buf_->empty()) {
-      OnReadHandshakeViaSocks5();
+    if (auth_required) {
+      ReadSocks5UsernamePasswordAuth();
     } else {
       ReadHandshakeViaSocks5();
     }
   });
 }
 
+void ServerConnection::ReadSocks5UsernamePasswordAuth() {
+  scoped_refptr<ServerConnection> self(this);
+
+  if (!handshake_pending_buf_->empty() || DoPeek()) {
+    OnReadSocks5UsernamePasswordAuth();
+    return;
+  }
+
+  downlink_->async_read_some([this, self](asio::error_code ec) {
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    OnReadSocks5UsernamePasswordAuth();
+  });
+}
+
+void ServerConnection::OnReadSocks5UsernamePasswordAuth() {
+  std::shared_ptr<IOBuf> buf = std::move(handshake_pending_buf_);
+  if (buf->empty()) {
+    asio::error_code ec;
+    size_t bytes_transferred;
+    buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+    do {
+      bytes_transferred = downlink_->read_some(buf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while (false);
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      DCHECK_EQ(bytes_transferred, 0u);
+      ReadSocks5UsernamePasswordAuth();
+      return;
+    }
+    if (ec) {
+      OnDisconnect(ec);
+      return;
+    }
+    buf->append(bytes_transferred);
+  }
+
+  DCHECK(CIPHER_METHOD_IS_SOCKS5(method()));
+
+  socks5::auth_request_parser parser;
+  socks5::auth_request auth_request;
+
+  socks5::auth_request_parser::result_type result;
+  std::tie(result, std::ignore) = parser.parse(auth_request, buf->data(), buf->data() + buf->length());
+  if (result == socks5::auth_request_parser::good) {
+    DCHECK_LE(auth_request.length(), buf->length());
+    buf->trimStart(auth_request.length());
+    buf->retreat(auth_request.length());
+  } else {
+    LOG(INFO) << "Connection (server) " << connection_id() << " malformed socks5 auth request.";
+    OnDisconnect(asio::error::invalid_argument);
+    return;
+  }
+
+  if (auth_request.username() != absl::GetFlag(FLAGS_username) ||
+      auth_request.password() != absl::GetFlag(FLAGS_password)) {
+    LOG(INFO) << "Connection (server) " << connection_id() << " socks5: dismatched username and password pair.";
+    OnDisconnect(asio::error::invalid_argument);
+    return;
+  }
+
+  VLOG(2) << "Connection (server) " << connection_id() << " socks5 auth handshake";
+
+  handshake_pending_buf_ = std::move(buf);
+  WriteUsernamePasswordAuthResponse();
+}
+
+void ServerConnection::WriteUsernamePasswordAuthResponse() {
+  scoped_refptr<ServerConnection> self(this);
+
+  downlink_->async_write_some([this, self](asio::error_code ec) {
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessSentData(ec, 0);
+      return;
+    }
+    auto reply = socks5::auth_response_stock_reply();
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(&reply, sizeof(reply));
+    auto written = downlink_->write_some(buf, ec);
+    // TODO improve it
+    if (ec || written != buf->length()) {
+      OnDisconnect(asio::error::connection_refused);
+      return;
+    }
+    ReadHandshakeViaSocks5();
+  });
+}
+
 void ServerConnection::ReadHandshakeViaSocks5() {
   scoped_refptr<ServerConnection> self(this);
 
-  if (DoPeek()) {
+  if (!handshake_pending_buf_->empty() || DoPeek()) {
     OnReadHandshakeViaSocks5();
     return;
   }
@@ -895,27 +1020,23 @@ void ServerConnection::OnReadHandshakeViaSocks5() {
   }
 
   DCHECK(CIPHER_METHOD_IS_SOCKS5(method()));
-  socks5::request_parser request_parser;
+  socks5::request_parser parser;
   socks5::request request;
 
   socks5::request_parser::result_type result;
-  std::tie(result, std::ignore) = request_parser.parse(request, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = parser.parse(request, buf->data(), buf->data() + buf->length());
   if (result == socks5::request_parser::good) {
     DCHECK_LE(request.length(), buf->length());
     buf->trimStart(request.length());
     buf->retreat(request.length());
     VLOG(2) << "Connection (server) " << connection_id() << " socks5 handshake";
   } else {
+    LOG(INFO) << "Connection (server) " << connection_id() << " malformed socks5 request.";
     OnDisconnect(asio::error::invalid_argument);
     return;
   }
   if (request.address_type() == socks5::domain) {
-    if (request.domain_name().size() > TLSEXT_MAXLEN_host_name) {
-      LOG(WARNING) << "Connection (client) " << connection_id()
-                   << " socks5: too long domain name: " << request.domain_name();
-      OnDisconnect(asio::error::invalid_argument);
-      return;
-    }
+    static_assert(UINT8_MAX /* socks5's variable addr size*/ <= TLSEXT_MAXLEN_host_name);
     request_ = {request.domain_name(), request.port()};
   } else {
     request_ = {request.endpoint()};

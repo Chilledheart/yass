@@ -34,6 +34,8 @@ const uint8_t version = 0x05;
 //  X'FF' NO ACCEPTABLE METHODS
 enum method_select {
   no_auth_required = 0x00,
+  gssapi = 0x01,
+  username_or_password = 0x02,
   unacceptable = 0xff,
 };
 
@@ -61,6 +63,35 @@ inline method_select_response method_select_response_stock_reply(uint8_t method 
   method_select_response resp;
   resp.ver = version;
   resp.method = method;
+  return resp;
+}
+
+// +----+------+----------+------+----------+
+// |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
+// +----+------+----------+------+----------+
+// | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
+// +----+------+----------+------+----------+
+PACK(struct auth_request_header { uint8_t ver; });
+
+//  X'00' success
+enum auth_response_status {
+  success = 0x00,
+};
+
+// +----+--------+
+// |VER | STATUS |
+// +----+--------+
+// | 1  |   1    |
+// +----+--------+
+PACK(struct auth_response {
+  uint8_t ver;
+  uint8_t status;
+});
+
+inline auth_response auth_response_stock_reply(uint8_t status = success) {
+  auth_response resp;
+  resp.ver = version;
+  resp.status = status;
   return resp;
 }
 
