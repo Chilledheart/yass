@@ -1489,7 +1489,7 @@ void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::err
         OnUpstreamWriteFlush();
         break;
       case state_error:
-        ec = std::make_error_code(std::errc::bad_message);
+        ec = asio::error::invalid_argument;
         break;
       default:
         LOG(FATAL) << "Connection (server) " << connection_id() << " bad state 0x" << std::hex
@@ -1518,7 +1518,7 @@ void ServerConnection::ProcessSentData(asio::error_code ec, size_t bytes_transfe
         break;
       case state_handshake:
       case state_error:
-        ec = std::make_error_code(std::errc::bad_message);
+        ec = asio::error::invalid_argument;
         break;
       default:
         LOG(FATAL) << "Connection (server) " << connection_id() << " bad state 0x" << std::hex
