@@ -438,13 +438,16 @@ void CliConnection::ReadMethodSelect() {
     DumpHex("HANDSHAKE/METHOD_SELECT->", buf.get());
 
     ec = OnReadRedirHandshake(buf);
-    if (ec) {
+    if (ec == asio::error::operation_not_supported) {
+      ec = asio::error::invalid_argument;
+    }
+    if (ec == asio::error::invalid_argument) {
       ec = OnReadSocks5MethodSelect(buf);
     }
-    if (ec) {
+    if (ec == asio::error::invalid_argument) {
       ec = OnReadSocks4Handshake(buf);
     }
-    if (ec) {
+    if (ec == asio::error::invalid_argument) {
       ec = OnReadHttpRequest(buf);
     }
     if (ec) {
@@ -626,25 +629,34 @@ asio::error_code CliConnection::OnReadRedirHandshake(std::shared_ptr<IOBuf> buf)
     return ec;
   }
 #endif
-  return std::make_error_code(std::errc::network_unreachable);
+  return asio::error::operation_not_supported;
 }
 
 asio::error_code CliConnection::OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf) {
   scoped_refptr<CliConnection> self(this);
   socks5::method_select_request_parser parser;
+  socks5::method_select_request request;
   socks5::method_select_request_parser::result_type result;
-  std::tie(result, std::ignore) = parser.parse(method_select_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = parser.parse(request, buf->data(), buf->data() + buf->length());
 
   if (result == socks5::method_select_request_parser::good) {
-    DCHECK_LE(method_select_request_.length(), buf->length());
-    buf->trimStart(method_select_request_.length());
-    buf->retreat(method_select_request_.length());
+    DCHECK_LE(request.length(), buf->length());
+    buf->trimStart(request.length());
+    buf->retreat(request.length());
     SetState(state_method_select);
+
+    // TODO support SOCK5 username/password auth
+    auto it = std::find(request.begin(), request.end(), socks5::no_auth_required);
+    if (it == request.end()) {
+      // accepted but rejected
+      LOG(INFO) << "Connection (client) " << connection_id() << " socks5: no auth required.";
+      return asio::error::connection_refused;
+    }
 
     VLOG(2) << "Connection (client) " << connection_id() << " socks5 method select";
     return asio::error_code();
   }
-  return std::make_error_code(std::errc::bad_message);
+  return asio::error::invalid_argument;
 }
 
 asio::error_code CliConnection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
@@ -662,7 +674,7 @@ asio::error_code CliConnection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf
     VLOG(2) << "Connection (client) " << connection_id() << " socks5 handshake began";
     return asio::error_code();
   }
-  return std::make_error_code(std::errc::bad_message);
+  return asio::error::invalid_argument;
 }
 
 asio::error_code CliConnection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
@@ -679,7 +691,7 @@ asio::error_code CliConnection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf
     VLOG(2) << "Connection (client) " << connection_id() << " socks4 handshake began";
     return asio::error_code();
   }
-  return std::make_error_code(std::errc::bad_message);
+  return asio::error::invalid_argument;
 }
 
 asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
@@ -720,7 +732,7 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
 
   LOG(WARNING) << "Connection (client) " << connection_id() << " " << parser.ErrorMessage() << ": "
                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
-  return std::make_error_code(std::errc::bad_message);
+  return asio::error::invalid_argument;
 }
 
 void CliConnection::ReadStream(bool yield) {
@@ -1774,7 +1786,7 @@ void CliConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_
         OnUpstreamWriteFlush();
         break;
       case state_error:
-        ec = std::make_error_code(std::errc::bad_message);
+        ec = asio::error::invalid_argument;
         break;
       default:
         LOG(FATAL) << "Connection (client) " << connection_id() << " bad state 0x" << std::hex
@@ -1803,7 +1815,7 @@ void CliConnection::ProcessSentData(asio::error_code ec, size_t bytes_transferre
       case state_socks5_handshake:
       case state_socks4_handshake:
       case state_http_handshake:
-        ec = std::make_error_code(std::errc::bad_message);
+        ec = asio::error::invalid_argument;
         break;
       case state_stream:
         if (bytes_transferred) {
@@ -1811,7 +1823,7 @@ void CliConnection::ProcessSentData(asio::error_code ec, size_t bytes_transferre
         }
         break;
       case state_error:
-        ec = std::make_error_code(std::errc::bad_message);
+        ec = asio::error::invalid_argument;
         break;
       default:
         LOG(FATAL) << "Connection (client) " << connection_id() << " bad state 0x" << std::hex

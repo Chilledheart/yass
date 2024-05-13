@@ -326,9 +326,6 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   state state_;
 
  private:
-  /// copy of method select request
-  socks5::method_select_request method_select_request_;
-
   /// copy of handshake request
   socks5::request s5_request_;
 
