@@ -1,21 +1,89 @@
 # Yet Another Shadow Socket.
-# Copyright (C) 2023 Chilledheart
+# Copyright (C) 2023-2024 Chilledheart
 # This file is distributed under the same license as the yass package.
-# Keyue Hu <hukeyue@hotmail.com>, 2023.
+# Chilledheart <keeyou-cn@outlook.com>, 2024.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-24 14:35+0800\n"
+"POT-Creation-Date: 2024-05-14 11:19+0800\n"
 "PO-Revision-Date: 2023-05-24 14:35+0800\n"
-"Last-Translator: Keyue Hu <hukeyue@hotmail.com>\n"
-"Language-Team: Keyue Hu <hukeyue@hotmail.com>\n"
+"Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
+"Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language: English\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: yass.cpp:245
+msgid "Connected with conns: "
+msgstr "Connected with conns: "
+
+#: yass.cpp:247
+msgid "Connecting"
+msgstr "Connecting"
+
+#: yass.cpp:249
+msgid "Failed to connect due to "
+msgstr "Failed to connect due to "
+
+#: yass.cpp:251
+msgid "Disconnecting"
+msgstr "Disconnecting"
+
+#: yass.cpp:253
+msgid "Disconnected with "
+msgstr "Disconnected with "
+
+#: yass.cpp:363
+msgid "Last Change: "
+msgstr "Last Change: "
+
+#: yass.cpp:366
+msgid "Enabled Feature: "
+msgstr "Enabled Feature: "
+
+#: yass.cpp:375
+msgid "official-site"
+msgstr "official-site"
+
+#: yass.cpp:381
+msgid "YASS Option"
+msgstr "YASS Option"
+
+#: yass_window.cpp:145
+msgid "READY"
+msgstr "READY"
+
+#: yass_window.cpp:258
+msgid " tx rate: "
+msgstr " tx rate: "
+
+#: yass_window.cpp:261
+msgid " rx rate: "
+msgstr " rx rate: "
+
+#: yass_window.cpp:295
+msgid "Start Failed"
+msgstr "Start Failed"
+
+#: yass_window.cpp:296
+msgid "OK"
+msgstr "OK"
+
+#: menu.ui:6
+msgid "_Option"
+msgstr "Option"
+
+#: menu.ui:12
+msgid "_About"
+msgstr "About"
+
+#: menu.ui:18
+msgid "_Quit"
+msgstr "Quit"
 
 #: option_dialog.ui:4
 msgid "Option"
@@ -37,15 +105,15 @@ msgstr "TCP keep alive after idle:"
 msgid "TCP keep alive interval:"
 msgstr "TCP keep alive interval:"
 
-#: option_dialog.ui:50
+#: option_dialog.ui:60
 msgid "Kyber post-quantum key agreement for TLS:"
 msgstr "Kyber post-quantum key agreement for TLS:"
 
-#: option_dialog.ui:92
+#: option_dialog.ui:110
 msgid "Okay"
 msgstr "Okay"
 
-#: option_dialog.ui:101
+#: option_dialog.ui:119
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -57,126 +125,58 @@ msgstr "Yet Another Shadow Socket"
 msgid "Server Host:"
 msgstr "Server Host:"
 
-#: yass_window.ui:31
+#: yass_window.ui:41
 msgid "Server SNI:"
 msgstr "Server SNI:"
 
-#: yass_window.ui:41
+#: yass_window.ui:51
 msgid "Server Port:"
 msgstr "Server Port:"
 
-#: yass_window.ui:51
+#: yass_window.ui:61
 msgid "Username:"
 msgstr "Username:"
 
-#: yass_window.ui:61
+#: yass_window.ui:71
 msgid "Password:"
 msgstr "Password:"
 
-#: yass_window.ui:71
+#: yass_window.ui:81
 msgid "Cipher/Method:"
 msgstr "Cipher/Method:"
 
-#: yass_window.ui:81
+#: yass_window.ui:91
 msgid "Local Host:"
 msgstr "Local Host:"
 
-#: yass_window.ui:91
+#: yass_window.ui:101
 msgid "Local Port:"
 msgstr "Local Port:"
 
-#: yass_window.ui:101
+#: yass_window.ui:111
 msgid "DNS over HTTPS URL:"
 msgstr "DNS over HTTPS URL:"
 
-#: yass_window.cpp:156
+#: yass_window.ui:121
 msgid "DNS over TLS Host:"
 msgstr "DNS over TLS Host:"
 
-#: yass_window.cpp:298
-msgid "Start Failed"
-msgstr "Start Failed"
-
-#: yass_window.cpp:298
-msgid "OK"
-msgstr "OK"
-
-#: yass_window.ui:101
+#: yass_window.ui:131
 msgid "Timeout:"
 msgstr "Timeout:"
 
-#: yass_window.ui:111
+#: yass_window.ui:141
 msgid "Auto Start:"
 msgstr "Auto Start:"
 
-#: yass_window.ui:121
+#: yass_window.ui:151
 msgid "System Proxy:"
 msgstr "System Proxy:"
 
-#: yass_window.ui:211
+#: yass_window.ui:265
 msgid "Start"
 msgstr "Start"
 
-#: yass_window.ui:220
+#: yass_window.ui:274
 msgid "Stop"
 msgstr "Stop"
-
-#: menu.ui:6
-msgid "_Option"
-msgstr "Option"
-
-#: menu.ui:12
-msgid "_About"
-msgstr "About"
-
-#: menu.ui:18
-msgid "_Quit"
-msgstr "Quit"
-
-#: yass.cpp:253
-msgid "Connecting"
-msgstr "Connecting"
-
-#: yass.cpp:253
-msgid "Connected with conns: "
-msgstr "Connected with conns: "
-
-#: yass.cpp:255
-msgid "Failed to connect due to "
-msgstr "Failed to connect due to "
-
-#: yass.cpp:253
-msgid "Disconnecting"
-msgstr "Disconnecting"
-
-#: yass.cpp:257
-msgid "Disconnected with "
-msgstr "Disconnected with "
-
-#: yass.cpp:374
-msgid "Last Change: "
-msgstr "Last Change: "
-
-#: yass.cpp:392
-msgid "Enabled Feature: "
-msgstr "Enabled Feature: "
-
-#: yass.cpp:383
-msgid "official-site"
-msgstr "official-site"
-
-#: yass.cpp:389
-msgid "YASS Option"
-msgstr "YASS Option"
-
-#: yass_window.cpp:169
-msgid "READY"
-msgstr "READY"
-
-#: yass_window.cpp:261
-msgid " tx rate: "
-msgstr " tx rate: "
-
-#: yass_window.cpp:264
-msgid " rx rate: "
-msgstr " rx rate: "
