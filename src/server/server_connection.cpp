@@ -383,9 +383,11 @@ bool ServerConnection::OnEndStream(StreamId stream_id) {
 
 bool ServerConnection::OnCloseStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) {
   if (stream_id == 0 || stream_id == stream_id_) {
+#ifdef HAVE_NGHTTP2
     if (stream_id_) {
       adapter_->RemoveStream(stream_id_);
     }
+#endif
     data_frame_ = nullptr;
     stream_id_ = 0;
   }
