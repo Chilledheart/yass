@@ -1,7 +1,7 @@
 # Yet Another Shadow Socket.
 # Copyright (C) 2023-2024 Chilledheart
 # This file is distributed under the same license as the yass package.
-# Keyue Hu <hukeyue@hotmail.com>, 2023.
+# Chilledheart <keeyou-cn@outlook.com>, 2024.
 #
 msgid ""
 msgstr ""
@@ -9,8 +9,8 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-05-14 11:18+0800\n"
 "PO-Revision-Date: 2023-09-15 11:26+0800\n"
-"Last-Translator: Keyue Hu <hukeyue@hotmail.com>\n"
-"Language-Team: Keyue Hu <hukeyue@hotmail.com>\n"
+"Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
+"Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
