@@ -362,7 +362,7 @@ void YASSApp::OnAbout() {
   gtk_about_dialog_set_authors(about_dialog, authors);
   std::string comments = _("Last Change: ");
   comments += YASS_APP_LAST_CHANGE;
-  comments += _("\n");
+  comments += "\n";
   comments += _("Enabled Feature: ");
   comments += YASS_APP_FEATURES;
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());

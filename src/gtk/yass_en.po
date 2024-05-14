@@ -1,5 +1,5 @@
 # Yet Another Shadow Socket.
-# Copyright (C) 2023 Chilledheart
+# Copyright (C) 2023-2024 Chilledheart
 # This file is distributed under the same license as the yass package.
 # Keyue Hu <hukeyue@hotmail.com>, 2023.
 #
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-24 14:35+0800\n"
+"POT-Creation-Date: 2024-05-14 11:18+0800\n"
 "PO-Revision-Date: 2023-09-15 11:18+0800\n"
 "Last-Translator: Keyue Hu <hukeyue@hotmail.com>\n"
 "Language-Team: Keyue Hu <hukeyue@hotmail.com>\n"
@@ -17,158 +17,158 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: option_dialog.cpp:33
+#: option_dialog.cpp:30
 msgid "TCP keep alive"
 msgstr "TCP keep alive"
 
-#: option_dialog.cpp:34
+#: option_dialog.cpp:31
 msgid "The number of TCP keep-alive probes"
 msgstr "The number of TCP keep-alive probes"
 
-#: option_dialog.cpp:35
+#: option_dialog.cpp:32
 msgid "TCP keep alive after idle"
 msgstr "TCP keep alive after idle"
 
-#: option_dialog.cpp:36
+#: option_dialog.cpp:33
 msgid "TCP keep alive interval"
 msgstr "TCP keep alive interval"
 
-#: option_dialog.ui:50
+#: option_dialog.cpp:35
 msgid "Kyber post-quantum key agreement for TLS"
 msgstr "Kyber post-quantum key agreement for TLS"
 
-#: option_dialog.cpp:54
+#: option_dialog.cpp:56
 msgid "Okay"
 msgstr "Okay"
 
-#: option_dialog.cpp:57
+#: option_dialog.cpp:59
 msgid "Cancel"
 msgstr "Cancel"
 
-#: yass_window.cpp:78
-msgid "File"
-msgstr "File"
-
-#: yass_window.cpp:79
-msgid "Option..."
-msgstr "Option..."
-
-#: yass_window.cpp:80
-msgid "Exit"
-msgstr "Exit"
-
-#: yass_window.cpp:99
-msgid "Help"
-msgstr "Help"
-
-#: yass_window.cpp:100
-msgid "About..."
-msgstr "About..."
-
-#: yass_window.cpp:113
-msgid "Start"
-msgstr "Start"
-
-#: yass_window.cpp:121
-msgid "Stop"
-msgstr "Stop"
-
-#: yass_window.cpp:149
-msgid "Server Host"
-msgstr "Server Host"
-
-#: yass_window.cpp:149
-msgid "Server SNI"
-msgstr "Server SNI"
-
-#: yass_window.cpp:150
-msgid "Server Port"
-msgstr "Server Port"
-
-#: yass_window.cpp:151
-msgid "Username"
-msgstr "Username"
-
-#: yass_window.cpp:152
-msgid "Password"
-msgstr "Password"
-
-#: yass_window.cpp:153
-msgid "Cipher/Method"
-msgstr "Cipher/Method"
-
-#: yass_window.cpp:154
-msgid "Local Host"
-msgstr "Local Host"
-
-#: yass_window.cpp:155
-msgid "Local Port"
-msgstr "Local Port"
-
-#: yass_window.cpp:156
-msgid "DNS over HTTPS URL"
-msgstr "DNS over HTTPS URL"
-
-#: yass_window.cpp:156
-msgid "DNS over TLS Host"
-msgstr "DNS over TLS Host"
-
-#: yass_window.cpp:156
-msgid "Timeout"
-msgstr "Timeout"
-
-#: yass_window.cpp:157
-msgid "Auto Start"
-msgstr "Auto Start"
-
-#: yass_window.cpp:158
-msgid "System Proxy"
-msgstr "System Proxy"
-
-#: yass_window.cpp:235
-msgid "READY"
-msgstr "READY"
-
-#: yass_window.cpp:330
-msgid " tx rate: "
-msgstr " tx rate: "
-
-#: yass_window.cpp:333
-msgid " rx rate: "
-msgstr " rx rate: "
-
-#: yass_window.cpp:428
-msgid "YASS Option"
-msgstr "YASS Option"
-
-#: yass_window.cpp:439
-msgid "Last Change: "
-msgstr "Last Change: "
-
-#: yass_window.cpp:448
-msgid "Enabled Feature: "
-msgstr "Enabled Feature: "
-
-#: yass_window.cpp:446
-msgid "official-site"
-msgstr "official-site"
-
-#: yass.cpp:253
-msgid "Connecting"
-msgstr "Connecting"
-
-#: yass.cpp:173
+#: yass.cpp:202
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
 
-#: yass.cpp:175
+#: yass.cpp:204
+msgid "Connecting"
+msgstr "Connecting"
+
+#: yass.cpp:206
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
 
-#: yass.cpp:253
+#: yass.cpp:208
 msgid "Disconnecting"
 msgstr "Disconnecting"
 
-#: yass.cpp:177
+#: yass.cpp:210
 msgid "Disconnected with "
 msgstr "Disconnected with "
+
+#: yass_window.cpp:59
+msgid "File"
+msgstr "File"
+
+#: yass_window.cpp:60
+msgid "Option..."
+msgstr "Option..."
+
+#: yass_window.cpp:61
+msgid "Exit"
+msgstr "Exit"
+
+#: yass_window.cpp:78
+msgid "Help"
+msgstr "Help"
+
+#: yass_window.cpp:79
+msgid "About..."
+msgstr "About..."
+
+#: yass_window.cpp:91
+msgid "Start"
+msgstr "Start"
+
+#: yass_window.cpp:99
+msgid "Stop"
+msgstr "Stop"
+
+#: yass_window.cpp:125
+msgid "Server Host"
+msgstr "Server Host"
+
+#: yass_window.cpp:126
+msgid "Server SNI"
+msgstr "Server SNI"
+
+#: yass_window.cpp:127
+msgid "Server Port"
+msgstr "Server Port"
+
+#: yass_window.cpp:128
+msgid "Username"
+msgstr "Username"
+
+#: yass_window.cpp:129
+msgid "Password"
+msgstr "Password"
+
+#: yass_window.cpp:130
+msgid "Cipher/Method"
+msgstr "Cipher/Method"
+
+#: yass_window.cpp:131
+msgid "Local Host"
+msgstr "Local Host"
+
+#: yass_window.cpp:132
+msgid "Local Port"
+msgstr "Local Port"
+
+#: yass_window.cpp:133
+msgid "DNS over HTTPS URL"
+msgstr "DNS over HTTPS URL"
+
+#: yass_window.cpp:134
+msgid "DNS over TLS Host"
+msgstr "DNS over TLS Host"
+
+#: yass_window.cpp:135
+msgid "Timeout"
+msgstr "Timeout"
+
+#: yass_window.cpp:136
+msgid "Auto Start"
+msgstr "Auto Start"
+
+#: yass_window.cpp:137
+msgid "System Proxy"
+msgstr "System Proxy"
+
+#: yass_window.cpp:218
+msgid "READY"
+msgstr "READY"
+
+#: yass_window.cpp:341
+msgid " tx rate: "
+msgstr " tx rate: "
+
+#: yass_window.cpp:344
+msgid " rx rate: "
+msgstr " rx rate: "
+
+#: yass_window.cpp:451
+msgid "YASS Option"
+msgstr "YASS Option"
+
+#: yass_window.cpp:462
+msgid "Last Change: "
+msgstr "Last Change: "
+
+#: yass_window.cpp:465
+msgid "Enabled Feature: "
+msgstr "Enabled Feature: "
+
+#: yass_window.cpp:474
+msgid "official-site"
+msgstr "official-site"
