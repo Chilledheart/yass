@@ -10,7 +10,9 @@
 ABSL_DECLARE_FLAG(bool, ipv6_mode);
 
 ABSL_DECLARE_FLAG(bool, reuse_port);
+#ifdef __linux__
 ABSL_DECLARE_FLAG(std::string, congestion_algorithm);
+#endif
 ABSL_DECLARE_FLAG(bool, tcp_fastopen);
 ABSL_DECLARE_FLAG(bool, tcp_fastopen_connect);
 // same with proxy_connect_timeout no need for proxy_read_timeout
