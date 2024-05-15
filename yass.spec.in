@@ -259,6 +259,9 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Wed May 15 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.0-1
+  - bump to chromium 126 dependents.
+  - net: support socks4/socks4a/socks5/socks5h cipher.
 * Tue May 7 2024 Chilledheart <keeyou-cn@outlook.com> - 1.9.5-1
   - ui: provide an option to turn on post quantum kyber.
 * Mon May 6 2024 Chilledheart <keeyou-cn@outlook.com> - 1.9.4-1

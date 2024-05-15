@@ -1,3 +1,9 @@
+yass (1.10.0-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 126 dependents.
+  * net: support socks4/socks4a/socks5/socks5h cipher.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 15 May 2024 10:11:57 +0800
 yass (1.9.5-1) UNRELEASED; urgency=medium
 
   * ui: provide an option to turn on post quantum kyber.
