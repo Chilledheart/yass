@@ -65,8 +65,7 @@ macOS releases from 1.5.19 are [notarized](https://developer.apple.com/documenta
 #### MinGW Build (alias Window Build)
 MinGW 64-bit releases from 1.6.5 and 1.7.1 no longer require Visual C++ 2010 Runtime.
 
-For Windows XP Users, please make Visual C++ 2010 Runtime installed and use 32-bit releases.
-Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
+For XP SP3 Users, please use 32-bit releases and install [Visual C++ 2010 x86 Runtime][vs2010_x86].
 #### Supplementary support for missing ISRG (Let's Encrypt Root) on some Windows 11 Installation and Android prior to 7.1.1
 Releases from 1.5.25 and 1.6.4 fixes an issue that ISRG Root 1 and ISRG Root 2 might be missing in some machines and that causes troubles.
 #### MSVC Build(previous Windows Build) prebuilt binaries removed
@@ -104,6 +103,5 @@ It is licensed with [GPLv2][license-link].
 [license-link]: LICENSE
 [naiveproxy]: https://github.com/klzgrad/naiveproxy
 [HTTP2]: https://datatracker.ietf.org/doc/html/rfc9113
-[vs2010_x64]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
 [BUILDING.md]: BUILDING.md
