@@ -44,7 +44,7 @@ void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::er
 void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
-#if defined(TCP_CONGESTION)
+#ifdef __linux__
   int fd = handle;
   /* manually enable congestion algorithm */
   char buf[256] = {};
@@ -78,7 +78,7 @@ void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::
     return;
   }
   VLOG(3) << "Current congestion: " << buf;
-#endif  // TCP_CONGESTION
+#endif
 }
 
 void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {

@@ -640,7 +640,9 @@ int main(int argc, char** argv) {
   }
 
   // avoid triggering flag saver
+#ifdef __linux__
   absl::SetFlag(&FLAGS_congestion_algorithm, "cubic");
+#endif
   absl::SetFlag(&FLAGS_password, "<dummy-password>");
 
   ::benchmark::RunSpecifiedBenchmarks();
