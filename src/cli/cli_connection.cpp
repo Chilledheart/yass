@@ -708,6 +708,8 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
             << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
 
+  http_is_keep_alive_ = false;
+
   if (ok) {
     buf->trimStart(nparsed);
     buf->retreat(nparsed);
@@ -722,7 +724,10 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());
-      VLOG(3) << "Connection (client) " << connection_id() << " Host: " << http_host_ << " PORT: " << http_port_;
+      http_is_keep_alive_ = absl::AsciiStrToLower(parser.connection()) == "keep-alive";
+      http_keep_alive_remaining_bytes_ += parser.content_length() + header.size() - buf->length();
+      VLOG(3) << "Connection (client) " << connection_id() << " Host: " << http_host_ << " PORT: " << http_port_
+              << " KEEPALIVE: " << std::boolalpha << http_is_keep_alive_;
     } else {
       VLOG(3) << "Connection (client) " << connection_id() << " CONNECT: " << http_host_ << " PORT: " << http_port_;
     }
@@ -1612,6 +1617,20 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, s
     OnStreamRead(buf);
     ec = asio::error::try_again;
     return nullptr;
+  }
+
+  if (http_is_keep_alive_) {
+    if (http_keep_alive_remaining_bytes_ < (int64_t)read) {
+      VLOG(1) << "Connection (client) " << connection_id() << " reused for keep-alive connection";
+      // currently, we assume the host doesn't change
+      ec = OnReadHttpRequest(buf);
+      SetState(state_stream);
+      if (ec) {
+        return nullptr;
+      }
+    } else {
+      http_keep_alive_remaining_bytes_ -= read;
+    }
   }
 
 #ifdef HAVE_QUICHE

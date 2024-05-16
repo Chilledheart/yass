@@ -49,6 +49,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   bool is_connect() const { return http_is_connect_; }
   uint64_t content_length() const { return content_length_; }
   const std::string& content_type() const { return content_type_; }
+  const std::string& connection() const { return connection_; }
+  const std::string& proxy_connection() const { return proxy_connection_; }
 
   void ReforgeHttpRequest(std::string* header,
                           const absl::flat_hash_map<std::string, std::string>* additional_headers = nullptr);
@@ -102,6 +104,10 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   uint64_t content_length_ = 0;
   /// copy of content type
   std::string content_type_;
+  /// copy of connection
+  std::string connection_;
+  /// copy of proxy-connection
+  std::string proxy_connection_;
 
   bool first_byte_processed_ = false;
   bool headers_done_ = false;
@@ -133,6 +139,8 @@ class HttpRequestParser {
   bool is_connect() const { return http_is_connect_; }
   uint64_t content_length() const { return content_length_; }
   const std::string& content_type() const { return content_type_; }
+  const std::string& connection() const { return connection_; }
+  const std::string& proxy_connection() const { return proxy_connection_; }
 
   int status_code() const;
 
@@ -166,6 +174,10 @@ class HttpRequestParser {
   uint64_t content_length_ = 0;
   /// copy of content type
   std::string content_type_;
+  /// copy of connection
+  std::string connection_;
+  /// copy of proxy-connection
+  std::string proxy_connection_;
 };
 
 class HttpResponseParser : public HttpRequestParser {
