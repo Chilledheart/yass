@@ -189,12 +189,6 @@ void CliConnection::start() {
   upstream_writable_ = false;
   downstream_readable_ = true;
 
-  int ret = resolver_.Init();
-  if (ret < 0) {
-    LOG(WARNING) << "resolver initialize failure";
-    close();
-    return;
-  }
   ReadMethodSelect();
 }
 
@@ -206,7 +200,7 @@ void CliConnection::close() {
           << " disconnected with client at stage: " << CliConnection::state_to_str(CurrentState());
   asio::error_code ec;
   closed_ = true;
-  resolver_.Cancel();
+  resolver_.Reset();
   downlink_->close(ec);
   if (ec) {
     VLOG(1) << "close() error: " << ec;
@@ -1867,26 +1861,40 @@ void CliConnection::OnCmdConnect(const std::string& domain_name, uint16_t port) 
   DCHECK_LE(domain_name.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
 
   if (CIPHER_METHOD_IS_SOCKS_NON_DOMAIN_NAME(method())) {
+    VLOG(1) << "Connection (client) " << connection_id() << " resolving domain name " << domain_name << " locally";
     scoped_refptr<CliConnection> self(this);
-    resolver_.AsyncResolve(domain_name, port,
-                           [this, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
-                             // Cancelled, safe to ignore
-                             if (UNLIKELY(ec == asio::error::operation_aborted)) {
-                               return;
-                             }
-                             if (closed_) {
-                               return;
-                             }
-                             if (ec) {
-                               disconnected(ec);
-                               return;
-                             }
-                             for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
-                               ss_request_ = std::make_unique<ss::request>(*iter);
-                               OnConnect();
-                               break;
-                             }
-                           });
+    int ret = resolver_.Init();
+    if (ret < 0) {
+      LOG(WARNING) << "resolver initialize failure";
+      OnDisconnect(asio::error::host_not_found);
+      return;
+    }
+    resolver_.AsyncResolve(
+        domain_name, port,
+        [this, self, domain_name](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
+          resolver_.Reset();
+          // Cancelled, safe to ignore
+          if (UNLIKELY(ec == asio::error::operation_aborted)) {
+            return;
+          }
+          if (closed_) {
+            return;
+          }
+          if (ec) {
+            OnDisconnect(ec);
+            return;
+          }
+          asio::ip::tcp::endpoint endpoint;
+          for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
+            endpoint = iter->endpoint();
+            break;
+          }
+          DCHECK(!endpoint.address().is_unspecified());
+          VLOG(1) << "Connection (client) " << connection_id() << " resolved domain name " << domain_name << " to "
+                  << endpoint.address();
+          ss_request_ = std::make_unique<ss::request>(endpoint);
+          OnConnect();
+        });
     return;
   }
   ss_request_ = std::make_unique<ss::request>(domain_name, port);
