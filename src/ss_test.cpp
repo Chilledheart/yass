@@ -294,7 +294,7 @@ void GenerateConnectRequest(std::string_view host, int port_num, IOBuf* buf) {
       "CONNECT %s:%d HTTP/1.1\r\n"
       "Host: packages.endpointdev.com:443\r\n"
       "User-Agent: curl/7.77.0\r\n"
-      "Proxy-Connection: Keep-Alive\r\n"
+      "Proxy-Connection: Close\r\n"
       "\r\n",
       host, port_num);
   buf->reserve(request_header.size(), 0);

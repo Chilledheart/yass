@@ -2148,7 +2148,7 @@ void CliConnection::connected() {
     std::string hdr = absl::StrFormat(
         "CONNECT %s HTTP/1.1\r\n"
         "Host: %s\r\n"
-        "Proxy-Connection: Keep-Alive\r\n"
+        "Proxy-Connection: Close\r\n"
         "\r\n",
         hostname_and_port.c_str(), hostname_and_port.c_str());
     // write variable address directly as https header
