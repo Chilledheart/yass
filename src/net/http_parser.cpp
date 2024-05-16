@@ -277,9 +277,6 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     if (key == "Connection") {
       connection_ = std::string(value);
     }
-    if (key == "Proxy-Connection") {
-      proxy_connection_ = std::string(value);
-    }
   }
 }
 
@@ -332,10 +329,8 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
   }
   if (version_input == "HTTP/1.1") {
     connection_ = "Keep-Alive";
-    proxy_connection_ = "Keep-Alive";
   } else {
     connection_ = "Close";
-    proxy_connection_ = "Close";
   }
 }
 
@@ -458,15 +453,6 @@ int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
   size_t nparsed;
   nparsed = http_parser_execute(parser_, &settings_connect, reinterpret_cast<const char*>(buf->data()), buf->length());
   *ok = HTTP_PARSER_ERRNO(parser_) == HPE_OK;
-  if (*ok) {
-    if (parser_->http_major == 1 && parser_->http_minor == 1) {
-      connection_ = "Keep-Alive";
-      proxy_connection_ = "Keep-Alive";
-    } else {
-      connection_ = "Close";
-      proxy_connection_ = "Close";
-    }
-  }
   return nparsed;
 }
 
@@ -511,6 +497,12 @@ int HttpRequestParser::OnReadHttpRequestURL(http_parser* p, const char* buf, siz
       return 1;
     }
     self->http_is_connect_ = true;
+  }
+
+  if (p->http_major == 1 && p->http_minor == 1) {
+    self->connection_ = "Keep-Alive";
+  } else {
+    self->connection_ = "Close";
   }
   return 0;
 }
@@ -559,9 +551,6 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   }
   if (self->http_field_ == "Connection") {
     self->connection_ = std::string(buf, len);
-  }
-  if (self->http_field_ == "Proxy-Connection") {
-    self->proxy_connection_ = std::string(buf, len);
   }
   return 0;
 }
