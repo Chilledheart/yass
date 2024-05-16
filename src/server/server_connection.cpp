@@ -626,19 +626,15 @@ void ServerConnection::OnReadHandshakeViaHttps() {
 
     if (!http_is_connect_) {
       absl::flat_hash_map<std::string, std::string> via_headers;
+      via_headers["Connection"s] = "Close"s;
       if (!absl::GetFlag(FLAGS_hide_ip)) {
-        asio::error_code ec;
-        auto peer_endpoint = peer_endpoint_;
-        if (ec) {
-          LOG(WARNING) << "Failed to retrieve remote endpoint: " << ec;
-        }
         std::ostringstream ss;
-        ss << "for=\"" << peer_endpoint << "\"";
+        ss << "for=\"" << peer_endpoint_ << "\"";
         via_headers["Forwarded"s] = ss.str();
       }
       // https://datatracker.ietf.org/doc/html/rfc7230#section-5.7.1
       if (!absl::GetFlag(FLAGS_hide_via)) {
-        via_headers["Via"s] = "1.1 asio"s;
+        via_headers["Via"s] = "YASS/" YASS_APP_PRODUCT_VERSION;
       }
       std::string header;
       parser.ReforgeHttpRequest(&header, &via_headers);

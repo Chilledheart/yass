@@ -52,6 +52,12 @@ static void ReforgeHttpRequestImpl(std::string* header,
     if (key == "Proxy-Authorization") {
       continue;
     }
+    if (additional_headers) {
+      auto has_key = [&](const std::pair<std::string, std::string>& rhs) { return rhs.first == key; };
+      if (std::find_if(additional_headers->begin(), additional_headers->end(), has_key) != additional_headers->end()) {
+        continue;
+      }
+    }
     ss << key << ": " << value << "\r\n";
   }
   if (additional_headers) {
