@@ -105,6 +105,11 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 * `--hide_via`:
   If true, the Via header will not be added.
 
+* `--congestion_algorithm` _algo_:
+  Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux Only)
+
+  See `/proc/sys/net/ipv4/tcp_allowed_congestion_control` for available options and `tcp`(7).
+
 ## ENVIRONMENT VARIABLES
 
 * `YASS_CA_BUNDLE`:
@@ -116,4 +121,4 @@ Copyright (C) 2019-2024 Chilledheart. All rights reserved.
 
 ## SEE ALSO
 
-`openssl`(1)
+`openssl`(1), `tcp`(7)

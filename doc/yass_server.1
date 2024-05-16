@@ -91,6 +91,11 @@ If true, the Forwarded header will not be augmented with your IP address\.
 .TP
 \fB\-\-hide_via\fR
 If true, the Via header will not be added\.
+.TP
+\fB\-\-congestion_algorithm\fR \fIalgo\fR
+Specify \fIalgo\fR as TCP congestion control algorithm for underlying TCP connections (Linux Only)
+.IP
+See \fB/proc/sys/net/ipv4/tcp_allowed_congestion_control\fR for available options and \fBtcp\fR(7)\.
 .SH "ENVIRONMENT VARIABLES"
 .TP
 \fBYASS_CA_BUNDLE\fR
@@ -98,4 +103,4 @@ Use as the path of ca\-bundle\.crt file\. Same effect with \fB\-\-cacert\fR \fIf
 .SH "COPYRIGHT"
 Copyright (C) 2019\-2024 Chilledheart\. All rights reserved\.
 .SH "SEE ALSO"
-\fBopenssl\fR(1)
+\fBopenssl\fR(1), \fBtcp\fR(7)

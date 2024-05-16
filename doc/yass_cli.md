@@ -97,6 +97,11 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 * `--enable_post_quantum_kyber`:
   Enable post-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard (ML-KEM).
 
+* `--congestion_algorithm` _algo_:
+  Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux Only)
+
+  See `/proc/sys/net/ipv4/tcp_allowed_congestion_control` for available options and `tcp`(7).
+
 ## ENVIRONMENT VARIABLES
 
 * `YASS_CA_BUNDLE`:
@@ -108,4 +113,4 @@ Copyright (C) 2019-2024 Chilledheart. All rights reserved.
 
 ## SEE ALSO
 
-`iptables`(8)
+`iptables`(8), `tcp`(7)
