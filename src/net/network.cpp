@@ -19,6 +19,7 @@
 
 #include "config/config_network.hpp"
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 
 namespace net {
 
@@ -41,43 +42,64 @@ void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::er
 #endif  // SO_REUSEPORT
 }
 
+#ifdef __linux__
+static void PrintTcpAllowedCongestionControls() {
+  constexpr std::string_view kAllowedCongestionControl = "/proc/sys/net/ipv4/tcp_allowed_congestion_control";
+  char buf[256];
+  auto ret = ReadFileToBuffer(std::string(kAllowedCongestionControl), absl::MakeSpan(buf));
+  if (ret < 0) {
+    return;
+  }
+  LOG(WARNING) << "Allowed Congestion Control: " << std::string(buf, ret);
+}
+#endif
+
 void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
 #ifdef __linux__
+  const std::string new_algo = absl::GetFlag(FLAGS_congestion_algorithm);
+  if (new_algo.empty()) {
+    return;
+  }
   int fd = handle;
   /* manually enable congestion algorithm */
   char buf[256] = {};
   socklen_t len = sizeof(buf);
   int ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    VLOG(2) << "TCP_CONGESTION is not supported on this platform";
+    PLOG(WARNING) << "TCP_CONGESTION is not supported on this platform";
+    LOG(WARNING) << "Ignore congestion algorithm settings";
+    absl::SetFlag(&FLAGS_congestion_algorithm, std::string());
+    return;
+  }
+  if (ret < 0) {
     ec = asio::error_code(errno, asio::error::get_system_category());
     return;
   }
-  if (buf != absl::GetFlag(FLAGS_congestion_algorithm)) {
-    len = absl::GetFlag(FLAGS_congestion_algorithm).size();
-    ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, absl::GetFlag(FLAGS_congestion_algorithm).c_str(), len);
-    if (ret < 0) {
-      VLOG(2) << "Congestion algorithm \"" << absl::GetFlag(FLAGS_congestion_algorithm)
-              << "\" is not supported on this platform";
-      VLOG(2) << "Current congestion: " << buf;
-      absl::SetFlag(&FLAGS_congestion_algorithm, buf);
-      ec = asio::error_code(errno, asio::error::get_system_category());
-      return;
-    } else {
-      VLOG(3) << "Previous congestion: " << buf;
-      VLOG(3) << "Applied current congestion algorithm: " << absl::GetFlag(FLAGS_congestion_algorithm);
-    }
+  const std::string old_algo = std::string(buf);
+  if (old_algo == new_algo) {
+    return;
   }
+  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, new_algo.c_str(), new_algo.size());
+  if (ret < 0) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
+    PLOG(WARNING) << "TCP Congestion algorithm \"" << new_algo << "\" is not supported on this platform";
+    PrintTcpAllowedCongestionControls();
+    LOG(WARNING) << "Please load the algorithm kernel module before use!";
+    LOG(WARNING) << "Ignore congestion algorithm settings";
+    absl::SetFlag(&FLAGS_congestion_algorithm, std::string());
+    return;
+  }
+  VLOG(2) << "Previous congestion algorithm: " << old_algo;
+  VLOG(2) << "Changed congestion algorithm to " << new_algo;
   len = sizeof(buf);
   ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
-  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    VLOG(1) << "TCP_CONGESTION is not supported on this platform";
+  if (ret < 0) {
     ec = asio::error_code(errno, asio::error::get_system_category());
     return;
   }
-  VLOG(3) << "Current congestion: " << buf;
+  VLOG(2) << "Current congestion algorithm: " << buf;
 #endif
 }
 

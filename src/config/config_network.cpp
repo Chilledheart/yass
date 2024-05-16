@@ -9,7 +9,7 @@ ABSL_FLAG(bool, ipv6_mode, true, "Resolve names to IPv6 addresses");
 
 ABSL_FLAG(bool, reuse_port, true, "Reuse the listening port");
 #ifdef __linux__
-ABSL_FLAG(std::string, congestion_algorithm, "bbr", "TCP Congestion Algorithm");
+ABSL_FLAG(std::string, congestion_algorithm, "", "TCP Congestion Algorithm");
 #endif
 ABSL_FLAG(bool, tcp_fastopen, false, "TCP fastopen");
 ABSL_FLAG(bool, tcp_fastopen_connect, false, "TCP fastopen connect");
