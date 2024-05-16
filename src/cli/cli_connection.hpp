@@ -348,6 +348,10 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   bool http_is_connect_ = false;
   /// copy of connect response
   static const std::string_view http_connect_reply_;
+  /// copy of keep alive state
+  bool http_is_keep_alive_ = false;
+  /// copy of remaining bytes in keep alive cycle
+  int64_t http_keep_alive_remaining_bytes_ = 0;
 
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;

@@ -49,6 +49,9 @@ static void ReforgeHttpRequestImpl(std::string* header,
     if (key == "Proxy-Connection") {
       continue;
     }
+    if (key == "Proxy-Authorization") {
+      continue;
+    }
     ss << key << ": " << value << "\r\n";
   }
   if (additional_headers) {
@@ -265,6 +268,12 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     if (key == "Content-Type") {
       content_type_ = std::string(value);
     }
+    if (key == "Connection") {
+      connection_ = std::string(value);
+    }
+    if (key == "Proxy-Connection") {
+      proxy_connection_ = std::string(value);
+    }
   }
 }
 
@@ -314,6 +323,13 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
     status_ = ParserStatus::Error;
     error_message_ = "HPE_INVALID_VERSION";
     return;
+  }
+  if (version_input == "HTTP/1.1") {
+    connection_ = "Keep-Alive";
+    proxy_connection_ = "Keep-Alive";
+  } else {
+    connection_ = "Close";
+    proxy_connection_ = "Close";
   }
 }
 
@@ -436,6 +452,15 @@ int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
   size_t nparsed;
   nparsed = http_parser_execute(parser_, &settings_connect, reinterpret_cast<const char*>(buf->data()), buf->length());
   *ok = HTTP_PARSER_ERRNO(parser_) == HPE_OK;
+  if (*ok) {
+    if (parser_->http_major == 1 && parser_->http_minor == 1) {
+      connection_ = "Keep-Alive";
+      proxy_connection_ = "Keep-Alive";
+    } else {
+      connection_ = "Close";
+      proxy_connection_ = "Close";
+    }
+  }
   return nparsed;
 }
 
@@ -525,6 +550,12 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   }
   if (self->http_field_ == "Content-Type") {
     self->content_type_ = std::string(buf, len);
+  }
+  if (self->http_field_ == "Connection") {
+    self->connection_ = std::string(buf, len);
+  }
+  if (self->http_field_ == "Proxy-Connection") {
+    self->proxy_connection_ = std::string(buf, len);
   }
   return 0;
 }
