@@ -82,6 +82,11 @@ Enable 0RTTI Early Data\.
 .TP
 \fB\-\-enable_post_quantum_kyber\fR
 Enable post\-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard (ML\-KEM)\.
+.TP
+\fB\-\-congestion_algorithm\fR \fIalgo\fR
+Specify \fIalgo\fR as TCP congestion control algorithm for underlying TCP connections (Linux Only)
+.IP
+See \fB/proc/sys/net/ipv4/tcp_allowed_congestion_control\fR for available options and \fBtcp\fR(7)\.
 .SH "ENVIRONMENT VARIABLES"
 .TP
 \fBYASS_CA_BUNDLE\fR
@@ -89,4 +94,4 @@ Use as the path of ca\-bundle\.crt file\. Same effect with \fB\-\-cacert\fR \fIf
 .SH "COPYRIGHT"
 Copyright (C) 2019\-2024 Chilledheart\. All rights reserved\.
 .SH "SEE ALSO"
-\fBiptables\fR(8)
+\fBiptables\fR(8), \fBtcp\fR(7)
