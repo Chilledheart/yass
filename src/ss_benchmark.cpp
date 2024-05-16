@@ -639,12 +639,6 @@ int main(int argc, char** argv) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
   }
 
-  // avoid triggering flag saver
-#ifdef __linux__
-  absl::SetFlag(&FLAGS_congestion_algorithm, "cubic");
-#endif
-  absl::SetFlag(&FLAGS_password, "<dummy-password>");
-
   ::benchmark::RunSpecifiedBenchmarks();
 
   ::benchmark::Shutdown();

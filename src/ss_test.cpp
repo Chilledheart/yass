@@ -307,11 +307,7 @@ void GenerateConnectRequest(std::string_view host, int port_num, IOBuf* buf) {
 class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
  public:
   static void SetUpTestSuite() {
-    // avoid triggering flag saver
-#ifdef __linux__
-    absl::SetFlag(&FLAGS_congestion_algorithm, "cubic");
-#endif
-    absl::SetFlag(&FLAGS_password, "<dummy-password>");
+    // nop
   }
 
   static void TearDownTestSuite() {
