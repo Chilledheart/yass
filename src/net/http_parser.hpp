@@ -91,6 +91,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   std::string method_;
   /// copy of url
   std::string http_url_;
+  /// copy of version input
+  std::string version_input_;
   /// copy of parsed connect host or host field
   std::string http_host_;
   /// copy of parsed connect host or host field
@@ -136,7 +138,7 @@ class HttpRequestParser {
   bool is_connect() const { return http_is_connect_; }
   uint64_t content_length() const { return content_length_; }
   const std::string& content_type() const { return content_type_; }
-  const std::string& connection() const { return connection_; }
+  std::string_view connection() const;
 
   int status_code() const;
 
@@ -170,8 +172,6 @@ class HttpRequestParser {
   uint64_t content_length_ = 0;
   /// copy of content type
   std::string content_type_;
-  /// copy of connection
-  std::string connection_;
 };
 
 class HttpResponseParser : public HttpRequestParser {

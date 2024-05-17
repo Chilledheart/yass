@@ -25,6 +25,7 @@ constexpr const std::string_view kHttpVersionPrefix = "HTTP/";
 // reforge HTTP Request Header and pretend it to buf
 // including removal of Proxy-Connection header
 static void ReforgeHttpRequestImpl(std::string* header,
+                                   const std::string& version,
                                    const char* method_str,
                                    const absl::flat_hash_map<std::string, std::string>* additional_headers,
                                    const std::string& uri,
@@ -44,7 +45,7 @@ static void ReforgeHttpRequestImpl(std::string* header,
   }
 
   ss << method_str << " "  // NOLINT(google-*)
-     << canon_uri << " HTTP/1.1\r\n";
+     << canon_uri << " " << version << "\r\n";
   for (auto [key, value] : headers) {
     if (key == "Proxy-Connection") {
       continue;
@@ -221,7 +222,7 @@ int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
 
 void HttpRequestParser::ReforgeHttpRequest(std::string* header,
                                            const absl::flat_hash_map<std::string, std::string>* additional_headers) {
-  ReforgeHttpRequestImpl(header, method_.c_str(), additional_headers, http_url_, http_headers_);
+  ReforgeHttpRequestImpl(header, version_input_, method_.c_str(), additional_headers, http_url_, http_headers_);
 }
 
 void HttpRequestParser::OnRawBodyInput(std::string_view /*input*/) {}
@@ -277,6 +278,9 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     if (key == "Connection") {
       connection_ = std::string(value);
     }
+    if (key == "Proxy-Connection") {
+      connection_ = std::string(value);
+    }
   }
 }
 
@@ -303,6 +307,7 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
     return;
   }
   http_url_ = std::string(request_uri);
+  version_input_ = std::string(version_input);
   if (is_connect) {
     std::string authority = http_url_;
     std::string hostname;
@@ -458,8 +463,9 @@ int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
 
 void HttpRequestParser::ReforgeHttpRequest(std::string* header,
                                            const absl::flat_hash_map<std::string, std::string>* additional_headers) {
-  ReforgeHttpRequestImpl(header, http_method_str((http_method)parser_->method), additional_headers, http_url_,
-                         http_headers_);
+  auto version_input = absl::StrCat("HTTP/", parser_->http_major, ".", parser_->http_minor);
+  ReforgeHttpRequestImpl(header, version_input, http_method_str((http_method)parser_->method), additional_headers,
+                         http_url_, http_headers_);
 }
 
 const char* HttpRequestParser::ErrorMessage() const {
@@ -468,6 +474,11 @@ const char* HttpRequestParser::ErrorMessage() const {
 
 int HttpRequestParser::status_code() const {
   return parser_->status_code;
+}
+
+std::string_view HttpRequestParser::connection() const {
+  using std::string_view_literals::operator""sv;
+  return http_should_keep_alive(parser_) ? "Keep-Alive"sv : "Close"sv;
 }
 
 static int OnHttpRequestParseUrl(const char* buf, size_t len, std::string* host, uint16_t* port, int is_connect) {
@@ -499,11 +510,6 @@ int HttpRequestParser::OnReadHttpRequestURL(http_parser* p, const char* buf, siz
     self->http_is_connect_ = true;
   }
 
-  if (p->http_major == 1 && p->http_minor == 1) {
-    self->connection_ = "Keep-Alive";
-  } else {
-    self->connection_ = "Close";
-  }
   return 0;
 }
 
@@ -548,9 +554,6 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   }
   if (self->http_field_ == "Content-Type") {
     self->content_type_ = std::string(buf, len);
-  }
-  if (self->http_field_ == "Connection") {
-    self->connection_ = std::string(buf, len);
   }
   return 0;
 }
