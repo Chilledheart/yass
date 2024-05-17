@@ -47,9 +47,10 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   const std::string& host() const { return http_host_; }
   uint16_t port() const { return http_port_; }
   bool is_connect() const { return http_is_connect_; }
-  uint64_t content_length() const { return content_length_; }
+  uint64_t content_length() const { return headers_.content_length(); }
   const std::string& content_type() const { return content_type_; }
   const std::string& connection() const { return connection_; }
+  bool transfer_encoding_is_chunked() const { return headers_.transfer_encoding_is_chunked(); }
 
   void ReforgeHttpRequest(std::string* header,
                           const absl::flat_hash_map<std::string, std::string>* additional_headers = nullptr);
@@ -91,6 +92,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   std::string method_;
   /// copy of url
   std::string http_url_;
+  /// copy of version input
+  std::string version_input_;
   /// copy of parsed connect host or host field
   std::string http_host_;
   /// copy of parsed connect host or host field
@@ -99,8 +102,6 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   absl::flat_hash_map<std::string, std::string> http_headers_;
   /// copy of connect method
   bool http_is_connect_ = false;
-  /// copy of content length
-  uint64_t content_length_ = 0;
   /// copy of content type
   std::string content_type_;
   /// copy of connection
@@ -134,9 +135,10 @@ class HttpRequestParser {
   const std::string& host() const { return http_host_; }
   uint16_t port() const { return http_port_; }
   bool is_connect() const { return http_is_connect_; }
-  uint64_t content_length() const { return content_length_; }
+  uint64_t content_length() const;
   const std::string& content_type() const { return content_type_; }
-  const std::string& connection() const { return connection_; }
+  std::string_view connection() const;
+  bool transfer_encoding_is_chunked() const;
 
   int status_code() const;
 
@@ -166,12 +168,8 @@ class HttpRequestParser {
   absl::flat_hash_map<std::string, std::string> http_headers_;
   /// copy of connect method
   bool http_is_connect_ = false;
-  /// copy of content length
-  uint64_t content_length_ = 0;
   /// copy of content type
   std::string content_type_;
-  /// copy of connection
-  std::string connection_;
 };
 
 class HttpResponseParser : public HttpRequestParser {
