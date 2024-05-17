@@ -164,6 +164,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
 #ifdef HAVE_QUICHE
  private:
+  bool http2_in_recv_callback_ = false;
   void SendIfNotProcessing();
   bool processing_responses_ = false;
   StreamId stream_id_ = 0;

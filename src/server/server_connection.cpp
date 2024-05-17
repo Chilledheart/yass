@@ -78,24 +78,8 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
     concatenated = std::string{frame_header};
   }
   const int64_t result = connection_->OnReadyToSend(concatenated);
-  // Write encountered error.
-  if (result < 0) {
-    connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
-    return false;
-  }
 
-  // Write blocked.
-  if (result == 0) {
-    connection_->blocked_stream_ = stream_id_;
-    return false;
-  }
-
-  if (static_cast<size_t>(result) < concatenated.size()) {
-    // Probably need to handle this better within this test class.
-    QUICHE_LOG(DFATAL) << "DATA frame not fully flushed. Connection will be corrupt!";
-    connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
-    return false;
-  }
+  DCHECK_EQ(static_cast<size_t>(result), concatenated.size());
 
   if (!payload_length) {
     return true;
@@ -176,22 +160,6 @@ void ServerConnection::close() {
           << " disconnected with client at stage: " << ServerConnection::state_to_str(CurrentState());
   asio::error_code ec;
   closing_ = true;
-
-#ifdef HAVE_QUICHE
-  if (adapter_) {
-    if (data_frame_) {
-      data_frame_->set_last_frame(true);
-      adapter_->ResumeStream(stream_id_);
-      SendIfNotProcessing();
-      data_frame_ = nullptr;
-      stream_id_ = 0;
-    }
-    adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
-    DCHECK(adapter_->want_write());
-    SendIfNotProcessing();
-    WriteStreamInPipe();
-  }
-#endif
   closed_ = true;
   if (enable_tls_ && !shutdown_) {
     shutdown_ = true;
@@ -257,6 +225,7 @@ void ServerConnection::Start() {
 
 #ifdef HAVE_QUICHE
 void ServerConnection::SendIfNotProcessing() {
+  DCHECK(!http2_in_recv_callback_);
   if (!processing_responses_) {
     processing_responses_ = true;
     adapter_->Send();
@@ -375,8 +344,6 @@ bool ServerConnection::OnEndStream(StreamId stream_id) {
     stream_id_ = 0;
     adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
     DCHECK(adapter_->want_write());
-    SendIfNotProcessing();
-    WriteStreamInPipe();
   }
   return true;
 }
@@ -394,8 +361,12 @@ bool ServerConnection::OnCloseStream(StreamId stream_id, http2::adapter::Http2Er
   return true;
 }
 
-void ServerConnection::OnConnectionError(ConnectionError /*error*/) {
-  OnDisconnect(asio::error::connection_aborted);
+void ServerConnection::OnConnectionError(ConnectionError error) {
+  LOG(INFO) << "Connection (server) " << connection_id() << " http2 connection error: " << (int)error;
+  data_frame_ = nullptr;
+  stream_id_ = 0;
+  adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
+  DCHECK(adapter_->want_write());
 }
 
 bool ServerConnection::OnFrameHeader(StreamId stream_id, size_t /*length*/, uint8_t /*type*/, uint8_t /*flags*/) {
@@ -1414,14 +1385,21 @@ try_again:
 #ifdef HAVE_QUICHE
   if (adapter_) {
     absl::string_view remaining_buffer(reinterpret_cast<const char*>(buf->data()), buf->length());
-    while (!remaining_buffer.empty()) {
-      int result = adapter_->ProcessBytes(remaining_buffer);
+    while (!remaining_buffer.empty() && adapter_->want_read()) {
+      http2_in_recv_callback_ = true;
+      int64_t result = adapter_->ProcessBytes(remaining_buffer);
+      http2_in_recv_callback_ = false;
       if (result < 0) {
-        ec = asio::error::connection_refused;
-        OnDisconnect(asio::error::connection_refused);
-        return nullptr;
+        /* handled in OnConnectionError inside ProcessBytes call */
+        goto out;
       }
       remaining_buffer = remaining_buffer.substr(result);
+    }
+    // don't want read anymore (after goaway sent)
+    if (UNLIKELY(!remaining_buffer.empty())) {
+      ec = asio::error::connection_refused;
+      OnDisconnect(ec);
+      return nullptr;
     }
     // not enough buffer for recv window
     if (upstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
@@ -1582,7 +1560,6 @@ void ServerConnection::OnConnect() {
     }
     int submit_result =
         adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame), false);
-    SendIfNotProcessing();
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
     }
