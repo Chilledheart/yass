@@ -330,7 +330,7 @@ void CAresResolver::OnAsyncResolve(AsyncResolveCallback cb,
   if (status != ARES_SUCCESS) {
     asio::error_code ec = AresToAsioError(status);
     VLOG(1) << "C-Ares: Host " << host << ":" << service << " Resolved error: " << ec;
-    cb(ec, {});
+    asio::post(io_context_, [cb, ec]() { cb(ec, {}); });
     return;
   }
 
@@ -349,7 +349,7 @@ void CAresResolver::OnAsyncResolve(AsyncResolveCallback cb,
     ss << endpoint << " ";
   }
   VLOG(1) << "C-Ares: Resolved " << host << ":" << service << " to: [ " << ss.str() << " ]";
-  cb(asio::error_code(), std::move(results));
+  asio::post(io_context_, [cb, results]() { cb(asio::error_code(), std::move(results)); });
 }
 
 void CAresResolver::WaitTimer() {
