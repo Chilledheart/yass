@@ -260,18 +260,6 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
       http_host_ = hostname;
       http_port_ = portnum;
     }
-    if (key == "Content-Length") {
-      std::string length = std::string(value);
-
-      std::optional<uint64_t> lengthnum_opt = StringToIntegerU64(length);
-      if (!lengthnum_opt.has_value()) {
-        VLOG(1) << "parser failed: bad http field: content-length: " << length;
-        status_ = ParserStatus::Error;
-        break;
-      }
-      const uint64_t lengthnum = lengthnum_opt.value();
-      content_length_ = lengthnum;
-    }
     if (key == "Content-Type") {
       content_type_ = std::string(value);
     }
@@ -476,9 +464,17 @@ int HttpRequestParser::status_code() const {
   return parser_->status_code;
 }
 
+uint64_t HttpRequestParser::content_length() const {
+  return parser_->content_length;
+}
+
 std::string_view HttpRequestParser::connection() const {
   using std::string_view_literals::operator""sv;
   return http_should_keep_alive(parser_) ? "Keep-Alive"sv : "Close"sv;
+}
+
+bool HttpRequestParser::transfer_encoding_is_chunked() const {
+  return parser_->flags & F_CHUNKED;
 }
 
 static int OnHttpRequestParseUrl(const char* buf, size_t len, std::string* host, uint16_t* port, int is_connect) {
@@ -541,17 +537,6 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
     self->http_port_ = portnum;
   }
 
-  if (self->http_field_ == "Content-Length") {
-    std::string length = std::string(buf, len);
-
-    std::optional<uint64_t> lengthnum_opt = StringToIntegerU64(length);
-    if (!lengthnum_opt.has_value()) {
-      VLOG(1) << "parser failed: bad http field: content-length: " << length;
-      return -1;
-    }
-    const uint64_t lengthnum = lengthnum_opt.value();
-    self->content_length_ = lengthnum;
-  }
   if (self->http_field_ == "Content-Type") {
     self->content_type_ = std::string(buf, len);
   }

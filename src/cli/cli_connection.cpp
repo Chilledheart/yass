@@ -722,6 +722,12 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
       http_keep_alive_remaining_bytes_ += parser.content_length() + header.size() - buf->length();
       VLOG(3) << "Connection (client) " << connection_id() << " Host: " << http_host_ << " PORT: " << http_port_
               << " KEEPALIVE: " << std::boolalpha << http_is_keep_alive_;
+      if (parser.transfer_encoding_is_chunked()) {
+        // See #957
+        LOG(WARNING) << "Connection (client) " << connection_id()
+                     << " detected chunked transfer encoding, disabling keep alive handling";
+        http_is_keep_alive_ = false;
+      }
     } else {
       VLOG(3) << "Connection (client) " << connection_id() << " CONNECT: " << http_host_ << " PORT: " << http_port_;
     }
