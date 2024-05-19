@@ -275,8 +275,7 @@ void CliConnection::OnConnectionError(ConnectionError error) {
   LOG(INFO) << "Connection (client) " << connection_id() << " http2 connection error: " << (int)error;
   data_frame_ = nullptr;
   stream_id_ = 0;
-  adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
-  DCHECK(adapter_->want_write());
+  disconnected(asio::error::invalid_argument);
 }
 
 bool CliConnection::OnFrameHeader(StreamId stream_id, size_t /*length*/, uint8_t /*type*/, uint8_t /*flags*/) {
@@ -2111,8 +2110,13 @@ void CliConnection::connected() {
       FillNonindexHeaderValue(RandUint64(), &padding[0], padding.size());
       headers.emplace_back("padding"s, padding);
     }
-    stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), nullptr);
-    data_frame_->set_stream_id(stream_id_);
+    int submit_result = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), nullptr);
+    if (submit_result < 0) {
+      adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::INTERNAL_ERROR, ""sv);
+    } else {
+      stream_id_ = submit_result;
+      data_frame_->set_stream_id(stream_id_);
+    }
     SendIfNotProcessing();
   } else
 #endif
