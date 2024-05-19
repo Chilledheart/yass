@@ -228,7 +228,8 @@ void ServerConnection::SendIfNotProcessing() {
   DCHECK(!http2_in_recv_callback_);
   if (!processing_responses_) {
     processing_responses_ = true;
-    adapter_->Send();
+    while (adapter_->want_write() && adapter_->Send() == 0) {
+    }
     processing_responses_ = false;
   }
 }
