@@ -1085,11 +1085,14 @@ void ServerConnection::WriteStreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    auto buf = GetNextDownstreamBuf(ec, &bytes_transferred);
+    bool downstream_blocked;
+    auto buf = GetNextDownstreamBuf(ec, &bytes_transferred, &downstream_blocked);
     size_t read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      ec = asio::error_code();
-      try_again = true;
+      if (!downstream_blocked) {
+        ec = asio::error_code();
+        try_again = true;
+      }
     } else if (ec) {
       /* not downstream error */
       ec = asio::error_code();
@@ -1170,7 +1173,10 @@ void ServerConnection::WriteStreamInPipe() {
   ProcessSentData(ec, wbytes_transferred);
 }
 
-std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
+std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& ec,
+                                                              size_t* bytes_transferred,
+                                                              bool* downstream_blocked) {
+  *downstream_blocked = false;
   if (!downstream_.empty()) {
     DCHECK(!downstream_.front()->empty());
     ec = asio::error_code();
@@ -1193,9 +1199,20 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& 
     return nullptr;
   }
 
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+  std::shared_ptr<IOBuf> buf;
   size_t read;
+
+#ifdef HAVE_QUICHE
+  if (data_frame_ && !data_frame_->empty()) {
+    VLOG(2) << "Connection (client) " << connection_id() << " has pending data to send downstream, defer reading";
+    *downstream_blocked = true;
+    ec = asio::error::try_again;
+    goto out;
+  }
+#endif
+
   do {
+    buf = IOBuf::create(SOCKET_BUF_SIZE);
     ec = asio::error_code();
     read = channel_->read_some(buf, ec);
     if (ec == asio::error::interrupted) {
@@ -1241,13 +1258,16 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& 
 
 out:
 #ifdef HAVE_QUICHE
-  if (data_frame_ && *bytes_transferred) {
+  if (data_frame_) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter_->ResumeStream(stream_id_);
     SendIfNotProcessing();
   }
 #endif
   if (downstream_.empty()) {
+    if (read) {
+      *downstream_blocked = true;
+    }
     if (!ec) {
       ec = asio::error::try_again;
     }

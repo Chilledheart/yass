@@ -68,6 +68,8 @@ class DataFrameSource : public http2::adapter::DataFrameSource {
   void set_last_frame(bool last_frame) { last_frame_ = last_frame; }
   void SetSendCompletionCallback(std::function<void()> callback) { send_completion_callback_ = std::move(callback); }
 
+  size_t empty() const { return chunks_.empty(); }
+
  private:
   ServerConnection* const connection_;
   const StreamId stream_id_;
@@ -269,7 +271,9 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// Write remaining buffers to stream
   void WriteStreamInPipe();
   /// Get next remaining buffer to stream
-  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code& ec, size_t* bytes_transferred);
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code& ec,
+                                              size_t* bytes_transferred,
+                                              bool* downstream_blocked);
 
   /// Write remaining buffers to channel
   void WriteUpstreamInPipe();
