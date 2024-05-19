@@ -365,8 +365,7 @@ void ServerConnection::OnConnectionError(ConnectionError error) {
   LOG(INFO) << "Connection (server) " << connection_id() << " http2 connection error: " << (int)error;
   data_frame_ = nullptr;
   stream_id_ = 0;
-  adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
-  DCHECK(adapter_->want_write());
+  OnDisconnect(asio::error::invalid_argument);
 }
 
 bool ServerConnection::OnFrameHeader(StreamId stream_id, size_t /*length*/, uint8_t /*type*/, uint8_t /*flags*/) {
@@ -1560,8 +1559,8 @@ void ServerConnection::OnConnect() {
     }
     int submit_result =
         adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame), false);
-    if (submit_result != 0) {
-      OnDisconnect(asio::error::connection_aborted);
+    if (submit_result < 0) {
+      adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::INTERNAL_ERROR, ""sv);
     }
   } else
 #endif
