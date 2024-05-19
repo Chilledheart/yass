@@ -1475,12 +1475,16 @@ void CliConnection::WriteUpstreamInPipe() {
   /* recursively send the remainings */
   while (true) {
     size_t read;
-    std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec, &bytes_transferred);
+    bool upstream_blocked;
+    std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec, &bytes_transferred, &upstream_blocked);
+
     read = buf ? buf->length() : 0;
 
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      ec = asio::error_code();
-      try_again = true;
+      if (!upstream_blocked) {
+        ec = asio::error_code();
+        try_again = true;
+      }
     } else if (ec) {
       /* handled in getter */
       return;
@@ -1546,7 +1550,10 @@ void CliConnection::WriteUpstreamInPipe() {
   }
 }
 
-std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
+std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec,
+                                                         size_t* bytes_transferred,
+                                                         bool* upstream_blocked) {
+  *upstream_blocked = false;
   if (!upstream_.empty()) {
     // pending on upstream handshake
     if ((socks5_method_select_handshake_ || socks5_auth_handshake_) && upstream_.front()->empty()) {
@@ -1567,9 +1574,20 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, s
     return nullptr;
   }
 
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+  std::shared_ptr<IOBuf> buf;
   size_t read;
+
+#ifdef HAVE_QUICHE
+  if (data_frame_ && !data_frame_->empty()) {
+    VLOG(2) << "Connection (client) " << connection_id() << " has pending data to send upstream, defer reading";
+    *upstream_blocked = true;
+    ec = asio::error::try_again;
+    goto out;
+  }
+#endif
+
   do {
+    buf = IOBuf::create(SOCKET_BUF_SIZE);
     read = downlink_->socket_.read_some(tail_buffer(*buf, SOCKET_BUF_SIZE), ec);
     if (ec == asio::error::interrupted) {
       continue;
@@ -1636,13 +1654,16 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, s
 
 out:
 #ifdef HAVE_QUICHE
-  if (data_frame_ && *bytes_transferred) {
+  if (data_frame_) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter_->ResumeStream(stream_id_);
     SendIfNotProcessing();
   }
 #endif
   if (upstream_.empty()) {
+    if (read) {
+      *upstream_blocked = true;
+    }
     if (!ec) {
       ec = asio::error::try_again;
     }
