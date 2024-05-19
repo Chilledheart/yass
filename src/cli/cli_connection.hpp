@@ -72,6 +72,8 @@ class DataFrameSource : public http2::adapter::DataFrameSource {
   void set_last_frame(bool last_frame) { last_frame_ = last_frame; }
   void SetSendCompletionCallback(std::function<void()> callback) { send_completion_callback_ = std::move(callback); }
 
+  size_t empty() const { return chunks_.empty(); }
+
  private:
   CliConnection* const connection_;
   StreamId stream_id_;
@@ -297,7 +299,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// Write remaining buffers to channel
   void WriteUpstreamInPipe();
   /// Get next remaining buffer to channel
-  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred);
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred, bool* upstream_blocked);
 
   /// dispatch the command to delegate
   /// \param command command type
