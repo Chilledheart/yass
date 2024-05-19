@@ -1,3 +1,10 @@
+yass (1.10.1-1) UNRELEASED; urgency=medium
+
+  * net: improve buffer to 16k.
+  * net: improve http2 send performance.
+  * net: miscs fixes.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 19 May 2024 13:39:39 +0800
 yass (1.10.0-1) UNRELEASED; urgency=medium
 
   * bump to chromium 126 dependents.
