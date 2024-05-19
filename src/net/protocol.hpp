@@ -16,13 +16,8 @@
 #include "net/asio.hpp"
 #include "net/iobuf.hpp"
 
-#if BUILDFLAG(IS_IOS)
-#define SOCKET_BUF_SIZE (1500)
-#define SOCKET_DEBUF_SIZE (1500)
-#else
-#define SOCKET_BUF_SIZE (8192)
-#define SOCKET_DEBUF_SIZE (8192)
-#endif
+#define SOCKET_BUF_SIZE (16384)
+#define SOCKET_DEBUF_SIZE (16384)
 #define SS_FRAME_SIZE (16384 - 128)
 
 namespace net {
