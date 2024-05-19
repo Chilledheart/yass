@@ -1,3 +1,11 @@
+yass (1.9.6-1) UNRELEASED; urgency=medium
+
+  * net: support socks4/socks4a/socks5/socks5h cipher.
+  * net: improve buffer to 16k.
+  * net: improve http2 send performance.
+  * net: miscs fixes.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 19 May 2024 13:39:39 +0800
 yass (1.9.5-1) UNRELEASED; urgency=medium
 
   * ui: provide an option to turn on post quantum kyber.
