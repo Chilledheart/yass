@@ -52,9 +52,9 @@ jobs:
           - distro: sid
             arch: riscv64
         # XFAIL stretch
-        # XFAIL focal-i386,jammy-i386
+        # XFAIL focal-i386,jammy-i386,noble-i386
         # XFAIL sid-riscv64 (gui, curl)
-        # distro: [trusty, xenial, bionic, focal, jammy, stretch, buster, bullseye, bookworm]
+        # distro: [trusty, xenial, bionic, focal, jammy, noble, stretch, buster, bullseye, bookworm]
         # arch: [i386, amd64, armhf, arm64]
         # include:
         #   - distro: stretch
@@ -229,12 +229,12 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
       - name: Populate sysroot (golang, new distro)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid') }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO != 'trusty' && env.HOST_DISTRO != 'xenial' && env.HOST_DISTRO != 'bionic' && env.HOST_DISTRO != 'stretch' && env.HOST_DISTRO != 'buster' && env.HOST_DISTRO != 'bullseye' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y golang
       - name: Populate sysroot (golang, old distro)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO != 'focal' && env.HOST_DISTRO != 'jammy' && env.HOST_DISTRO != 'bookworm' && env.HOST_DISTRO != 'sid' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'trusty' || env.HOST_DISTRO == 'xenial' || env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye') }}
         run: |
           # shipped with debian bullseye
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang_1.15~1_${{ env.BUILD_ARCH }}.deb
