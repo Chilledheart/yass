@@ -104,16 +104,16 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: Populate depedencies (debian keyring, for debian distributions)
+      - name: Populate dependencies (debian keyring, for debian distributions)
         run: |
           curl -O http://ftp.us.debian.org/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2023.4_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debian*.deb
           rm -f *.deb
-      - name: Populate depedencies (sbuild, debhelper, schroot, debootstrap and ubuntu-dev-tools)
+      - name: Populate dependencies (sbuild, debhelper, schroot, debootstrap and ubuntu-dev-tools)
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y sbuild debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
-      - name: Populate depedencies (deboostrap update for sid fix)
+      - name: Populate dependencies (deboostrap update for sid fix)
         if: ${{ env.HOST_DISTRO == 'sid' }}
         run: |
           curl -L -O http://mirrors.kernel.org/ubuntu/pool/main/d/debootstrap/debootstrap_1.0.132ubuntu1_all.deb
@@ -250,40 +250,41 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y -f
           rm -f *.deb
-      - name: Populate depedencie (cmake, new distro)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid') }}
+      - name: Populate dependencie (cmake)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y cmake
-      - name: Populate depedencie (cmake, old distro)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO != 'focal' && env.HOST_DISTRO != 'jammy' && env.HOST_DISTRO != 'bookworm' && env.HOST_DISTRO != 'sid' }}
+            apt-get install -y cmake ninja-build
+      - name: Populate dependencie (cmake, overwrite)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          # fallback cmake: https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.tar.gz
-          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.22.3/cmake-3.22.3-linux-x86_64.tar.gz
+          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            tar -C /usr --strip-components=1 -xvf cmake-3.22.3-linux-x86_64.tar.gz
+            tar -C /usr --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            cmake --version
           rm -f *.tar.gz
-      - name: Populate depedencie (base)
+      - name: Populate dependencie (base)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y perl gcc g++ ninja-build
-      - name: Populate depedencie (zlib)
+      - name: Populate dependencie (zlib)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y zlib1g-dev:${{ env.HOST_ARCH }}
-      - name: Populate depedencie (gui, exclude some arches)
+      - name: Populate dependencie (gui, exclude some arches)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y libglib2.0-dev:${{ env.HOST_ARCH }} libgtk-3-dev:${{ env.HOST_ARCH }}
-      - name: Populate depedencie (curl, for test purpose, exclude some arches)
+      - name: Populate dependencie (curl, for test purpose, exclude some arches)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y libcurl4-openssl-dev:${{ env.HOST_ARCH }}
-      - name: Populate depedencie (list upgradable packages)
+      - name: Populate dependencie (list upgradable packages)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt list --upgradeable || true
