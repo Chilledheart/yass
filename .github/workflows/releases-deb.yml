@@ -169,7 +169,7 @@ jobs:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
-          key: ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v2
+          key: ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v3
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
