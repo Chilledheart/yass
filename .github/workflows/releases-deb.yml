@@ -278,7 +278,7 @@ jobs:
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y libglib2.0-dev:${{ env.HOST_ARCH }} libgtk-3-dev:${{ env.HOST_ARCH }}
+            apt-get -o DPkg::Options::="--force-confnew" install -y libglib2.0-dev:${{ env.HOST_ARCH }} libgtk-3-dev:${{ env.HOST_ARCH }}
       - name: Populate dependencie (curl, for test purpose, exclude some arches)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
         run: |
