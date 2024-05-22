@@ -3929,6 +3929,15 @@ if (CLI)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
     configure_file("src/core/win32.manifest" "${CLI_MSVC_MANIFEST}" @ONLY)
     target_sources(yass_cli PRIVATE ${CLI_MSVC_MANIFEST})
+
+    if (MINGW)
+      set(CLI_MINGW_MANIFEST_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_cli_manifest.rc")
+      file(WRITE "${CLI_MINGW_MANIFEST_RC}"
+        "#include <winuser.h>\n"
+        "1 RT_MANIFEST yass_cli.manifest\n"
+      )
+      target_sources(yass_cli PRIVATE ${CLI_MINGW_MANIFEST_RC})
+    endif()
   endif()
 
   target_include_directories(yass_cli PRIVATE
@@ -3971,6 +3980,15 @@ if (SERVER)
     set(SERVER_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_server.manifest")
     configure_file("src/core/win32.manifest" "${SERVER_MSVC_MANIFEST}" @ONLY)
     target_sources(yass_server PRIVATE ${SERVER_MSVC_MANIFEST})
+
+    if (MINGW)
+      set(SERVER_MINGW_MANIFEST_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_server_manifest.rc")
+      file(WRITE "${SERVER_MINGW_MANIFEST_RC}"
+        "#include <winuser.h>\n"
+        "1 RT_MANIFEST yass_server.manifest\n"
+      )
+      target_sources(yass_server PRIVATE ${SERVER_MINGW_MANIFEST_RC})
+    endif()
   endif()
 
   target_include_directories(yass_server PRIVATE
@@ -4702,6 +4720,14 @@ if (BUILD_TESTS)
     set(TEST_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_test.manifest")
     configure_file("src/core/win32.manifest" "${TEST_MSVC_MANIFEST}" @ONLY)
     target_sources(yass_test PRIVATE ${TEST_MSVC_MANIFEST})
+
+    if (MINGW)
+      set(TEST_MINGW_MANIFEST_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_test_manifest.rc")
+      file(WRITE "${TEST_MINGW_MANIFEST_RC}"
+        "#include <winuser.h>\n"
+        "1 RT_MANIFEST yass_test.manifest\n"
+      )
+    endif()
   endif()
   if (BUILD_TESTS_NO_NETWORK)
     set(TESTS_FLAGS --no_cares_tests --no_doh_tests --no_dot_tests)
@@ -4825,6 +4851,14 @@ if (BUILD_BENCHMARKS)
     set(BENCHMARK_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_benchmark.manifest")
     configure_file("src/core/win32.manifest" "${BENCHMARK_MSVC_MANIFEST}" @ONLY)
     target_sources(yass_benchmark PRIVATE ${BENCHMARK_MSVC_MANIFEST})
+
+    if (MINGW)
+      set(BENCHMARK_MINGW_MANIFEST_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_benchmark_manifest.rc")
+      file(WRITE "${BENCHMARK_MINGW_MANIFEST_RC}"
+        "#include <winuser.h>\n"
+        "1 RT_MANIFEST yass_benchmark.manifest\n"
+      )
+    endif()
   endif()
 endif()
 
