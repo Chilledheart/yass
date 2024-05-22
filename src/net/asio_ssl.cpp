@@ -259,6 +259,7 @@ bool IsNotAcceptableIntermediate(const bssl::ParsedCertificate* cert, const CFSt
 
 static bool found_isrg_root_x1 = false;
 static bool found_isrg_root_x2 = false;
+static bool found_digicert_root_g2 = false;
 
 void print_openssl_error() {
   const char* file;
@@ -287,15 +288,19 @@ static bool load_ca_cert_to_x509_trust(X509_STORE* store, bssl::UniquePtr<X509> 
       X509_NAME_ENTRY* entry = X509_NAME_get_entry(X509_get_subject_name(cert.get()), lastpos);
 
       const ASN1_STRING* value = X509_NAME_ENTRY_get_data(entry);
-      std::string commonName((const char*)ASN1_STRING_get0_data(value), ASN1_STRING_length(value));
-      // TODO check commonName with "ISRG Root X1" and "ISRG Root X2"
-      if (commonName == "ISRG Root X1") {
-        LOG(INFO) << "Loading ISRG Root X1 CA";
+      std::string_view commonName((const char*)ASN1_STRING_get0_data(value), ASN1_STRING_length(value));
+      using std::string_view_literals::operator""sv;
+      if (commonName == "ISRG Root X1"sv) {
+        VLOG(1) << "Loading ISRG Root X1 CA";
         found_isrg_root_x1 = true;
       }
-      if (commonName == "ISRG Root X2") {
-        LOG(INFO) << "Loading ISRG Root X2 CA";
+      if (commonName == "ISRG Root X2"sv) {
+        VLOG(1) << "Loading ISRG Root X2 CA";
         found_isrg_root_x2 = true;
+      }
+      if (commonName == "DigiCert Global Root G2"sv) {
+        VLOG(1) << "Loading DigiCert Global Root G2 CA";
+        found_digicert_root_g2 = true;
       }
     }
 
@@ -670,6 +675,7 @@ out:
 void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
   found_isrg_root_x1 = false;
   found_isrg_root_x2 = false;
+  found_digicert_root_g2 = false;
   load_ca_to_ssl_ctx_cacert(ssl_ctx);
 
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
@@ -696,12 +702,15 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
   }
 
   // TODO we can add the missing CA if required
-  if (!found_isrg_root_x1 || !found_isrg_root_x2) {
+  if (!found_isrg_root_x1 || !found_isrg_root_x2 || !found_digicert_root_g2) {
     if (!found_isrg_root_x1) {
-      LOG(WARNING) << "Missing ISRG Root X1 CA";
+      LOG(INFO) << "Missing ISRG Root X1 CA";
     }
     if (!found_isrg_root_x2) {
-      LOG(WARNING) << "Missing ISRG Root X2 CA";
+      LOG(INFO) << "Missing ISRG Root X2 CA";
+    }
+    if (!found_digicert_root_g2) {
+      LOG(INFO) << "Missing DigiCert Global Root G2 CA";
     }
     std::string_view ca_content(_binary_supplementary_ca_bundle_crt_start,
                                 _binary_supplementary_ca_bundle_crt_end - _binary_supplementary_ca_bundle_crt_start);
