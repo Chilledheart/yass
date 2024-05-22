@@ -4703,12 +4703,22 @@ if (BUILD_TESTS)
     configure_file("src/core/win32.manifest" "${TEST_MSVC_MANIFEST}" @ONLY)
     target_sources(yass_test PRIVATE ${TEST_MSVC_MANIFEST})
   endif()
+  if (BUILD_TESTS_NO_NETWORK)
+    set(TESTS_FLAGS --no_cares_tests --no_doh_tests --no_dot_tests)
+  endif()
   add_custom_target(check
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test ${TESTS_FLAGS}
     DEPENDS yass_test
     COMMENT "yass unittests"
     USES_TERMINAL
   )
+  if (NOT IOS)
+    enable_testing()
+    add_test(NAME unittests
+      COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test -logtostderr ${TESTS_FLAGS}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(unittests PROPERTIES DEPENDS yass_test)
+  endif()
 
   if (USE_CURL)
     if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic")
