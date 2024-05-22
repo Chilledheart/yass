@@ -328,8 +328,8 @@ static bool load_ca_content_to_x509_trust(X509_STORE* store, std::string_view ca
   return load_ca_cert_to_x509_trust(store, std::move(cert));
 }
 
-static const char kEndCertificateMark[] = "-----END CERTIFICATE-----\n";
-static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view& cadata) {
+static constexpr std::string_view kEndCertificateMark = "-----END CERTIFICATE-----";
+static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, std::string_view cadata) {
   X509_STORE* store = nullptr;
   int count = 0;
   store = SSL_CTX_get_cert_store(ssl_ctx);
@@ -342,9 +342,9 @@ static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view&
     if (end == std::string_view::npos) {
       break;
     }
-    end += sizeof(kEndCertificateMark) - 1;
+    end += kEndCertificateMark.size();
 
-    std::string_view cacert(cadata.data() + pos, end - pos);
+    std::string_view cacert = cadata.substr(pos, end);
     if (load_ca_content_to_x509_trust(store, cacert)) {
       ++count;
     }
