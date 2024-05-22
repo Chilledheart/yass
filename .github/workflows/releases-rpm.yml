@@ -45,7 +45,7 @@ jobs:
         container:
         - 'centos7'
         - 'centos8'
-        - 'fedora38'
+        - 'fedora39'
         - 'alpine319'
         - 'opensuse15'
         # - 'centos9'
@@ -85,7 +85,7 @@ jobs:
         container:
         - 'centos7'
         - 'centos8'
-        - 'fedora38'
+        - 'fedora39'
         - 'opensuse15'
         # - 'centos9'
     runs-on: ubuntu-22.04
