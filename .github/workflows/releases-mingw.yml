@@ -70,6 +70,10 @@ jobs:
             third_party/curl-8.4.0_7-win64-mingw
             third_party/curl-8.4.0_7-win32-mingw
           key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v1
+      - name: "Download dependency: clang (chocolatey)"
+        run: |
+          choco upgrade -y llvm --version=17.0.6
+          clang -v
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
