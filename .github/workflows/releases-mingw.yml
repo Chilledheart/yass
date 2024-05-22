@@ -160,11 +160,10 @@ jobs:
           vcredist_x64.exe /install /quiet /norestart
           del vcredist_x64.exe
       - name: Run unittests
-        shell: bash
         run: |
           cd build-mingw
-          ./yass_test
-          ./yass_benchmark
+          yass_test
+          yass_benchmark
       - name: Upload dist tarball
         if: ${{ github.event_name == 'release' }}
         env:
