@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022-2024 Chilledheart  */
 
-#include "net/asio.hpp"
+#include "net/asio_ssl_internal.hpp"
 
 #ifdef _WIN32
 #include "core/windows/dirent.h"
@@ -36,9 +36,6 @@
 
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
 
-extern "C" const char _binary_ca_bundle_crt_start[];
-extern "C" const char _binary_ca_bundle_crt_end[];
-
 // Use internal ca-bundle.crt if necessary
 // we take care of the ca-bundle if windows version is below windows 8.1
 ABSL_FLAG(bool,
@@ -53,9 +50,6 @@ ABSL_FLAG(bool,
           "Use internal ca-bundle.crt instead of system CA store.");
 
 #endif  // HAVE_BUILTIN_CA_BUNDLE_CRT
-
-extern "C" const char _binary_supplementary_ca_bundle_crt_start[];
-extern "C" const char _binary_supplementary_ca_bundle_crt_end[];
 
 std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
 #ifdef _WIN32
@@ -329,7 +323,7 @@ static bool load_ca_content_to_x509_trust(X509_STORE* store, std::string_view ca
 }
 
 static constexpr std::string_view kEndCertificateMark = "-----END CERTIFICATE-----\n";
-static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, std::string_view cadata) {
+int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, std::string_view cadata) {
   X509_STORE* store = nullptr;
   int count = 0;
   store = SSL_CTX_get_cert_store(ssl_ctx);
@@ -508,7 +502,7 @@ static int load_ca_to_ssl_ctx_yass_ca_bundle(SSL_CTX* ssl_ctx) {
   return 0;
 }
 
-static int load_ca_to_ssl_ctx_system(SSL_CTX* ssl_ctx) {
+int load_ca_to_ssl_ctx_system(SSL_CTX* ssl_ctx) {
 #ifdef _WIN32
   HCERTSTORE cert_store = NULL;
   asio::error_code ec;
