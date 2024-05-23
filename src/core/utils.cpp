@@ -272,7 +272,7 @@ bool GetTempDir(std::string* path) {
     return true;
   }
 #endif
-#if defined(__ANDROID) || defined(__OHOS__)
+#if defined(__ANDROID__) || defined(__OHOS__)
   *path = "/data/local/tmp";
 #else
   *path = "/tmp";
