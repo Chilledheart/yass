@@ -1,3 +1,8 @@
+yass (1.10.2-1) UNRELEASED; urgency=medium
+
+  * net: reduce memory footprint peak and cpu peak.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 23 May 2024 16:53:43 +0800
 yass (1.10.1-1) UNRELEASED; urgency=medium
 
   * net: improve buffer to 16k.
