@@ -33,6 +33,17 @@ Cipher http2 is NaïveProxy-compatible.
 
 See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
 
+### More Experimental Support
+
+#### Experimental SOCKS cipher Support
+Experimental socks4/socks4a/socks5/socks5h cipher support is added for both of CLI and GUI.
+
+#### Experimental DoH (DNS over HTTPS) and DoT (DNS over TLS) Support
+Experimental DoH and DoT support is added for both of CLI and GUI.
+
+#### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
+These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
+
 ## Usages
 
 ### Prebuilt binaries
