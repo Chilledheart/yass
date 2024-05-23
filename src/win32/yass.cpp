@@ -55,7 +55,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   // This function is primarily useful to applications that were linked with /SUBSYSTEM:WINDOWS,
   // which implies to the operating system that a console is not needed
   // before entering the program's main method.
-  if (AttachConsole(ATTACH_PARENT_PROCESS) != 0) {
+  if (getenv("MSYSTEM") != nullptr) {
+    // TODO improve cygwin/msys2 environment check
+    fprintf(stderr, "attached to cygwin terminal\n");
+    fflush(stderr);
+  } else if (AttachConsole(ATTACH_PARENT_PROCESS) != 0) {
     FILE* unusedFile;
     // Swap to the new out/err streams
     freopen_s(&unusedFile, "CONOUT$", "w", stdout);
