@@ -31,7 +31,7 @@ See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/
 ### NaïveProxy-Compatible Protocol Support
 Cipher http2 is NaïveProxy-compatible.
 
-See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for more.
+See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
 
 ## Usages
 
@@ -46,7 +46,7 @@ See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for 
 View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.10.2)
 
 ### Build from Source
-Take a look at [BUILDING.md](BUILDING.md) for more instructions.
+Take a look at [more instructions](BUILDING.md).
 
 ### Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
