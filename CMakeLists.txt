@@ -4727,6 +4727,7 @@ if (BUILD_TESTS)
         "#include <winuser.h>\n"
         "1 RT_MANIFEST yass_test.manifest\n"
       )
+      target_sources(yass_test PRIVATE ${TEST_MINGW_MANIFEST_RC})
     endif()
   endif()
   if (BUILD_TESTS_NO_NETWORK)
@@ -4858,6 +4859,7 @@ if (BUILD_BENCHMARKS)
         "#include <winuser.h>\n"
         "1 RT_MANIFEST yass_benchmark.manifest\n"
       )
+      target_sources(yass_benchmark PRIVATE ${BENCHMARK_MINGW_MANIFEST_RC})
     endif()
   endif()
 endif()
