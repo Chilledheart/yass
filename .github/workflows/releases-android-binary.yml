@@ -204,9 +204,10 @@ jobs:
         if: ${{ matrix.arch == 'x86' ||  matrix.arch == 'x64' }}
         run: |
           # android sysimg doesn't like resolv.conf
-          mkdir -p $SYSROOT/dev $SYSROOT/proc $SYSROOT/data/local/tmp
-          bwrap --die-with-parent --bind $SYSROOT / \
+          mkdir -p $SYSROOT/etc/ssl/certs $SYSROOT/dev $SYSROOT/proc $SYSROOT/data/local/tmp
+          bwrap --die-with-parent --ro-bind $SYSROOT / \
             --ro-bind /sys /sys \
+            --ro-bind /etc/ssl/certs /etc/ssl/certs \
             --proc /proc --dev /dev \
             --unshare-all --share-net \
             --bind $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} /data/local/tmp \
