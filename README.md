@@ -9,11 +9,10 @@
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 [![homebrew cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
-yass is client-server model based and efficient forward proxy
-supporting http/socks4/socks4a/socks5 protocol.
+yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5 protocol running on PC and mobile devices.
 
 ## License
-It is licensed with [GPLv2][license-link].
+[GPLv2-only][license-link].
 
 ## Features
 
@@ -44,6 +43,11 @@ Experimental DoH and DoT support is added for both of CLI and GUI.
 #### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
 These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
 
+#### Experimental Server Side Support
+Full ciphers supported by client is also supported by server side. Read more from manpage _yass_server(1)_
+
+See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
+
 ## Usages
 
 ### Prebuilt binaries
@@ -60,7 +64,7 @@ View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.
 Take a look at [more instructions](BUILDING.md).
 
 ### Usages
-Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
+Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
 
 ## Sponsor Me
 Please visit [the pages site](https://letshack.info).
