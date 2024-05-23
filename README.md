@@ -10,74 +10,49 @@
 [![homebrew cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
 yass is client-server model based and efficient forward proxy
-supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
+supporting http/socks4/socks4a/socks5 protocol.
+
+## License
+It is licensed with [GPLv2][license-link].
 
 ## Features
 
-- Better scaled, less memory consumption and CPU cycles.
-- Easier to maintain and adopt new features.
-- Safe memory layout.
+### Android/iOS/macOS (M1/M2/M3 only) comes with VPN Service support
+Mobile users including macOS (M1/M2/M3) machines use YASS as VPN Service more than Global Proxy.
 
-More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki).
+See [Supporteded Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System) for more.
+See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store) for more.
+
+### Post Quantum Kyber Support
+Post Quantum Kyber Support (not enabled by default) is added on all of supported Platforms.
+
+See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
+
+### NaïveProxy-Compatible Protocol Support
+Cipher http2 is NaïveProxy-compatible.
+
+See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for more.
 
 ## Usages
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-android-release-arm64-1.10.1.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-android-release-arm-1.10.1.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-ios-release-arm64-1.10.1.ipa)
-- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-mingw-win7-release-x86_64-1.10.1-system-installer.exe) or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-mingw-winxp-release-i686-1.10.1-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-mingw-release-aarch64-1.10.1-system-installer.exe)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-macos-release-x64-1.10.1.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-macos-release-arm64-1.10.1.dmg)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-android-release-arm64-1.10.2.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-android-release-arm-1.10.2.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-ios-release-arm64-1.10.2.ipa)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-mingw-win7-release-x86_64-1.10.2-system-installer.exe) or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-mingw-winxp-release-i686-1.10.2-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-mingw-release-aarch64-1.10.2-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-macos-release-x64-1.10.2.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-macos-release-arm64-1.10.2.dmg)
 > via homebrew: `brew install --cask yass`
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass.el7.x86_64.1.10.1-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.10.1/yass-client-ubuntu-16.04-xenial_amd64.1.10.1.deb)
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass.el7.x86_64.1.10.2-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-client-ubuntu-16.04-xenial_amd64.1.10.2.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.10.1)
-
-### Status of Package Store
-Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
+View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.10.2)
 
 ### Build from Source
-Take a look at [BUILDING.md] for more instructions.
-
-### Screenshots
-Visit wiki's [Supported Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System)
+Take a look at [BUILDING.md](BUILDING.md) for more instructions.
 
 ### Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
 
-### Important notes before use
-
-#### Post Quantum Kyber Support
-Starting with release 1.9.5 and 1.8.7, Post Quantum Kyber Support is added on all of supported Platforms.You can enable it via Options Dialog(non-iOS)/Settings(iOS) manually.
-
-This option will be enabled by default in the future (M128).
-#### NaïveProxy Protocol Support
-It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
-#### Fix disk space occupation issue for mobile users
-Starting with release 1.9.2 and 1.8.5, it will no longer keep log file and will not occupy extra disk space for Android/iOS/HarmonyOS client.
-#### Android vpn service support
-Android releases from 1.5.24 are signed and have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
-#### iOS packet tunnel support
-iOS releases from 1.5.22 have fixed memory pressure crashes and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
-#### macOS packet tunnel support (M1/M2/M3 only)
-For Apple Silicon macOS Users such as M1/M2/M3, you can also install [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) version via [TestFlight](https://testflight.apple.com/join/6AkiEq09).
-#### Notarized macOS releases
-macOS releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
-#### MinGW Build (alias Window Build)
-MinGW 64-bit releases from 1.6.5 and 1.7.1 no longer require Visual C++ 2010 Runtime.
-
-For XP SP3 Users, please use 32-bit releases and install [Visual C++ 2010 x86 Runtime][vs2010_x86].
-#### Supplementary support for missing ISRG (Let's Encrypt Root) on some Windows 11 Installation and Android prior to 7.1.1
-Releases from 1.5.25 and 1.6.4 fixes an issue that ISRG Root 1 and ISRG Root 2 might be missing in some machines and that causes troubles.
-#### MSVC Build(previous Windows Build) prebuilt binaries removed
-Due to the fact of possibly violating GPL license by linking static Visual C++ Runtime or distribute the CRT dll files
-we are still supporting MSVC builds, but the prebuilt binaries are removed from the release page.
-You can build MSVC binaries by yourself or switch to MinGW builds.
-
 ## Sponsor Me
 Please visit [the pages site](https://letshack.info).
-
-## License
-It is licensed with [GPLv2][license-link].
 
 ## Build Status
 
@@ -101,7 +76,4 @@ It is licensed with [GPLv2][license-link].
 [![Old MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 
 [license-link]: LICENSE
-[naiveproxy]: https://github.com/klzgrad/naiveproxy
-[HTTP2]: https://datatracker.ietf.org/doc/html/rfc9113
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
-[BUILDING.md]: BUILDING.md
