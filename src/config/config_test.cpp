@@ -24,9 +24,12 @@ class ConfigTest : public ::testing::Test {
     original_configfile_ = config::g_configfile;
     const char* tmpdir = getenv("TMPDIR");
     if (!tmpdir || *tmpdir == '\0')
+#if defined(__ANDROID__) || defined(__OHOS__)
+      tmpdir = "/data/local/tmp";
+#else
       tmpdir = "/tmp";
-    std::string tmpdir_configfile = absl::StrCat(tmpdir, "/", "yass.json");
-    config::g_configfile = tmpdir_configfile;
+#endif
+    config::g_configfile = absl::StrCat(tmpdir, "/", "yass.json");
 #endif
   }
   void TearDown() override {
