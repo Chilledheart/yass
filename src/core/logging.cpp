@@ -2388,7 +2388,7 @@ static void GetTempDirectories(std::vector<std::string>* list) {
     }
     list->push_back(tmp_dir);
   }
-#if defined(__ANDROID) || defined(__OHOS__)
+#if defined(__ANDROID__) || defined(__OHOS__)
   list->push_back("/data/local/tmp/");
 #else
   list->push_back("/tmp/");

@@ -182,10 +182,11 @@ jobs:
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch_name == 'x86' || matrix.arch_name == 'x86_64' }}
         run: |
-          mkdir -p ${{ env.SDK_ROOT }}/etc ${{ env.SDK_ROOT }}/dev ${{ env.SDK_ROOT }}/proc ${{ env.SDK_ROOT }}/tmp
+          mkdir -p ${{ env.SDK_ROOT }}/etc/ssl/certs ${{ env.SDK_ROOT }}/dev ${{ env.SDK_ROOT }}/proc ${{ env.SDK_ROOT }}/tmp
           touch ${{ env.SDK_ROOT }}/etc/resolv.conf
           bwrap --die-with-parent --ro-bind ${{ env.SDK_ROOT }} / \
             --ro-bind /etc/resolv.conf /etc/resolv.conf \
+            --ro-bind /etc/ssl/certs /etc/ssl/certs \
             --proc /proc --dev /dev \
             --unshare-all --share-net \
             --bind $PWD/build-linux-openwrt-${{ matrix.arch }} /tmp \

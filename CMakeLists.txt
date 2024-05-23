@@ -2862,7 +2862,7 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
   target_include_directories(asio_ca_bundle_crt PRIVATE third_party/ca-certificates)
 
   list(APPEND YASS_APP_FEATURES "ca-certificates 20240203.3.98")
-  target_link_libraries(asio PRIVATE asio_ca_bundle_crt)
+  target_link_libraries(asio PUBLIC asio_ca_bundle_crt)
 endif()
 
 #
@@ -4673,6 +4673,7 @@ if (BUILD_TESTS)
     src/config/config_test.cpp
     src/core/process_utils_test.cpp
     src/core/utils_test.cpp
+    src/net/asio_ssl_test.cpp
     src/net/cipher_test.cpp
     src/net/c-ares_test.cpp
     src/net/padding_test.cpp
@@ -4727,6 +4728,7 @@ if (BUILD_TESTS)
         "#include <winuser.h>\n"
         "1 RT_MANIFEST yass_test.manifest\n"
       )
+      target_sources(yass_test PRIVATE ${TEST_MINGW_MANIFEST_RC})
     endif()
   endif()
   if (BUILD_TESTS_NO_NETWORK)
@@ -4858,6 +4860,7 @@ if (BUILD_BENCHMARKS)
         "#include <winuser.h>\n"
         "1 RT_MANIFEST yass_benchmark.manifest\n"
       )
+      target_sources(yass_benchmark PRIVATE ${BENCHMARK_MINGW_MANIFEST_RC})
     endif()
   endif()
 endif()
