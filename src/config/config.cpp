@@ -346,7 +346,7 @@ void SetClientUsageMessage(std::string_view exec_path) {
   --use_ca_bundle_crt Use builtin ca-bundle.crt instead of system CA store
   --cacert <file> Tells where to use the specified certificate file to verify the peer
   --capath <dir> Tells where to use the specified certificate dir to verify the peer
-  --certificate_chain_file <file> Specify Certificate Chain File Path
+  --certificate_chain_file <file> Use custom certificate chain file to verify server's certificate
   -k, --insecure_mode Skip the verification step and proceed without checking
   --tls13_early_data Enable 0RTTI Early Data
   --enable_post_quantum_kyber Enable post-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard (ML-KEM)
@@ -366,9 +366,9 @@ void SetServerUsageMessage(std::string_view exec_path) {
   --use_ca_bundle_crt Use builtin ca-bundle.crt instead of system CA store
   --cacert <file> Tells where to use the specified certificate file to verify the peer
   --capath <dir> Tells where to use the specified certificate dir to verify the peer
-  --certificate_chain_file <file> Specify Certificate Chain File Path
-  --private_key_file <file> Specify Private Key File Path
-  --private_key_password <password> Specify Private Key Password
+  --certificate_chain_file <file> Use custom certificate chain file to verify server's certificate
+  --private_key_file <file> Use custom private key file to secure connection between server and client
+  --private_key_password <password> Use custom private key password to decrypt server's encrypted private key
   --tls13_early_data Enable 0RTTI Early Data
 )"));
 }

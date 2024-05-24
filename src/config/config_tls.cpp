@@ -10,9 +10,15 @@
 std::string g_certificate_chain_content;
 std::string g_private_key_content;
 
-ABSL_FLAG(std::string, certificate_chain_file, "", "Certificate Chain File Path (Both of Server and Client)");
-ABSL_FLAG(std::string, private_key_file, "", "Private Key File Path (Server Only)");
-ABSL_FLAG(std::string, private_key_password, "", "Private Key Password (Server Only)");
+ABSL_FLAG(std::string, certificate_chain_file, "", "Use custom certificate chain file to verify server's certificate");
+ABSL_FLAG(std::string,
+          private_key_file,
+          "",
+          "Use custom private key file to secure connection between server and client");
+ABSL_FLAG(std::string,
+          private_key_password,
+          "",
+          "Use custom private key password to decrypt server's encrypted private key");
 ABSL_FLAG(bool,
           insecure_mode,
           false,
@@ -22,7 +28,7 @@ ABSL_FLAG(std::string,
           getenv("YASS_CA_BUNDLE") ? getenv("YASS_CA_BUNDLE") : "",
           "Tells where to use the specified certificate file to verify the peer. "
           "You can override it with YASS_CA_BUNDLE environment variable");
-ABSL_FLAG(std::string, capath, "", "Tells where to use the specified certificate directory to verify the peer.");
+ABSL_FLAG(std::string, capath, "", "Tells where to use the specified certificate directory to verify the peer");
 
 ABSL_FLAG(bool, tls13_early_data, true, "Enable 0RTTI Early Data (risk at production)");
 ABSL_FLAG(bool,

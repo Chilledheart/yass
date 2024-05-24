@@ -17,7 +17,7 @@ See \fIhttps://github\.com/Chilledheart/yass/wiki/Usage\fR\.
 Use specified \fIfile\fR as config file\.
 .TP
 \fB\-\-limit_rate\fR \fIrate\fR
-Limits the \fIrate\fR of response transmission to a client\. Uint can be \fB(none)\fR, \fBk\fR, \fBm\fR\.
+Limits the \fIrate\fR of response transmission to a client\. Uint can be \fB(none)\fR, \fBk\fR and \fBm\fR\.
 .TP
 \fB\-\-ipv6_mode\fR
 Enable IPv6 support\.
@@ -70,6 +70,9 @@ Tells where to use the specified certificate \fIfile\fR to verify the peer\.
 .TP
 \fB\-\-capath\fR \fIdir\fR
 Tells where to use the specified certificate \fIdir\fR to verify the peer\.
+.TP
+\fB\-\-certificate_chain_file\fR \fIfile\fR
+Use custom certificate chain provided by \fIfile\fR to verify server\'s certificate (optional by https and http2)\.
 .TP
 \fB\-k\fR, \fB\-\-insecure_mode\fR
 This option makes to skip the verification step and proceed without checking\.

@@ -24,7 +24,7 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
   Use specified _file_ as config file.
 
 * `--limit_rate` _rate_:
-  Limits the _rate_ of response transmission to a client. Uint can be `(none)`, `k`, `m`.
+  Limits the _rate_ of response transmission to a client. Uint can be `(none)`, `k` and `m`.
 
 * `--ipv6_mode`:
   Enable IPv6 support.
@@ -85,13 +85,13 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
   Tells where to use the specified certificate _dir_ to verify the peer.
 
 * `--certificate_chain_file` _file_:
-  Certificate Chain _file_ (required by https and http2).
+  Use custom certificate chain provided by _file_ to verify server's private key (required by https and http2).
 
 * `--private_key_file` _file_:
-  Private Key _file_ (required by https and http2).
+  Use custom private key provided by _file_ to secure connection between server and client (required by https and http2).
 
 * `--private_key_password` _password_:
-  Private Key _password_ (required by https and http2).
+  Use custom private key password provided by _password_ to decrypt server's encrypted private key.
 
 * `--user` _user_:
   Set non-privileged user for worker.
