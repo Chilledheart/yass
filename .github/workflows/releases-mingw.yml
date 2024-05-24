@@ -83,6 +83,14 @@ jobs:
         shell: bash
         run: |
           ./scripts/download-curl-mingw.sh ${{ matrix.arch }}
+      - name: "Download dependency: cmake (chocolatey)"
+        run: |
+          choco install -y cmake.portable --version=3.28.5
+          cmake --version
+      - name: "Download dependency: ninja (chocolatey)"
+        run: |
+          choco install -y ninja
+          ninja --version
       - name: Patch libcxx for windows xp
         shell: bash
         run: |
@@ -103,7 +111,6 @@ jobs:
           set "CFLAGS=-I %CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include"
           set "CXXFLAGS=-I %CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include"
           set "LDFLAGS=-Wl,-L%CD%\third_party\${{ matrix.mingw_dir }}\lib -Wl,-L%CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}"
-          set "Path=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%Path%"
           set "Path=%CD%\third_party\${{ matrix.mingw_dir }}\bin;%Path%"
           set "Path=%CD%\third_party\nasm;%Path%"
           REM for clang.exe and clang++.exe

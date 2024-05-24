@@ -173,6 +173,12 @@ jobs:
           sudo apt install qemu-user
           sudo apt remove -y qemu-user-binfmt
           sudo dpkg -i qemu-user-static_*.deb
+      - name: Populate dependencie (cmake, overwrite)
+        run: |
+          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
+          sudo tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
+          cmake --version
+          rm -f *.tar.gz
       - name: Build TGZ packages
         run: |
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
