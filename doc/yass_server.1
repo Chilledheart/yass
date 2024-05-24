@@ -17,7 +17,7 @@ See \fIhttps://github\.com/Chilledheart/yass/wiki/Usage\fR\.
 Use specified \fIfile\fR as config file\.
 .TP
 \fB\-\-limit_rate\fR \fIrate\fR
-Limits the \fIrate\fR of response transmission to a client\. Uint can be \fB(none)\fR, \fBk\fR, \fBm\fR\.
+Limits the \fIrate\fR of response transmission to a client\. Uint can be \fB(none)\fR, \fBk\fR and \fBm\fR\.
 .TP
 \fB\-\-ipv6_mode\fR
 Enable IPv6 support\.
@@ -72,13 +72,13 @@ Tells where to use the specified certificate \fIfile\fR to verify the peer\.
 Tells where to use the specified certificate \fIdir\fR to verify the peer\.
 .TP
 \fB\-\-certificate_chain_file\fR \fIfile\fR
-Certificate Chain \fIfile\fR (required by https and http2)\.
+Use custom certificate chain provided by \fIfile\fR to verify server\'s private key (required by https and http2)\.
 .TP
 \fB\-\-private_key_file\fR \fIfile\fR
-Private Key \fIfile\fR (required by https and http2)\.
+Use custom private key provided by \fIfile\fR to secure connection between server and client (required by https and http2)\.
 .TP
 \fB\-\-private_key_password\fR \fIpassword\fR
-Private Key \fIpassword\fR (required by https and http2)\.
+Use custom private key password provided by \fIpassword\fR to decrypt server\'s encrypted private key\.
 .TP
 \fB\-\-user\fR \fIuser\fR
 Set non\-privileged user for worker\.
