@@ -28,3 +28,10 @@ RUN ulimit -n 1024 && yum clean all && \
     gtk3-devel zlib-devel curl-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
+
+# Install cmake 3.28.5
+RUN curl -L https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz | \
+  tar -C /usr/local --strip-components=1 --gz -xf - && \
+  ln -sf cmake /usr/local/bin/cmake3 && \
+  cmake --version && \
+  cmake3 --version
