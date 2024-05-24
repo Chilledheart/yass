@@ -20,6 +20,10 @@ fi
 
 VERSION=$TAG
 SUBVERSION=$SUBTAG
+SUBVERSION_SUFFIX="-$SUBTAG"
+if [ $SUBVERSION == 0 ]; then
+  SUBVERSION_SUFFIX=""
+fi
 # FIXME deb cannot pickup subtag correctly
 SUBVERSION=1
 
@@ -94,14 +98,14 @@ ARCH=${HOST_ARCH:-$BUILD_ARCH}
 DISTRO=$(scripts/get-debian-name.py $HOST_DISTRO)
 
 if [ -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" ]; then
-  mv -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}_${ARCH}.${TAG}.deb"
-  mv -f ../"yass-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+  mv -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
+  mv -f ../"yass-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}-dbg_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
 fi
 
-mv -f ../"yass-server_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-server-${DISTRO}_${ARCH}.${TAG}.deb"
-mv -f ../"yass-server-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-server-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
-mv -f ../"yass-client_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-client-${DISTRO}_${ARCH}.${TAG}.deb"
-mv -f ../"yass-client-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-client-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+mv -f ../"yass-server_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-server-${DISTRO}_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
+mv -f ../"yass-server-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-server-${DISTRO}-dbg_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
+mv -f ../"yass-client_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-client-${DISTRO}_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
+mv -f ../"yass-client-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-client-${DISTRO}-dbg_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
 
 echo "Generated debs: "
 for deb in *.deb; do
