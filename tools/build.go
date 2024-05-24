@@ -34,6 +34,8 @@ var toolDir string
 var projectDir string
 var buildDir string
 var tagFlag string
+var subtagFlag string
+var refTag string
 var fullTagFlag string
 
 var dryRunFlag bool
@@ -266,13 +268,13 @@ func prebuildFindSourceDirectory() {
 	}
 
 	if _, err = os.Stat(".git"); err == nil {
-		cmd := exec.Command("git", "describe", "--tags", "HEAD")
+		cmd := exec.Command("git", "rev-list", fmt.Sprintf("%s..HEAD", tagFlag), "--count")
 		var outb, errb bytes.Buffer
 		cmd.Stdout = &outb
 		cmd.Stderr = &errb
 		err = cmd.Run()
 		if err == nil {
-			fullTagFlag = strings.TrimSpace(outb.String())
+			subtagFlag = strings.TrimSpace(outb.String())
 		}
 	}
 
@@ -282,16 +284,33 @@ func prebuildFindSourceDirectory() {
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
-		subtagFlag := strings.TrimSpace(string(subtagContent))
+		subtagFlag = strings.TrimSpace(string(subtagContent))
+	}
 
+	if _, err = os.Stat(".git"); err == nil {
+		cmd := exec.Command("git", "rev-parse", "HEAD")
+		var outb, errb bytes.Buffer
+		cmd.Stdout = &outb
+		cmd.Stderr = &errb
+		err = cmd.Run()
+		if err == nil {
+			refTag = strings.TrimSpace(outb.String())[:8]
+		}
+	}
+
+	if err != nil {
 		var lastChangeContent []byte
 		lastChangeContent, err = ioutil.ReadFile("LAST_CHANGE")
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
-		lastChangeFlag := strings.TrimSpace(string(lastChangeContent))[:8]
+		refTag = strings.TrimSpace(string(lastChangeContent))[:8]
+	}
 
-		fullTagFlag = fmt.Sprintf("%s-%s-%s", tagFlag, subtagFlag, lastChangeFlag)
+	if subtagFlag == "0" {
+		fullTagFlag = tagFlag
+	} else {
+		fullTagFlag = fmt.Sprintf("%s-%s-%s", tagFlag, subtagFlag, refTag)
 	}
 
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "" {
