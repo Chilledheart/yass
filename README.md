@@ -35,14 +35,12 @@ See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/
 > via homebrew: `brew install --cask yass`
 - Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass.el7.x86_64.1.10.2-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-client-ubuntu-16.04-xenial_amd64.1.10.2.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.10.2)
+View more at [Release Page](https://github.com/Chilledheart/yass/releases/tag/1.10.2)
 
 ### NaïveProxy-Compatible Protocol Support
 Cipher http2 is NaïveProxy-compatible.
 
 See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
-
-See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
 
 ## Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
@@ -90,6 +88,8 @@ Use custom certificate chain provided by _file_ to verify server's certificate.
 
 ### Server Side Support
 All ciphers supported by client are also supported by `yass_server`. Read more from manpage _yass_server(1)_
+
+See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
 
 ### Experimental SOCKS cipher Support
 Experimental socks4/socks4a/socks5/socks5h cipher support is added for both of CLI and GUI.
