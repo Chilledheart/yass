@@ -97,6 +97,14 @@ jobs:
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-curl-msvc.bat ${{ matrix.arch }}
+      - name: "Download dependency: cmake (chocolatey)"
+        run: |
+          choco install -y cmake.portable --version=3.28.5
+          cmake --version
+      - name: "Download dependency: ninja (chocolatey)"
+        run: |
+          choco install -y ninja
+          ninja --version
       - uses: actions/setup-python@v4
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         with:
@@ -189,6 +197,14 @@ jobs:
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
+      - name: "Download dependency: cmake (chocolatey)"
+        run: |
+          choco install -y cmake.portable --version=3.28.5
+          cmake --version
+      - name: "Download dependency: ninja (chocolatey)"
+        run: |
+          choco install -y ninja
+          ninja --version
       - name: Patch libcxx for windows xp
         shell: bash
         run: |
@@ -204,7 +220,6 @@ jobs:
           set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
-          set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
