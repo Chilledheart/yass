@@ -27,32 +27,9 @@ Post Quantum Kyber Support (not enabled by default) is added on all of supported
 
 See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
-### NaïveProxy-Compatible Protocol Support
-Cipher http2 is NaïveProxy-compatible.
-
-See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
-
-### More Experimental Support
-
-#### Experimental SOCKS cipher Support
-Experimental socks4/socks4a/socks5/socks5h cipher support is added for both of CLI and GUI.
-
-#### Experimental DoH (DNS over HTTPS) and DoT (DNS over TLS) Support
-Experimental DoH and DoT support is added for both of CLI and GUI.
-
-#### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
-These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
-
-#### Experimental Server Side Support
-Full ciphers supported by client is also supported by server side. Read more from manpage _yass_server(1)_
-
-See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
-
-## Usages
-
 ### Prebuilt binaries
 - Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-android-release-arm64-1.10.2.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-android-release-arm-1.10.2.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-ios-release-arm64-1.10.2.ipa)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09)
 - Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-mingw-win7-release-x86_64-1.10.2-system-installer.exe) or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-mingw-winxp-release-i686-1.10.2-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-mingw-release-aarch64-1.10.2-system-installer.exe)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-macos-release-x64-1.10.2.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.10.2/yass-macos-release-arm64-1.10.2.dmg)
 > via homebrew: `brew install --cask yass`
@@ -60,11 +37,18 @@ See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup
 
 View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.10.2)
 
-### Build from Source
-Take a look at [more instructions](BUILDING.md).
+### NaïveProxy-Compatible Protocol Support
+Cipher http2 is NaïveProxy-compatible.
 
-### Usages
+See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
+
+See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
+
+## Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
+
+## Build from Source
+Take a look at [more instructions](BUILDING.md).
 
 ## Sponsor Me
 Please visit [the pages site](https://letshack.info).
@@ -90,5 +74,35 @@ Please visit [the pages site](https://letshack.info).
 [![MSVC Build](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml)
 [![Old MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 
+## Additional Features
+
+### Rate Limit (only on CLI)
+Pass `--limit_rate rate` to command line.
+Limits the _rate_ of response transmission to a client. Uint can be `(none)`, `k` and `m`.
+
+### Change of Congestion Algorithm (Linux only)
+Pass `--congestion_algorithm algo` to command line.
+Specify _algo_ as TCP congestion control algorithm for underlying TCP connections.
+
+### Allow custom CA (only on CLI, client only)
+Pass `--certificate_chain_file file` to command line.
+Use custom certificate chain provided by _file_ to verify server's certificate.
+
+### Server Side Support
+All ciphers supported by client are also supported by `yass_server`. Read more from manpage _yass_server(1)_
+
+### Experimental SOCKS cipher Support
+Experimental socks4/socks4a/socks5/socks5h cipher support is added for both of CLI and GUI.
+
+### Experimental DoH (DNS over HTTPS) and DoT (DNS over TLS) Support
+Experimental DoH and DoT support is added for both of CLI and GUI.
+
+### Supplementary Support for ISRG Root X2 and ISRG Root X1 ca which is missing on some machines
+These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
+
+### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
+These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
+
 [license-link]: LICENSE
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
+
