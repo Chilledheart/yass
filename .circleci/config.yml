@@ -47,6 +47,10 @@ commands:
           command: |
             sudo apt-get update -qq
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cmake ninja-build libgtk-3-dev libncurses5 gettext libcurl4-openssl-dev dpkg-dev
+            curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
+            sudo tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
+            cmake --version
+            rm -f *.tar.gz
 
   install-deps-golang:
     steps:
