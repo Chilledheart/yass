@@ -21,10 +21,6 @@ freebsd_task:
   pkginstall_script:
     - pkg update -f
     - pkg install -y cmake ninja pkgconf perl5 go llvm17-lite git
-    - ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
-    - ln -sf /usr/include/c++/v1/unwind-arm.h /usr/include/unwind-arm.h
-    - ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
-    - pkg install -y devel/py-jsonschema devel/py-Jinja2
   submodules_script:
     # unshallow must come first otherwise submodule may be get unshallowed
     - git fetch --tags --unshallow
