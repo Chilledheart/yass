@@ -42,8 +42,6 @@ ABSL_FLAG(bool,
           use_ca_bundle_crt,
 #if defined(_WIN32) && _WIN32_WINNT < 0x0603
           !IsWindowsVersionBNOrGreater(6, 3, 0),
-#elif defined(__FreeBSD__)
-          true,
 #else
           false,
 #endif
@@ -683,7 +681,17 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
 #endif  // HAVE_BUILTIN_CA_BUNDLE_CRT
 
   if (load_ca_to_ssl_ctx_yass_ca_bundle(ssl_ctx) == 0 && load_ca_to_ssl_ctx_system(ssl_ctx) == 0) {
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
+    LOG(WARNING) << "No ceritifcates from system loaded, probably due to outdated system image";
+#elif BUILDFLAG(IS_LINUX)
+    LOG(WARNING) << "No ceritifcates from system loaded, probably due to missing ca-certficates package";
+#elif BUILDFLAG(IS_FREEBSD)
+    LOG(WARNING) << "No ceritifcates from system loaded, probably due to missing ca_root_nss package";
+#elif BUILDFLAG(IS_IOS)
+    // nop
+#else
     LOG(WARNING) << "No ceritifcates from system keychain loaded, trying builtin ca bundle";
+#endif
 
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
     std::string_view ca_bundle_content(_binary_ca_bundle_crt_start,

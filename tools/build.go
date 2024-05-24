@@ -1063,6 +1063,9 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "freebsd" && sysrootFlag != "" {
+		// depends on ca_root_nss package
+		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
+
 		var llvmTarget string
 		var llvmArch string
 
