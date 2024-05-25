@@ -262,6 +262,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == SETTINGS_REQUEST_CODE) {
+            return;
+        }
         if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
             onStartVpn();
             return;
@@ -275,6 +278,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private final int VPN_REQUEST_CODE = 10000;
+    private final int SETTINGS_REQUEST_CODE = 10001;
     private long tun2proxyPtr = 0;
     private Thread tun2proxyThread;
 
@@ -380,8 +384,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void onOptionsClicked(View view) {
         // opening a new intent to open settings activity.
-        Intent i = new Intent(MainActivity.this, SettingsActivity.class);
-        startActivity(i);
+        Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+        startActivityForResult(intent, SETTINGS_REQUEST_CODE);
     }
 
     private native long tun2ProxyInit(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);
