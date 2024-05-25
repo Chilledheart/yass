@@ -55,6 +55,7 @@ var cmakeBuildConcurrencyFlag int
 var clangPath string
 var useLibCxxFlag bool
 var enableLtoFlag bool
+var useMoldFlag bool
 var useTcmallocFlag bool
 
 var clangTidyModeFlag bool
@@ -168,6 +169,7 @@ func InitFlag() {
 
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 	flag.BoolVar(&enableLtoFlag, "enable-lto", true, "Enable lto")
+	flag.BoolVar(&useMoldFlag, "use-mold", false, "Use Mold Linker")
 	flag.BoolVar(&useTcmallocFlag, "use-tcmalloc", true, "Use tcmalloc if possible")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
@@ -800,6 +802,11 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_LTO=on")
 	} else {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_LTO=off")
+	}
+	if useMoldFlag {
+		cmakeArgs = append(cmakeArgs, "-DUSE_MOLD=on")
+	} else {
+		cmakeArgs = append(cmakeArgs, "-DUSE_MOLD=off")
 	}
 	if clangTidyModeFlag {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_CLANG_TIDY=on", fmt.Sprintf("-DCLANG_TIDY_EXECUTABLE=%s", clangTidyExecutablePathFlag))
