@@ -70,6 +70,10 @@
   NSWindow* window = self.window;
   [window performSelector:@selector(orderFrontRegardless) withObject:nil afterDelay:0.10];
   [window makeKeyAndOrderFront:nil];
+
+  if (![NSApp isActive]) {
+    [NSApp activateIgnoringOtherApps:YES];
+  }
 }
 
 - (void)UpdateStatusBar {
