@@ -42,7 +42,10 @@
   }
 
   SetDockIconStyle(false);
-  [NSApp activateIgnoringOtherApps:true];
+
+  if (![NSApp isActive]) {
+    [NSApp activateIgnoringOtherApps:YES];
+  }
 }
 
 - (void)applicationWillTerminate:(NSNotification*)aNotification {
