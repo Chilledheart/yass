@@ -1,3 +1,8 @@
+yass (1.10.3-1) UNRELEASED; urgency=medium
+
+  * net: support https protocol via caddy.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 26 May 2024 14:48:28 +0800
 yass (1.10.2-1) UNRELEASED; urgency=medium
 
   * net: reduce memory footprint peak and cpu peak.

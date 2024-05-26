@@ -259,6 +259,8 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Sun May 26 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.3-1
+  - net: support https protocol via caddy.
 * Thu May 23 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.2-1
   - net: reduce memory footprint peak and cpu peak.
 * Sun May 19 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.1-1
