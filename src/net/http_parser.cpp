@@ -269,6 +269,9 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     if (key == "Proxy-Connection") {
       connection_ = std::string(value);
     }
+    if (key == "Proxy-Authorization") {
+      proxy_authorization_ = std::string(value);
+    }
   }
 }
 
@@ -539,6 +542,9 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
 
   if (self->http_field_ == "Content-Type") {
     self->content_type_ = std::string(buf, len);
+  }
+  if (self->http_field_ == "Proxy-Authorization") {
+    self->proxy_authorization_ = std::string(buf, len);
   }
   return 0;
 }

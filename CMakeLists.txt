@@ -2712,6 +2712,21 @@ if (BORINGSSL_BUILD_TESTS)
 endif()
 
 # *****************************************************************************************
+#           modp_b64 Library
+# *****************************************************************************************
+add_library(modp_b64 STATIC
+  third_party/modp_b64/modp_b64.h
+  third_party/modp_b64/modp_b64_data.h
+  third_party/modp_b64/modp_b64.cc
+)
+target_include_directories(modp_b64 PUBLIC
+  third_party/modp_b64)
+
+target_compile_options(modp_b64 PRIVATE "-Wno-error")
+
+set(SUPPORT_LIBS modp_b64 ${SUPPORT_LIBS})
+
+# *****************************************************************************************
 #           mbedssl Library
 # *****************************************************************************************
 # pip install -U 'jsonschema<4.0'
@@ -4647,6 +4662,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/libunwind/trunk/LICENSE.TXT         _LIBUNWIND_LICENSE)
   file(READ third_party/lss/LICENSE                         _LSS_LICENSE)
   file(READ third_party/mbedtls/LICENSE                     _MBEDTLS_LICENSE)
+  file(READ third_party/modp_b64/LICENSE                    _MODP_B64_LICENSE)
   file(READ third_party/protobuf/LICENSE                    _PROTOBUF_LICENSE)
   file(READ third_party/quiche/src/LICENSE                  _QUICHE_LICENSE)
   file(READ third_party/re2/LICENSE                         _RE2_LICENSE)
