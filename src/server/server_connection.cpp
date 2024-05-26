@@ -293,8 +293,8 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
               << " Unexpected method: " << request_map_[":method"];
     return false;
   }
-  auto auth = request_map_["proxy-authorization"s];
-  if (!VerifyProxyAuthorizationIdentity(auth)) {
+  bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+  if (auth_required && !VerifyProxyAuthorizationIdentity(request_map_["proxy-authorization"s])) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " Unexpected auth token.";
     return false;
   }
@@ -602,7 +602,8 @@ void ServerConnection::OnReadHandshakeViaHttps() {
       return;
     }
 
-    if (!VerifyProxyAuthorizationIdentity(parser.proxy_authorization())) {
+    bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+    if (auth_required && !VerifyProxyAuthorizationIdentity(parser.proxy_authorization())) {
       LOG(INFO) << "Connection (server) " << connection_id() << " Unexpected auth token.";
       ec = asio::error::invalid_argument;
       OnDisconnect(ec);

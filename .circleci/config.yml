@@ -170,6 +170,8 @@ commands:
             # test SOCKS5 without auth
             ./build/yass_test --gtest_filter="Ss*/SOCKS5" --username '' --password ''
             ./build/yass_test --gtest_filter="Ss*/SOCKS5H" --username '' --password ''
+            # test HTTPS/HTTP2 without auth
+            ./build/yass_test --gtest_filter="Ss*/HTTP*" --username '' --password ''
             # somehow inside the container DNS hosts file resolves localhost to 127.0.0.1 only not ::1
             # due to the incompleteness
             grep localhost /etc/hosts

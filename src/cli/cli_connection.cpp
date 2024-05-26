@@ -2121,7 +2121,10 @@ void CliConnection::connected() {
     //    authority   = [ userinfo "@" ] host [ ":" port ]
     headers.emplace_back(":authority"s, hostname_and_port);
     headers.emplace_back("host"s, hostname_and_port);
-    headers.emplace_back("proxy-authorization"s, absl::StrCat("basic ", GetProxyAuthorizationIdentity()));
+    bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+    if (auth_required) {
+      headers.emplace_back("proxy-authorization"s, absl::StrCat("basic ", GetProxyAuthorizationIdentity()));
+    }
     // Send "Padding" header
     // originated from naive_proxy_delegate.go;func ServeHTTP
     if (padding_support_) {
@@ -2162,6 +2165,8 @@ void CliConnection::connected() {
       hostname_and_port = absl::StrCat("[", host, "]", ":", port);
     }
 
+    bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
+
     std::string hdr = absl::StrFormat(
         "CONNECT %s HTTP/1.1\r\n"
         "Host: %s\r\n"
@@ -2169,6 +2174,14 @@ void CliConnection::connected() {
         "Proxy-Connection: Close\r\n"
         "\r\n",
         hostname_and_port.c_str(), hostname_and_port.c_str(), absl::StrCat("basic ", GetProxyAuthorizationIdentity()));
+    if (!auth_required) {
+      hdr = absl::StrFormat(
+          "CONNECT %s HTTP/1.1\r\n"
+          "Host: %s\r\n"
+          "Proxy-Connection: Close\r\n"
+          "\r\n",
+          hostname_and_port.c_str(), hostname_and_port.c_str());
+    }
     // write variable address directly as https header
     upstream_.push_back(hdr.data(), hdr.size());
   } else {
