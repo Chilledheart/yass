@@ -1,3 +1,9 @@
+yass (1.9.7-1) UNRELEASED; urgency=medium
+
+  * net: support https protocol via caddy.
+  * net: reduce memory footprint peak and cpu peak.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 26 May 2024 14:48:28 +0800
 yass (1.9.6-1) UNRELEASED; urgency=medium
 
   * net: support socks4/socks4a/socks5/socks5h cipher.
