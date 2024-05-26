@@ -366,6 +366,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
  private:
   void ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
+  void ReadUpstreamHttpsChunk(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
 
   void WriteUpstreamMethodSelectRequest();
   void ReadUpstreamMethodSelectResponse(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
@@ -377,7 +378,9 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   void ReadUpstreamSocksResponse(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
 
   /// the state of https fallback handshake (upstream)
-  bool upstream_handshake_ = true;
+  bool upstream_https_handshake_ = true;
+  /// the state of https chunked (upstream)
+  bool upstream_https_chunked_ = false;
   /// the state of socks5 method select handshake (upstream)
   bool socks5_method_select_handshake_ = false;
   bool socks5_auth_handshake_ = false;
