@@ -190,6 +190,12 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     }
   }
 
+  if (CIPHER_METHOD_IS_HTTP(method)) {
+    if (username.empty() ^ password.empty()) {
+      err_msg << ",HTTP requires both of username and passsword";
+    }
+  }
+
   if (local_host.empty() || local_host.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Local Host: " << local_host;
   }
@@ -279,6 +285,12 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   if (method == CRYPTO_SOCKS5 || method == CRYPTO_SOCKS5H) {
     if (username.empty() ^ password.empty()) {
       err_msg << ",SOCKS5/SOCKS5H requires both of username and passsword";
+    }
+  }
+
+  if (CIPHER_METHOD_IS_HTTP(method)) {
+    if (username.empty() ^ password.empty()) {
+      err_msg << ",HTTP requires both of username and passsword";
     }
   }
 
