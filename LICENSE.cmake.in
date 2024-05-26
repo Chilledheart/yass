@@ -44,6 +44,10 @@
 
 @_MBEDTLS_LICENSE@
 
+=== modp_b64 ==
+
+@_MODP_B64_LICENSE@
+
 === protobuf ==
 
 @_PROTOBUF_LICENSE@
