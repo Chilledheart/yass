@@ -48,10 +48,9 @@ static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair
 }
 
 static std::string GetProxyAuthorizationIdentity() {
-  std::string result;
   auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":", absl::GetFlag(FLAGS_password));
-  Base64Encode(user_pass, &result);
-  return result;
+  return Base64Encode(
+      absl::Span<uint8_t>(const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(user_pass.c_str())), user_pass.size()));
 }
 
 static bool g_nonindex_codes_initialized;
@@ -2166,9 +2165,10 @@ void CliConnection::connected() {
     std::string hdr = absl::StrFormat(
         "CONNECT %s HTTP/1.1\r\n"
         "Host: %s\r\n"
+        "Proxy-Authorization: %s\r\n"
         "Proxy-Connection: Close\r\n"
         "\r\n",
-        hostname_and_port.c_str(), hostname_and_port.c_str());
+        hostname_and_port.c_str(), hostname_and_port.c_str(), absl::StrCat("basic ", GetProxyAuthorizationIdentity()));
     // write variable address directly as https header
     upstream_.push_back(hdr.data(), hdr.size());
   } else {

@@ -54,11 +54,20 @@ static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair
   return response_vector;
 }
 
-static std::string GetProxyAuthorizationIdentity() {
-  std::string result;
-  auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":", absl::GetFlag(FLAGS_password));
-  Base64Encode(user_pass, &result);
-  return result;
+static constexpr std::string_view kBasicAuthPrefix = "basic ";
+static bool VerifyProxyAuthorizationIdentity(std::string_view auth) {
+  if (auth.size() <= kBasicAuthPrefix.size()) {
+    return false;
+  }
+  if (ToLowerASCII(auth.substr(0, kBasicAuthPrefix.size())) != kBasicAuthPrefix) {
+    return false;
+  }
+  auth.remove_prefix(kBasicAuthPrefix.size());
+  std::string pass;
+  if (!Base64Decode(auth, &pass)) {
+    return false;
+  }
+  return pass == absl::StrCat(absl::GetFlag(FLAGS_username), ":", absl::GetFlag(FLAGS_password));
 }
 
 #endif
@@ -285,7 +294,7 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
     return false;
   }
   auto auth = request_map_["proxy-authorization"s];
-  if (auth != absl::StrCat("basic ", GetProxyAuthorizationIdentity())) {
+  if (!VerifyProxyAuthorizationIdentity(auth)) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " Unexpected auth token.";
     return false;
   }
@@ -587,7 +596,14 @@ void ServerConnection::OnReadHandshakeViaHttps() {
     http_is_connect_ = parser.is_connect();
 
     if (http_host_.size() > TLSEXT_MAXLEN_host_name) {
-      LOG(WARNING) << "Connection (server) " << connection_id() << " too long domain name: " << http_host_;
+      LOG(INFO) << "Connection (server) " << connection_id() << " too long domain name: " << http_host_;
+      ec = asio::error::invalid_argument;
+      OnDisconnect(ec);
+      return;
+    }
+
+    if (!VerifyProxyAuthorizationIdentity(parser.proxy_authorization())) {
+      LOG(INFO) << "Connection (server) " << connection_id() << " Unexpected auth token.";
       ec = asio::error::invalid_argument;
       OnDisconnect(ec);
       return;

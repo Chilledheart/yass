@@ -50,6 +50,7 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   uint64_t content_length() const { return headers_.content_length(); }
   const std::string& content_type() const { return content_type_; }
   const std::string& connection() const { return connection_; }
+  const std::string& proxy_authorization() const { return proxy_authorization_; }
   bool transfer_encoding_is_chunked() const { return headers_.transfer_encoding_is_chunked(); }
 
   void ReforgeHttpRequest(std::string* header,
@@ -106,6 +107,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   std::string content_type_;
   /// copy of connection
   std::string connection_;
+  /// copy of proxy_authorization
+  std::string proxy_authorization_;
 
   bool first_byte_processed_ = false;
   bool headers_done_ = false;
@@ -138,6 +141,7 @@ class HttpRequestParser {
   uint64_t content_length() const;
   const std::string& content_type() const { return content_type_; }
   std::string_view connection() const;
+  const std::string& proxy_authorization() const { return proxy_authorization_; }
   bool transfer_encoding_is_chunked() const;
 
   int status_code() const;
@@ -170,6 +174,8 @@ class HttpRequestParser {
   bool http_is_connect_ = false;
   /// copy of content type
   std::string content_type_;
+  /// copy of proxy_authorization
+  std::string proxy_authorization_;
 };
 
 class HttpResponseParser : public HttpRequestParser {
