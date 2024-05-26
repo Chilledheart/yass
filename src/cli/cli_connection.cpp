@@ -1034,8 +1034,14 @@ try_again:
   } else
 #endif
       if (upstream_https_fallback_) {
-    if (upstream_handshake_) {
+    if (upstream_https_handshake_) {
       ReadUpstreamHttpsHandshake(buf, ec);
+      if (ec) {
+        return nullptr;
+      }
+    }
+    if (upstream_https_chunked_) {
+      ReadUpstreamHttpsChunk(buf, ec);
       if (ec) {
         return nullptr;
       }
@@ -1088,9 +1094,9 @@ out:
 }
 
 void CliConnection::ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
-  DCHECK(upstream_handshake_);
+  DCHECK(upstream_https_handshake_);
 
-  upstream_handshake_ = false;
+  upstream_https_handshake_ = false;
   HttpResponseParser parser;
 
   bool ok;
@@ -1103,6 +1109,10 @@ void CliConnection::ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio:
   if (ok && parser.status_code() == 200) {
     buf->trimStart(nparsed);
     buf->retreat(nparsed);
+    if (parser.transfer_encoding_is_chunked()) {
+      upstream_https_chunked_ = true;
+      VLOG(1) << "Connection (client) " << connection_id() << " upstream http chunked encoding";
+    }
   } else {
     if (!ok) {
       LOG(WARNING) << "Connection (client) " << connection_id()
@@ -1117,6 +1127,44 @@ void CliConnection::ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio:
   }
   if (buf->empty()) {
     ec = asio::error::try_again;
+    return;
+  }
+}
+
+void CliConnection::ReadUpstreamHttpsChunk(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
+  DCHECK(upstream_https_chunked_);
+
+  HttpResponseParser parser;
+
+  bool ok;
+  int nparsed = parser.Parse(buf, &ok);
+
+  if (nparsed) {
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " chunked http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+  }
+  if (ok && parser.status_code() == 200) {
+    buf->trimStart(nparsed);
+    buf->retreat(nparsed);
+    upstream_https_chunked_ = false;
+    if (parser.content_length() != 0) {
+      LOG(WARNING) << "Connection (client) " << connection_id() << " upstream server returns unexpected body";
+      ec = asio::error::invalid_argument;
+      return;
+    }
+    if (buf->empty()) {
+      ec = asio::error::try_again;
+      return;
+    }
+  } else {
+    if (!ok) {
+      LOG(WARNING) << "Connection (client) " << connection_id()
+                   << " upstream server unhandled: " << parser.ErrorMessage() << ": "
+                   << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+    } else {
+      LOG(WARNING) << "Connection (client) " << connection_id() << " upstream server returns: " << parser.status_code();
+    }
+    ec = asio::error::connection_refused;
     return;
   }
 }
