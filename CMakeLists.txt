@@ -590,6 +590,7 @@ if (CMAKE_CROSSCOMPILING AND (CMAKE_SYSROOT OR CMAKE_OSX_SYSROOT))
   if (NOT EXISTS ${_SYSROOT})
     message(FATAL_ERROR "Invalid sysroot ${_SYSROOT}")
   endif()
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
   set(ENV{PKG_CONFIG_DIR} "")
   set(ENV{PKG_CONFIG_LIBDIR} "${_SYSROOT}/usr/lib64/pkgconfig:${_SYSROOT}/usr/lib/pkgconfig:${_SYSROOT}/lib/pkgconfig:${_SYSROOT}/usr/share/pkgconfig")
   if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
@@ -613,6 +614,10 @@ if (UNIX AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG AND NOT C
     # fix up for riscv64 and riscv32 sysroot
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv32")
       file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
+    endif()
+    # fix up for raw sysroot from docker
+    if (NOT _GCC_SYSROOT)
+      file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/usr/lib/gcc/*/*.*.*")
     endif()
     if (_GCC_SYSROOT)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
