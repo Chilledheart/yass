@@ -8,15 +8,15 @@ REM Usage: download-toolchain.bat
 echo "Install dependency: prebuilt nasm"
 
 cd third_party
-curl -C - -L -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
+curl -C - -L -O https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/win64/nasm-2.16.03-win64.zip
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
-"C:\Program Files\7-Zip\7z.exe" x nasm-2.15.05-win64.zip -aoa
+"C:\Program Files\7-Zip\7z.exe" x nasm-2.16.03-win64.zip -aoa
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 rmdir /s /q nasm
-rename nasm-2.15.05 nasm
+rename nasm-2.16.03 nasm
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..
-del /s /q third_party\nasm-2.15*.zip
+del /s /q third_party\nasm-2*.zip
 
 echo "Install dependency: prebuilt clang and clang-tidy binaries"
 
