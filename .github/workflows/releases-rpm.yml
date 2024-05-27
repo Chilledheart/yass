@@ -47,6 +47,7 @@ jobs:
         - 'centos8'
         - 'fedora39'
         - 'alpine320'
+        - 'i386-alpine320'
         - 'opensuse15'
         # - 'centos9'
     runs-on: ubuntu-22.04
@@ -162,14 +163,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container:
-        - 'alpine320'
-    runs-on: ubuntu-22.04
+        include:
+          - container: 'alpine320'
+            arch: amd64
+          - container: 'i386-alpine320'
+            arch: i386
+    runs-on: ubuntu-20.04
     needs: docker_publish
-    container:
-      image: 'ghcr.io/chilledheart/${{ matrix.container }}'
-    env:
-      DISTRO: ${{ matrix.container }}
     steps:
       - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
@@ -179,6 +179,16 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Set SDK_ROOT
+        run: |
+          echo "SDK_ROOT=${{ github.workspace }}/${{ matrix.arch }}-alpine320-sysroot" >> $GITHUB_ENV
+      - name: Cache clang
+        id: clang-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v4
         with:
@@ -188,20 +198,50 @@ jobs:
           key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-docker-
+      - name: Populate sysroot from docker image
+        run: |
+          docker pull ghcr.io/chilledheart/${{ matrix.container }}
+          mkdir -p "${{ env.SDK_ROOT }}"
+          docker export $(docker create ghcr.io/chilledheart/${{ matrix.container }}) | tar -C "${{ env.SDK_ROOT }}" -xf -
       - name: Build build tool
         run: |
           cd tools
           go build
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
+      - name: Populate depedencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build pkg-config gettext bubblewrap
+          # libc6-i386 interferes with x86 build
+          sudo apt remove libc6-i386
+      - name: Populate dependencie (cmake, overwrite)
+        run: |
+          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
+          sudo tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
+          cmake --version
+          rm -f *.tar.gz
       - name: Build TGZ packages
         run: |
-          export CC=clang
-          export CXX=clang++
-          ./tools/build --arch amd64 --system linux --subsystem musl -build-benchmark -build-test \
-            --cmake-build-type MinSizeRel
-      - name: Run tests (amd64)
+          ./tools/build --arch ${{ matrix.arch }} --system linux --subsystem musl \
+            --sysroot "${{ env.SDK_ROOT }}" \
+            -build-test --cmake-build-type MinSizeRel
+      - name: Run tests
         run: |
-          ./build-linux-musl-amd64/yass_test
-          ./build-linux-musl-amd64/yass_benchmark
+          bwrap --die-with-parent --bind "${{ env.SDK_ROOT }}" / \
+            --ro-bind /sys /sys \
+            --ro-bind /etc/resolv.conf /etc/resolv.conf \
+            --proc /proc --dev /dev \
+            --unshare-all --share-net \
+            --bind $PWD/build-linux-musl-${{ matrix.arch }} /tmp \
+            /tmp/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
