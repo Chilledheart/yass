@@ -45,15 +45,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and wixtoolset 3
-        id: clang-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            third_party/nasm
-            third_party/llvm-build/Release+Asserts
-            third_party/wix311
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 toolchain
         id: mingw64-cache
         uses: actions/cache@v4
@@ -74,10 +65,6 @@ jobs:
         run: |
           choco upgrade -y llvm --version=17.0.6
           clang -v
-      - name: "Download dependency: clang, nasm and wixtoolset 3"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        run: |
-          scripts\download-toolchain.bat
       - name: "Download dependency: mingw64"
         if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -87,6 +74,10 @@ jobs:
         shell: bash
         run: |
           ./scripts/download-curl-mingw.sh ${{ matrix.arch }}
+      - name: "Download dependency: nasm (chocolatey)"
+        run: |
+          choco install -y nasm
+          "C:\Program Files\NASM\nasm" --version
       - name: "Download dependency: cmake (chocolatey)"
         run: |
           choco install -y cmake.portable --version=3.28.5
@@ -116,7 +107,7 @@ jobs:
           set "CXXFLAGS=-I %CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include"
           set "LDFLAGS=-Wl,-L%CD%\third_party\${{ matrix.mingw_dir }}\lib -Wl,-L%CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}"
           set "Path=%CD%\third_party\${{ matrix.mingw_dir }}\bin;%Path%"
-          set "Path=%CD%\third_party\nasm;%Path%"
+          set "Path=C:\Program Files\NASM\nasm;%Path%"
           REM for clang.exe and clang++.exe
           REM set "Path=C:\Program Files\LLVM\bin;%Path%"
 
