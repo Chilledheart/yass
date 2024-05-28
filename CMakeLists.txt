@@ -1150,16 +1150,10 @@ endif()
 ## adopt Thin LTO
 if (LTO AND COMPILER_CLANG AND USE_MOLD)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=thin>)
-  if (CMAKE_OBJC_COMPILER)
-    add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-flto=thin>)
-  endif()
 
   if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(lgrey): Enable unit splitting for Mac when supported.
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fsplit-lto-unit>)
-    if (CMAKE_OBJC_COMPILER)
-      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fsplit-lto-unit>)
-    endif()
   endif()
 
   if (NOT MSVC)
@@ -1179,9 +1173,6 @@ if (LTO AND COMPILER_CLANG AND USE_MOLD)
 
   if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fwhole-program-vtables>)
-    if (CMAKE_OBJC_COMPILER)
-      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fwhole-program-vtables>)
-    endif()
     if (NOT MSVC)
       add_link_options(-fwhole-program-vtables)
     endif()
@@ -1191,16 +1182,10 @@ endif()
 ## adopt Thin LTO
 if (LTO AND COMPILER_CLANG AND USE_LLD)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=thin>)
-  if (CMAKE_OBJC_COMPILER)
-    add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-flto=thin>)
-  endif()
 
   if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(lgrey): Enable unit splitting for Mac when supported.
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fsplit-lto-unit>)
-    if (CMAKE_OBJC_COMPILER)
-      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fsplit-lto-unit>)
-    endif()
   endif()
 
   # Limit the size of the ThinLTO cache to the lesser of 10% of
@@ -1255,9 +1240,6 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
 
   if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fwhole-program-vtables>)
-    if (CMAKE_OBJC_COMPILER)
-      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fwhole-program-vtables>)
-    endif()
     if (NOT MSVC)
       add_link_options(-fwhole-program-vtables)
     endif()
@@ -1267,9 +1249,6 @@ endif()
 ## adopt Thin LTO
 if (LTO AND COMPILER_CLANG AND USE_GOLD)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=thin>)
-  if (CMAKE_OBJC_COMPILER)
-    add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-flto=thin>)
-  endif()
 
   # Limit the size of the ThinLTO cache to the lesser of 10% of
   # available disk space, 40GB and 100000 files.
@@ -1294,9 +1273,6 @@ if (LTO AND COMPILER_CLANG AND USE_GOLD)
 
   if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fwhole-program-vtables>)
-    if (CMAKE_OBJC_COMPILER)
-      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fwhole-program-vtables>)
-    endif()
     if (NOT MSVC)
       add_link_options(-fwhole-program-vtables)
     endif()
