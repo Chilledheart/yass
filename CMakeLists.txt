@@ -418,8 +418,14 @@ include(CMakeDependentOption)
 option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
-option(BUILD_TESTS "Build with test." OFF)
+
+cmake_dependent_option(USE_GTK4
+  "Build with gtk4 (GUI)" ON
+  "GUI AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
+
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
+option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
+option(BUILD_TESTS "Build with test." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
 
 option(USE_TCMALLOC "Build with tcmalloc" OFF)
@@ -443,7 +449,6 @@ cmake_dependent_option(
   USE_SYSTEM_CARES "Build with system or vendored c-ares" OFF
   USE_CARES OFF)
 
-option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 
 option(USE_MBEDTLS "Build with mbedtls support" ON)
@@ -480,8 +485,6 @@ option(ENABLE_GOLD "Enable build with GOLD" ON)
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
-
-option(USE_GTK4 "Build with gtk4 if possible (GUI)" ON)
 
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html
