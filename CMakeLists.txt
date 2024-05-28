@@ -413,36 +413,73 @@ endif()
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+include(CMakeDependentOption)
+
 option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
-option(USE_TCMALLOC "Build with tcmalloc (linux only)" OFF)
+
+option(USE_TCMALLOC "Build with tcmalloc" OFF)
+cmake_dependent_option(
+  USE_SYSTEM_TCMALLOC "Build with system or vendored tcmalloc" OFF
+  USE_TCMALLOC OFF)
+
 option(USE_LIBCXX "Build with libc++" ON)
+
 option(USE_NGHTTP2 "Build with libnghttp2" ON)
-option(USE_MOLD "Build with mold linker" OFF)
-option(USE_LLD "Build with lld linker" OFF)
-option(USE_GOLD "Build with gold linker" OFF)
+cmake_dependent_option(
+  USE_SYSTEM_NGHTTP2 "Build with system or vendored libnghttp2" OFF
+  USE_NGHTTP2 OFF)
+
 option(USE_ICF "Build with ICF" OFF)
 option(USE_LTO "Build with LTO" OFF)
 option(USE_CURL "Build with libcurl (test only)" ON)
+
 option(USE_CARES "Build with c-ares" ON)
+cmake_dependent_option(
+  USE_SYSTEM_CARES "Build with system or vendored c-ares" OFF
+  USE_CARES OFF)
+
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
+
 option(USE_MBEDTLS "Build with mbedtls support" ON)
-option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
-option(USE_LEVELDB "Build with leveldb" OFF)
-option(USE_SQLITE "Build with sqlite" OFF)
-option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
+cmake_dependent_option(
+  USE_SYSTEM_MBEDTLS "Build with system or vendored mbedtls" OFF
+  USE_MBEDTLS OFF)
+
 option(USE_QUICHE "Build with quiche support" ON)
+
+cmake_dependent_option(
+  USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON
+  USE_QUICHE OFF)
+cmake_dependent_option(
+  USE_SYSTEM_HTTP_PARSER "Build with system or vendored http parser" OFF
+  "NOT USE_BALSA_HTTP_PARSER" OFF)
+
+option(USE_LEVELDB "Build with leveldb" OFF)
+
+option(USE_SQLITE "Build with sqlite" OFF)
+cmake_dependent_option(
+  USE_SYSTEM_SQLITE "Build with system or vendored sqlite" OFF
+  USE_SQLITE OFF)
+
+option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
 option(USE_IOURING "Build with io uring support" OFF)
+option(USE_SYSTEM_ZLIB "Build with system or vendered zlib" OFF)
+option(USE_SYSTEM_JSON "Build with system or vendered json library" OFF)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source (linux only)" OFF)
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
+
+option(USE_MOLD "Build with mold linker" OFF)
+option(USE_LLD "Build with lld linker" OFF)
+option(USE_GOLD "Build with gold linker" OFF)
 
 option(USE_GTK4 "Build with gtk4 if possible (GUI)" ON)
 
@@ -507,7 +544,7 @@ if (CMAKE_CROSSCOMPILING)
   list(APPEND YASS_APP_FEATURES "crosscompile")
 endif()
 
-if (${CMAKE_BUILD_TYPE} MATCHES Release OR ${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo)
+if (upper_CMAKE_BUILD_TYPE MATCHES "RELEASE|MINSIZEREL|RELWITHDEBINFO")
   message(STATUS "Release Build: ${CMAKE_BUILD_TYPE}")
   set(IS_RELEASE_BUILD ON)
 else()
@@ -543,6 +580,19 @@ if (ENABLE_LTO AND IS_RELEASE_BUILD)
   if (LTO)
     message(STATUS "Compiling with ${LTO_FLAVOUR} LTO")
     list(APPEND YASS_APP_FEATURES "lto ${LTO_FLAVOUR}")
+  endif()
+endif()
+
+if (NOT MSVC)
+  if (USE_MOLD)
+    add_link_options(-fuse-ld=mold -Wl,--gdb-index)
+    list(APPEND YASS_APP_FEATURES "linker mold")
+  elseif (USE_LLD)
+    add_link_options(-fuse-ld=lld)
+    list(APPEND YASS_APP_FEATURES "linker lld")
+  elseif (USE_GOLD)
+    add_link_options(-fuse-ld=gold)
+    list(APPEND YASS_APP_FEATURES "linker gold")
   endif()
 endif()
 
@@ -720,7 +770,7 @@ if(MSAN)
     if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=memory")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=memory")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=memory")
+      add_link_options(/fsanitize=memory)
     else()
       message(FATAL_ERROR "Cannot enable MSAN unless using Clang or Vistual Studio 2019 version 16.9")
     endif()
@@ -728,7 +778,7 @@ if(MSAN)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+    add_link_options(-fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer)
   endif()
   add_definitions(-DMEMORY_SANITIZER)
   list(APPEND YASS_APP_FEATURES "msan")
@@ -741,14 +791,14 @@ if(ASAN)
     if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=address")
+      add_link_options(/fsanitize=address)
     else()
       message(FATAL_ERROR "Cannot enable ASAN unless using Clang or Vistual Studio 2019 version 16.9")
     endif()
   else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+    add_link_options(-fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer)
   endif()
   add_definitions(-DADDRESS_SANITIZER)
   list(APPEND YASS_APP_FEATURES "asan")
@@ -775,14 +825,14 @@ if(TSAN)
     if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=thread")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=thread")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=thread")
+      add_link_options(/fsanitize=thread)
     else()
       message(FATAL_ERROR "Cannot enable TSAN unless using Clang or Vistual Studio 2019 version 16.9")
     endif()
   else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+    add_link_options(-fsanitize=thread)
   endif()
   add_definitions(-DTHREAD_SANITIZER)
   list(APPEND YASS_APP_FEATURES "tsan")
@@ -801,7 +851,7 @@ if(UBSAN)
   else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+    add_link_options(-fsanitize=undefined)
   endif()
   add_definitions(-DUNDEFINED_SANITIZER)
   list(APPEND YASS_APP_FEATURES "ubsan")
@@ -829,8 +879,7 @@ endif()
 
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
   if (NOT APPLE AND NOT MSVC AND NOT MINGW)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+    add_link_options(-Wl,-z,defs -Wl,--as-needed)
   endif()
 endif()
 
@@ -862,16 +911,13 @@ if (NOT MSVC)
   endif()
 
   if (APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
+    add_link_options(-Wl,-dead_strip)
   else()
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+    add_link_options(-Wl,--gc-sections)
   endif()
 
   if (APPLE AND NOT USE_MOLD)
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
+    add_link_options(-Wl,-no_data_in_code_info -Wl,-no_function_starts)
   endif()
 
   if (APPLE AND COMPILER_CLANG)
@@ -948,8 +994,7 @@ if (NOT MSVC)
     # directly there, not through the compiler driver.
     # We don't link on goma, so this change is just for cleaner
     # internal linker invocations, for people who work on the build.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -no-canonical-prefixes")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-canonical-prefixes")
+    add_link_options(-no-canonical-prefixes)
   endif()
 else()
   # Enable function-level linking.
@@ -998,17 +1043,14 @@ else()
 
   ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
   if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /GL")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GL")
+    add_link_options(/LTCG)
   endif()
 
   # lld's uac manifest is outdated and incompatible with windows xp
   if (USE_LLD)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:NO")
+    add_link_options(/MANIFESTUAC:NO)
   endif()
 
   ## not omit stack frame pointer
@@ -1050,8 +1092,7 @@ else()
     if (USE_LLD)
       set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -gcodeview-ghash")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gcodeview-ghash")
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG:GHASH")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG:GHASH")
+      add_link_options(/DEBUG:GHASH)
     endif()
   else()
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
@@ -1059,18 +1100,16 @@ else()
   endif()
 
   # Tell linker to include symbol data
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
+  add_link_options(/DEBUG)
 
   ## Remove unreferenced data
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
-
-  list(APPEND YASS_APP_FEATURES "ldflags icf")
+  if (USE_ICF)
+    add_link_options(/OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO)
+    list(APPEND YASS_APP_FEATURES "ldflags icf")
+  endif()
 
   # Tell linker to include FIXUP information symbol data
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
+  add_link_options(/PROFILE)
 
   # Use constructor homing for debug info. This option reduces debug info
   # by emitting class type info only when constructors are emitted
@@ -1082,18 +1121,18 @@ else()
   if (USE_LLD)
     # Use a fake fixed base directory for paths in the pdb to make the pdb
     # output fully deterministic and independent of the build directory.
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PDBSourcePath:o:\\fake\\prefix")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSourcePath:o:\\fake\\prefix")
-    set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "${CMAKE_EXE_LINKER_FLAGS_MINSIZEREL} /PDBSourcePath:o:\\fake\\prefix")
-    set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "${CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL} /PDBSourcePath:o:\\fake\\prefix")
+    # verified via llvm-pdbutil pdb2yaml -modules -module-files -subsections=lines,fc yass.pdb|grep Module
+    # see https://reviews.llvm.org/D53021 and https://reviews.llvm.org/D48882
+    if (upper_CMAKE_BUILD_TYPE MATCHES "RELEASE|MINSIZEREL")
+      add_link_options(/PDBSourcePath:o:\\fake\\prefix)
+    endif()
 
     # Absolutize source file paths for PDB. Pass the real build directory
     # if the pdb contains source-level debug information and if linker
     # reproducibility is not critical.
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO   "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
+    if (upper_CMAKE_BUILD_TYPE MATCHES "DEBUG|RELWITHDEBINFO")
+      add_link_options(/PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR})
+    endif()
   endif()
 
   # Tells the compiler not to use absolute paths when passing the default
@@ -1107,61 +1146,63 @@ endif()
 
 ## adopt Thin LTO
 if (LTO AND COMPILER_CLANG AND USE_MOLD)
-  set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}   "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
-  set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=thin>)
+  if (CMAKE_OBJC_COMPILER)
+    add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-flto=thin>)
+  endif()
 
   if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(lgrey): Enable unit splitting for Mac when supported.
-    set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}   "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fsplit-lto-unit")
-    set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fsplit-lto-unit")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fsplit-lto-unit>)
+    if (CMAKE_OBJC_COMPILER)
+      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fsplit-lto-unit>)
+    endif()
   endif()
 
   if (NOT MSVC)
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
+    add_link_options(-flto=thin)
     # In ThinLTO builds, we run at most one link process at a time,
     # and let it use all cores.
     # TODO(thakis): Check if '=0' (that is, number of cores, instead
     # of "all" which means number of hardware threads) is faster.
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=all")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=all")
+      add_link_options(-Wl,--thinlto-jobs=all)
     else()
       include(ProcessorCount)
       ProcessorCount(CPU_NUMBER)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=${CPU_NUMBER}")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=${CPU_NUMBER}")
+      add_link_options(-Wl,--thinlto-jobs=${CPU_NUMBER})
     endif()
   endif()
 
   if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
-    set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
-    set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fwhole-program-vtables>)
+    if (CMAKE_OBJC_COMPILER)
+      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fwhole-program-vtables>)
+    endif()
     if (NOT MSVC)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
+      add_link_options(-fwhole-program-vtables)
     endif()
   endif()
 endif()
 
 ## adopt Thin LTO
 if (LTO AND COMPILER_CLANG AND USE_LLD)
-  set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}   "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
-  set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=thin>)
+  if (CMAKE_OBJC_COMPILER)
+    add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-flto=thin>)
+  endif()
 
   if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(lgrey): Enable unit splitting for Mac when supported.
-    set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}   "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fsplit-lto-unit")
-    set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fsplit-lto-unit")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fsplit-lto-unit>)
+    if (CMAKE_OBJC_COMPILER)
+      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fsplit-lto-unit>)
+    endif()
   endif()
 
   # Limit the size of the ThinLTO cache to the lesser of 10% of
   # available disk space, 40GB and 100000 files.
-  if (MSVC)
-    set(cache_policy "cache_size=10%:cache_size_bytes=40g")
-  else()
-    set(cache_policy "cache_size=10\\%:cache_size_bytes=40g")
-  endif()
+  set(cache_policy "cache_size=10%:cache_size_bytes=40g")
 
   if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
     set(cache_policy "${cache_policy}:cache_size_files=100000")
@@ -1173,102 +1214,88 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
 
   if (MSVC)
     # When using lld-link, the -flto option need only be added to the compile step
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} /opt:lldltojobs=all -mllvm:-import-instr-limit=${import_instr_limit} /lldltocache:thinlto-cache /lldltocachepolicy:${cache_policy}")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} /opt:lldltojobs=all -mllvm:-import-instr-limit=${import_instr_limit} /lldltocache:thinlto-cache /lldltocachepolicy:${cache_policy}")
+    add_link_options(/opt:lldltojobs=all -mllvm:-import-instr-limit=${import_instr_limit} /lldltocache:thinlto-cache /lldltocachepolicy:${cache_policy})
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -mllvm:-disable-auto-upgrade-debug-info")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -mllvm:-disable-auto-upgrade-debug-info")
+      add_link_options(-mllvm:-disable-auto-upgrade-debug-info)
     endif()
   elseif (NOT MINGW)
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
+    add_link_options(-flto=thin)
     # In ThinLTO builds, we run at most one link process at a time,
     # and let it use all cores.
     # TODO(thakis): Check if '=0' (that is, number of cores, instead
     # of "all" which means number of hardware threads) is faster.
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=all")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=all")
+      add_link_options(-Wl,--thinlto-jobs=all)
     else()
       include(ProcessorCount)
       ProcessorCount(CPU_NUMBER)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=${CPU_NUMBER}")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-jobs=${CPU_NUMBER}")
+      add_link_options(-Wl,--thinlto-jobs=${CPU_NUMBER})
     endif()
     if (APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
       if (YASS_TARGET_IS_CROSSCOMPILE_HOST)
-        set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/../thinlto-cache")
-        set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/../thinlto-cache")
+        add_link_options(-Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/../thinlto-cache)
       else()
-        set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-cache_path_lto,thinlto-cache")
-        set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-cache_path_lto,thinlto-cache")
+        add_link_options(-Wl,-cache_path_lto,thinlto-cache)
       endif()
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wcrl,object_path_lto")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wcrl,object_path_lto")
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-cache-policy=${cache_policy}")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-cache-policy=${cache_policy}")
+      add_link_options(-Wcrl,object_path_lto)
+      add_link_options(-Wl,--thinlto-cache-policy=${cache_policy})
     elseif (NOT APPLE)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-cache-dir=thinlto-cache")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-cache-dir=thinlto-cache")
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-cache-policy,${cache_policy}")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,--thinlto-cache-policy,${cache_policy}")
+      add_link_options(-Wl,--thinlto-cache-dir=thinlto-cache)
+      add_link_options(-Wl,--thinlto-cache-policy,${cache_policy})
     endif()
 
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+    add_link_options(-Wl,-mllvm,-import-instr-limit=${import_instr_limit})
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-disable-auto-upgrade-debug-info")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-disable-auto-upgrade-debug-info")
+      add_link_options(-Wl,-mllvm,-disable-auto-upgrade-debug-info)
     endif()
   endif()
 
   if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
-    set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
-    set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fwhole-program-vtables>)
+    if (CMAKE_OBJC_COMPILER)
+      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fwhole-program-vtables>)
+    endif()
     if (NOT MSVC)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
+      add_link_options(-fwhole-program-vtables)
     endif()
   endif()
 endif()
 
 ## adopt Thin LTO
 if (LTO AND COMPILER_CLANG AND USE_GOLD)
-  set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}   "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
-  set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=thin>)
+  if (CMAKE_OBJC_COMPILER)
+    add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-flto=thin>)
+  endif()
 
   # Limit the size of the ThinLTO cache to the lesser of 10% of
   # available disk space, 40GB and 100000 files.
-  set(cache_policy "cache_size=10\\%:cache_size_bytes=40g:cache_size_files=100000")
+  set(cache_policy "cache_size=10%:cache_size_bytes=40g:cache_size_files=100000")
 
   # TODO(gbiv): We ideally shouldn't need to specify this; ThinLTO
   # should be able to better manage binary size increases on its own.
   set(import_instr_limit 5)
 
-  set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
-  set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=thin")
+  add_link_options(-flto=thin)
   # In ThinLTO builds, we run at most one link process at a time,
   # and let it use all cores.
   # TODO(thakis): Check if '=0' (that is, number of cores, instead
   # of "all" which means number of hardware threads) is faster.
-  set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-plugin-opt,jobs=all")
-  set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-plugin-opt,jobs=all")
+  add_link_options(-Wl,-plugin-opt,jobs=all)
 
-  set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-plugin-opt,cache-dir=thinlto-cache")
-  set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-plugin-opt,cache-dir=thinlto-cache")
+  add_link_options(-Wl,-plugin-opt,cache-dir=thinlto-cache)
 
-  set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-plugin-opt,cache-policy=${cache_policy}")
-  set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-plugin-opt,cache-policy=${cache_policy}")
+  add_link_options(-Wl,-plugin-opt,cache-policy=${cache_policy})
 
-  set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
-  set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+  add_link_options(-Wl,-mllvm,-import-instr-limit=${import_instr_limit})
 
   if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
-    set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
-    set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fwhole-program-vtables>)
+    if (CMAKE_OBJC_COMPILER)
+      add_compile_options($<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fwhole-program-vtables>)
+    endif()
     if (NOT MSVC)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
+      add_link_options(-fwhole-program-vtables)
     endif()
   endif()
 endif()
@@ -1277,27 +1304,21 @@ endif()
 ## old gcc has regression on c++17 mode
 ## https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81004
 if (LTO AND COMPILER_GCC)
-  set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}   "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=auto")
-  set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=auto")
-  set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=auto")
-  set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -flto=auto")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=auto>)
+  add_link_options(-flto=auto)
   # gcc is known to fails at combining -std=c++14 and -std=c++17 objects (fixed in gcc 8.4)
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89358
   # and another https://gcc.gnu.org/bugzilla/show_bug.cgi?id=84044 (fixed in gcc 9.1)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+    add_link_options(-Wno-error=odr)
   endif()
   # silence lto warning on old gcc, fixed in latest gcc
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+    add_link_options(-Wno-error=odr)
   elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+    add_link_options(-Wno-lto-type-mismatch)
   else()
-    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
-    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
+    add_link_options(-Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized)
   endif()
 endif()
 
@@ -1365,26 +1386,12 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
   endif()
 
-  if (USE_MOLD)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
-    list(APPEND YASS_APP_FEATURES "linker mold")
-  endif()
-
-  if (USE_LLD)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
-    list(APPEND YASS_APP_FEATURES "linker lld")
-  endif()
-
   # Linker warnings.
   if (FALSE)
     if (NOT APPLE)
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--fatal-warnings")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--fatal-warnings")
+      add_link_options(-Wl,--fatal-warnings)
     else ()
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-fatal_warnings")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-fatal_warnings")
+      add_link_options(-Wl,-fatal_warnings)
     endif()
   endif()
 endif()
@@ -1395,14 +1402,11 @@ if (UNIX AND NOT APPLE)
   # Explicitly pass --build-id to ld. Compilers used to always pass this
   # implicitly but don't any more (in particular clang when built without
   # ENABLE_LINKER_BUILD_ID=ON).
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
-  set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "${CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL} -Wl,--build-id=sha1")
-  set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -Wl,--build-id=sha1")
-  set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} -Wl,--build-id=sha1")
-  set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "${CMAKE_EXE_LINKER_FLAGS_MINSIZEREL} -Wl,--build-id=sha1")
-  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--build-id")
-  set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -Wl,--build-id")
+  if (IS_RELEASE_BUILD)
+    add_link_options(-Wl,--build-id=sha1)
+  else()
+    add_link_options(-Wl,--build-id)
+  endif()
 
   # _FILE_OFFSET_BITS=64 should not be set on Android in order to maintain
   # the behavior of the Android NDK from earlier versions.
@@ -1432,11 +1436,8 @@ if ((UNIX AND NOT APPLE) OR ANDROID OR OHOS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
   endif()
 
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
-
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
+  add_link_options(-Wl,-z,noexecstack -Wl,-z,relro)
+  add_link_options(-Wl,-z,now)
 endif()
 
 # Linux-specific compiler flags setup.
@@ -1446,13 +1447,9 @@ if ((UNIX AND NOT APPLE) AND USE_LLD)
     # Reduce the page size from 65536 in order to reduce binary size slightly
     # by shrinking the alignment gap between segments. This also causes all
     # segments to be mapped adjacently, which breakpad relies on.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
+    add_link_options(-Wl,-z,max-page-size=4096)
   endif()
 elseif (USE_GOLD)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
-  list(APPEND YASS_APP_FEATURES "linker gold")
   if (NOT ANDROID AND NOT OHOS)
     # On Android, this isn't needed.  gcc in the NDK knows to look next to
     # it with -fuse-ld=gold, and clang gets a --gcc-toolchain flag passed
@@ -1465,8 +1462,7 @@ elseif (USE_GOLD)
     # linker might not be gold, but isn't used much anyway.
     # FIXME crashing on aarch64 build machine
     if (FALSE)
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
+      add_link_options(-Wl,--threads -Wl,--thread-count=4)
     endif()
   endif()
 
@@ -1480,8 +1476,7 @@ if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG) AND NOT MSVC)
   # Gold doesn't respect section alignment and breaks gcc builds with icf
   # https://sourceware.org/bugzilla/show_bug.cgi?id=17704
   # Landed upstream Fri, 21 Oct 2016 - is in 2.28, such as CentOS 7
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
+  add_link_options(-Wl,--icf=all)
   list(APPEND YASS_APP_FEATURES "ldflags icf")
 endif()
 
@@ -1524,19 +1519,16 @@ if (USE_LLD)
   if (MSVC)
     # On Windows, we call the linker directly, instead of calling it through
     # the driver.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --color-diagnostics")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --color-diagnostics")
+    add_link_options(--color-diagnostics)
   elseif (NOT MINGW)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--color-diagnostics")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  -Wl,--color-diagnostics")
+    add_link_options(-Wl,--color-diagnostics)
   endif()
 endif()
 
 # Enable text section splitting only on linux when using lld for now. Other
 # platforms can be added later if needed.
 if ((UNIX AND NOT APPLE) AND USE_LLD)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,keep-text-section-prefix")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,keep-text-section-prefix")
+  add_link_options(-Wl,-z,keep-text-section-prefix)
 endif()
 
 if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
@@ -1546,11 +1538,9 @@ if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
   if (USE_LLD)
     if (MSVC)
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mllvm:-instcombine-lower-dbg-declare=0")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mllvm:-instcombine-lower-dbg-declare=0")
+      add_link_options(-mllvm:-instcombine-lower-dbg-declare=0)
     else()
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
+      add_link_options(-Wl,-mllvm,-instcombine-lower-dbg-declare=0)
     endif()
   endif()
 
@@ -1601,15 +1591,13 @@ endif()
 # Pass flag to LLD so Android builds can allow debuggerd to properly symbolize
 # stack crashes (http://crbug.com/919499).
 if (USE_LLD AND ANDROID)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-rosegment")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-rosegment")
+  add_link_options(-Wl,--no-rosegment)
 endif()
 
 # TODO(crbug.com/1374347): Cleanup undefined symbol errors caught by
 # --no-undefined-version.
 if (USE_LLD AND NOT WIN32 AND NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--undefined-version")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--undefined-version")
+  add_link_options(-Wl,--undefined-version)
 endif()
 
 # Apple: pass --strict-auto-link to ld64.lld
@@ -1620,8 +1608,7 @@ endif()
 # After https://reviews.llvm.org/D140491, this will only happen if the link fails,
 # matching ld64. Passing `--strict-auto-link` restores the old behavior.
 if (USE_LLD AND APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--strict-auto-link")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--strict-auto-link")
+  add_link_options(-Wl,--strict-auto-link)
 endif()
 
 # LLD does call-graph-sorted binary layout by default when profile data is
@@ -1630,13 +1617,11 @@ endif()
 # beneficial.
 if (USE_LLD)
   if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /call-graph-profile-sort:no")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /call-graph-profile-sort:no")
+    add_link_options(/call-graph-profile-sort:no)
   elseif (NOT APPLE AND NOT MINGW AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(thakis): Once LLD's Mach-O port basically works, implement call
     # graph profile sorting for it, add an opt-out flag, and pass it here.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-call-graph-profile-sort")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-call-graph-profile-sort")
+    add_link_options(-Wl,--no-call-graph-profile-sort)
   endif()
 endif()
 
@@ -1758,13 +1743,11 @@ if (WIN32)
 
   # set linker option for x86
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH /largeaddressaware")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH /largeaddressaware")
+    add_link_options(/SAFESEH /largeaddressaware)
   endif()
 
   if (MSVC)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DYNAMICBASE /NXCOMPAT")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DYNAMICBASE /NXCOMPAT")
+    add_link_options(/DYNAMICBASE /NXCOMPAT)
   endif()
 
   if (MSVC AND ALLOW_XP)
@@ -1837,21 +1820,18 @@ if (ANDROID)
   # Don't allow visible symbols from libraries that contain
   # assembly code with symbols that aren't hidden properly.
   # http://crbug.com/448386
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs=libvpx_assembly_arm.a")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--exclude-libs=libvpx_assembly_arm.a")
+  add_link_options(-Wl,--exclude-libs=libvpx_assembly_arm.a)
 
   # Reduce the page size from 65536 in order to reduce binary size slightly
   # by shrinking the alignment gap between segments. This also causes all
   # segments to be mapped adjacently, which breakpad relies on.
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm64.*")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
+    add_link_options(-Wl,-z,max-page-size=4096)
   endif()
 
   # Instead of using an unwind lib from the toolchain,
   # buildtools/third_party/libunwind will be built and used directly.
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --unwindlib=none")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --unwindlib=none")
+  add_link_options(--unwindlib=none)
 
   list(APPEND YASS_APP_FEATURES "libunwind")
 
@@ -2035,8 +2015,7 @@ int main() {
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation -framework SystemConfiguration")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation -framework SystemConfiguration")
+    link_libraries("-framework Foundation" "-framework SystemConfiguration")
   endif()
 endif()
 
@@ -2444,12 +2423,10 @@ elseif (USE_TCMALLOC)
 
   # patching manually, see tcmalloc's README_windows.txt
   if (MSVC)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
+    add_link_options(/INCLUDE:__tcmalloc)
   endif()
   if (MINGW)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-u__tcmalloc")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-u__tcmalloc")
+    add_link_options(-Wl,-u__tcmalloc)
   endif()
 endif()
 
@@ -2507,7 +2484,7 @@ if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic" AND NOT ALLOW_XP AND ${CMAKE_BU
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
 
-  install(FILES "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION bin)
+  install(FILES "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 if (IOS)
@@ -3345,7 +3322,28 @@ endif()
 #           sqlite3 Library
 # *****************************************************************************************
 
-if (USE_SQLITE)
+if (USE_SYSTEM_SQLITE)
+  find_package(PkgConfig)
+  if (PKG_CONFIG_FOUND)
+    pkg_check_modules(SQLITE sqlite3)
+  endif()
+  if(NOT SQLITE_FOUND)
+    message(STATUS "System sqlite3 not found, using bundled one")
+    set(USE_SYSTEM_SQLITE FALSE)
+  endif()
+endif()
+
+if (USE_SYSTEM_SQLITE AND USE_SQLITE)
+  message(STATUS "Compiling with system sqlite3 library")
+  list(APPEND YASS_APP_FEATURES "system sqlite3 library")
+  set(SUPPORT_DEFINITIONS
+    HAVE_SQLITE
+    ${SUPPORT_DEFINITIONS}
+  )
+  include_directories(${SQLITE_INCLUDE_DIRS})
+  link_directories(${SQLITE_LIBRARY_DIRS})
+  link_libraries(${SQLITE_LIBRARIES})
+elseif (USE_SQLITE)
   message(STATUS "Compiling with bundled sqlite3 library")
   add_subdirectory(third_party/sqlite)
   list(APPEND YASS_APP_FEATURES "sqlite3")
@@ -3522,8 +3520,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   # this may happens
   if (COMPILER_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wno-unused-command-line-argument")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wno-unused-command-line-argument")
+    add_link_options(-Wno-unused-command-line-argument)
   endif()
 
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
@@ -3969,8 +3966,8 @@ if (CLI)
     )
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
-    install(TARGETS yass_cli RUNTIME DESTINATION bin)
-    install(FILES doc/yass_cli.1 DESTINATION share/man/man1)
+    install(TARGETS yass_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(FILES doc/yass_cli.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1/)
     # TODO add freebsd rc files
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
@@ -4020,8 +4017,8 @@ if (SERVER)
     )
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
-    install(TARGETS yass_server RUNTIME DESTINATION bin)
-    install(FILES doc/yass_server.1 DESTINATION share/man/man1)
+    install(TARGETS yass_server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(FILES doc/yass_server.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1/)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
       install(FILES yass-server${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass-server.service DESTINATION lib/systemd/system)
@@ -4624,7 +4621,7 @@ if (GUI)
     if (NOT CMAKE_SKIP_INSTALL_RULES)
       # installable, except on macOS when marked as MACOSX_BUNDLE
       if (NOT APPLE)
-        install(TARGETS ${APP_NAME} RUNTIME DESTINATION bin)
+        install(TARGETS ${APP_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
       endif()
 
       if (GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
