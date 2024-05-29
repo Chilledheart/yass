@@ -1106,6 +1106,8 @@ func buildStageGenerateBuildScript() {
 		} else {
 			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
 		}
+		// for compatibility, we build only gtk3 package for now
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_GTK4=off"))
 	}
 	cmakeCmd := append([]string{"cmake", ".."}, cmakeArgs...)
 	if noConfigureFlag {
