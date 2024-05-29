@@ -398,6 +398,12 @@ else()
   list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(LINUX ON)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(FREEBSD ON)
+endif()
+
 # handling bug with cmake+clang-cl
 # newer clang-cl produces "Note: including file: .\\foo.h"
 # unable to parse by cmake's CMakeDetermineCompilerId.cmake
@@ -473,7 +479,9 @@ cmake_dependent_option(
   USE_SQLITE OFF)
 
 option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
-option(USE_IOURING "Build with io uring support" OFF)
+cmake_dependent_option(
+  USE_IOURING "Build with io uring support" OFF
+  LINUX OFF)
 option(USE_SYSTEM_ZLIB "Build with system or vendered zlib" OFF)
 option(USE_SYSTEM_JSON "Build with system or vendered json library" OFF)
 
@@ -1856,7 +1864,7 @@ endif()
 
 if (USE_LIBCXX)
   add_definitions(-DHAVE_LIBCXX)
-  add_subdirectory(third_party/libc++)
+  add_subdirectory(third_party/libc++ EXCLUDE_FROM_ALL)
   link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")
   list(APPEND YASS_APP_FEATURES "libc++")
@@ -1876,6 +1884,7 @@ endif()
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
+include(CheckSymbolExists)
 include(CheckLibraryExists)
 
 check_c_source_compiles ("
@@ -1962,18 +1971,7 @@ else()
       link_directories(${ROOT_PATH}/lib)
     endforeach()
   endif()
-
-# simple socketpair test code
-set(SOCKETPAIR_C_CXX_TEST_SOURCE [====[
-#include <sys/types.h>
-#include <sys/socket.h>
-int main() {
-    int fds[2];
-    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
-}
-]====])
-  check_c_source_compiles("${SOCKETPAIR_C_CXX_TEST_SOURCE}"
-      HAVE_SOCKETPAIR)
+  check_symbol_exists(socketpair sys/socket.h HAVE_SOCKETPAIR)
   if (HAVE_SOCKETPAIR)
     set(SUPPORT_DEFINITIONS
       HAVE_SOCKETPAIR
@@ -1981,8 +1979,8 @@ int main() {
     )
   endif()
 
-  check_include_file(pwd.h HAVE_PWD_INCLUDE)
-  if (HAVE_PWD_INCLUDE)
+  check_include_file(pwd.h HAVE_PWD_H)
+  if (HAVE_PWD_H)
     set(SUPPORT_DEFINITIONS
       HAVE_PWD_H
       ${SUPPORT_DEFINITIONS}
@@ -2293,7 +2291,7 @@ if (ABSL_BUILD_TESTING)
   set(GMOCK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googlemock/include)
   set(GMOCK_MAIN_LIBRARY absl_gmock_main)
 endif()
-add_subdirectory(third_party/abseil-cpp)
+add_subdirectory(third_party/abseil-cpp EXCLUDE_FROM_ALL)
 
 set(SUPPORT_LIBS
   absl::base
@@ -2380,9 +2378,8 @@ elseif (USE_TCMALLOC)
   set(GPERFTOOLS_BUILD_STATIC ON CACHE BOOL "")
   set(GPERFTOOLS_ENABLE_INSTALL OFF CACHE BOOL "")
   set(GPERFTOOLS_BUILD_TESTING OFF CACHE BOOL "")
-  add_subdirectory(third_party/gperftools)
+  add_subdirectory(third_party/gperftools EXCLUDE_FROM_ALL)
 
-  set_target_properties(tcmalloc_minimal PROPERTIES EXCLUDE_FROM_ALL TRUE)
   list(APPEND YASS_APP_FEATURES "tcmalloc_minimal")
 
   set(TCMALLOC_LIB tcmalloc_minimal_static)
@@ -2414,7 +2411,7 @@ endif()
 # *****************************************************************************************
 
 message(STATUS "Compiling with bundled re2 library")
-add_subdirectory(third_party)
+add_subdirectory(third_party EXCLUDE_FROM_ALL)
 set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2649,7 +2646,7 @@ if (MINGW AND USE_LIBCXX)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -U__MINGW32__")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -U__MINGW32__")
 endif()
-add_subdirectory(third_party/boringssl/src)
+add_subdirectory(third_party/boringssl/src EXCLUDE_FROM_ALL)
 # restore hacks
 if (MINGW AND USE_LIBCXX)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
@@ -2720,7 +2717,7 @@ elseif (USE_MBEDTLS)
   set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "")
   set(INSTALL_MBEDTLS_HEADERS OFF CACHE BOOL "")
 
-  add_subdirectory(third_party/mbedtls)
+  add_subdirectory(third_party/mbedtls EXCLUDE_FROM_ALL)
 
   list(APPEND YASS_APP_FEATURES "mbedtls")
   set(SUPPORT_DEFINITIONS
@@ -2766,9 +2763,6 @@ target_link_libraries(asio_core PUBLIC
   )
 
 if (USE_IOURING)
-  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    message(FATAL_ERROR "io uring is only supported with linux")
-  endif()
   target_compile_definitions(asio_core PUBLIC ASIO_HAS_IO_URING)
   target_compile_definitions(asio_core PUBLIC ASIO_HAS_IO_URING_AS_DEFAULT)
   target_link_libraries(asio_core PUBLIC uring)
@@ -3008,7 +3002,7 @@ int main() {
     set(HAVE_GNU_POSIX_REGEX "ON" CACHE STRING "")
   endif()
 
-  add_subdirectory(third_party/benchmark)
+  add_subdirectory(third_party/benchmark EXCLUDE_FROM_ALL)
   # fix a typo in re.h
   target_compile_definitions(benchmark PRIVATE BENCHMARK_HAVE_STD_REGEX)
 endif()
@@ -3027,7 +3021,7 @@ endif()
 set(protobuf_BUILD_TESTS "OFF" CACHE STRING "")
 set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 set(protobuf_BUILD_SHARED_LIBS "OFF" CACHE STRING "")
-add_subdirectory(third_party/protobuf)
+add_subdirectory(third_party/protobuf EXCLUDE_FROM_ALL)
 # required because it is not bound with libproto/libproto-lite targets
 #list(APPEND YASS_APP_FEATURES "protobuf")
 set(SUPPORT_DEFINITIONS
@@ -3039,12 +3033,6 @@ set(SUPPORT_DEFINITIONS
 # fix protoc's path
 set_target_properties(protoc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-
-# exclude non-native protoc from being build
-set_target_properties(protoc PROPERTIES EXCLUDE_FROM_ALL TRUE)
-set_target_properties(libprotoc PROPERTIES EXCLUDE_FROM_ALL TRUE)
-set_target_properties(libprotobuf PROPERTIES EXCLUDE_FROM_ALL TRUE)
-set_target_properties(libprotobuf-lite PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 include(Protobuf)
 add_protoc(protoc yass)
@@ -3072,7 +3060,7 @@ if (USE_SYSTEM_ZLIB)
   list(APPEND YASS_APP_FEATURES "system zlib")
 else()
   message(STATUS "Compiling with bundled zlib")
-  add_subdirectory(third_party/zlib)
+  add_subdirectory(third_party/zlib EXCLUDE_FROM_ALL)
   list(APPEND YASS_APP_FEATURES "zlib")
   set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 endif()
@@ -3115,7 +3103,7 @@ elseif (USE_CARES)
   set(CARES_STATIC_PIC ON CACHE BOOL "")
   set(CARES_BUILD_TESTS OFF CACHE BOOL "")
   set(CARES_INSTALL OFF CACHE BOOL "")
-  add_subdirectory(third_party/c-ares)
+  add_subdirectory(third_party/c-ares EXCLUDE_FROM_ALL)
 
   set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
 endif()
@@ -3155,7 +3143,7 @@ elseif (USE_NGHTTP2)
   set(BUILD_STATIC_LIBS ON CACHE BOOL "")
   set(ENABLE_DOC OFF CACHE BOOL "")
   set(DISABLE_INSTALL ON CACHE BOOL "")
-  add_subdirectory(third_party/nghttp2)
+  add_subdirectory(third_party/nghttp2 EXCLUDE_FROM_ALL)
   if (COMPILER_CLANG)
     target_compile_options(nghttp2_static PRIVATE -Wno-cast-qual)
     target_compile_options(nghttp2_static PRIVATE -Wno-implicit-fallthrough)
@@ -3195,7 +3183,7 @@ endif()
 
 set(SUPPORT_LIBS url ${SUPPORT_LIBS})
 if (USE_QUICHE)
-  add_subdirectory(third_party/quiche)
+  add_subdirectory(third_party/quiche EXCLUDE_FROM_ALL)
   list(APPEND YASS_APP_FEATURES "quiche")
   set(SUPPORT_DEFINITIONS
     HAVE_QUICHE
@@ -3252,7 +3240,7 @@ endif()
 
 if (USE_LEVELDB)
   message(STATUS "Compiling with bundled snappy library")
-  add_subdirectory(third_party/snappy)
+  add_subdirectory(third_party/snappy EXCLUDE_FROM_ALL)
   include_directories(third_party/snappy/src)
 endif()
 
@@ -3270,7 +3258,7 @@ if (USE_LEVELDB)
   set(ZSTD_PROGRAMS_LINK_SHARED "OFF" CACHE STRING "")
   set(ZSTD_INSTALL "OFF" CACHE STRING "")
   set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
-  add_subdirectory(third_party/zstd/build/cmake)
+  add_subdirectory(third_party/zstd/build/cmake EXCLUDE_FROM_ALL)
   include_directories(third_party/zstd/lib)
 endif()
 
@@ -3288,7 +3276,7 @@ if (USE_LEVELDB)
   set(HAVE_SNAPPY 1)
   set(HAVE_ZSTD 1)
   set(HAVE_TCMALLOC 0)
-  add_subdirectory(third_party/leveldb)
+  add_subdirectory(third_party/leveldb EXCLUDE_FROM_ALL)
   list(APPEND YASS_APP_FEATURES "leveldb")
   set(SUPPORT_DEFINITIONS
     HAVE_LEVELDB
@@ -3324,7 +3312,7 @@ if (USE_SYSTEM_SQLITE AND USE_SQLITE)
   link_libraries(${SQLITE_LIBRARIES})
 elseif (USE_SQLITE)
   message(STATUS "Compiling with bundled sqlite3 library")
-  add_subdirectory(third_party/sqlite)
+  add_subdirectory(third_party/sqlite EXCLUDE_FROM_ALL)
   list(APPEND YASS_APP_FEATURES "sqlite3")
   set(SUPPORT_DEFINITIONS
     HAVE_SQLITE
