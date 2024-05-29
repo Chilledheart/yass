@@ -79,9 +79,7 @@ jobs:
         with:
           path: |
             freebsd-${{ matrix.abi }}-toolchain
-          key: freebsd-${{ matrix.arch }}-${{ matrix.abi }}-v1
-          restore-keys: |
-            freebsd-${{ matrix.arch }}-${{ matrix.abi }}-
+          key: freebsd-${{ matrix.arch }}-${{ matrix.abi }}-14-0-and-13-3-v1
       - name: Build build tool
         run: |
           cd tools
