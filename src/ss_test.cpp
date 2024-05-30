@@ -800,9 +800,7 @@ int main(int argc, char** argv) {
 
   int ret = RUN_ALL_TESTS();
 
-#ifdef HAVE_TCMALLOC
-  PrintTcmallocStats();
-#endif
+  PrintMallocStats();
 
 #ifdef HAVE_CURL
   curl_global_cleanup();
