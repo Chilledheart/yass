@@ -4662,6 +4662,7 @@ if (BUILD_TESTS)
     src/net/cipher_test.cpp
     src/net/c-ares_test.cpp
     src/net/padding_test.cpp
+    src/net/dns_addrinfo_helper_test.cpp
     src/net/dns_message_test.cpp
     src/net/doh_resolver_test.cpp
     src/net/dot_resolver_test.cpp

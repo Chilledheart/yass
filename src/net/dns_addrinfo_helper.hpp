@@ -11,7 +11,7 @@ extern "C" struct addrinfo;
 
 namespace net {
 
-bool is_localhost(const std::string& host);
+bool is_localhost(std::string_view host);
 struct addrinfo* addrinfo_loopback(bool is_ipv6, int port);
 struct addrinfo* addrinfo_dup(bool is_ipv6, const net::dns_message::response& response, int port);
 void addrinfo_freedup(struct addrinfo* addrinfo);
