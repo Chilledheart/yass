@@ -20,22 +20,17 @@ namespace net {
 
 using namespace dns_message;
 
+using namespace std::string_view_literals;
+
 /* RFC6761 6.3 says : The domain "localhost." and any names falling within ".localhost." */
-bool is_localhost(const std::string& host) {
+bool is_localhost(std::string_view host) {
   if (host.empty()) {
     return false;
   }
-  if (host == "localhost") {
+  if (host == "localhost"sv) {
     return true;
   }
-  constexpr const char suffix[] = ".localhost";
-  constexpr const int suffixLength = std::size(suffix) - 1;
-  static_assert(suffixLength == 10);
-  if (host.size() < suffixLength) {
-    return false;
-  }
-
-  return 0 == host.compare(host.size() - suffixLength, suffixLength, suffix, suffixLength);
+  return host.ends_with(".localhost"sv);
 }
 
 // TODO more strictly we should load loopback address from system first

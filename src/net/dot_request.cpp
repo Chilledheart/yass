@@ -38,7 +38,7 @@ void DoTRequest::DoRequest(dns_message::DNStype dns_type, const std::string& hos
   cb_ = std::move(cb);
 
   if (is_localhost(host_)) {
-    VLOG(3) << "DoT Request: is_localhost host: " << host_;
+    VLOG(3) << "DoT Request: localhost host: " << host_;
     scoped_refptr<DoTRequest> self(this);
     asio::post(io_context_, [this, self]() {
       struct addrinfo* addrinfo = addrinfo_loopback(dns_type_ == dns_message::DNS_TYPE_AAAA, port_);
