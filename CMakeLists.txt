@@ -443,7 +443,7 @@ cmake_dependent_option(
 
 cmake_dependent_option(
   USE_MIMALLOC "Use mimalloc" OFF
-  "NOT USE_TCMALLOC; NOT WIN32; NOT APPLE; NOT ANDROID; NOT OHOS" OFF)
+  "NOT USE_TCMALLOC; NOT WIN32; NOT IOS; NOT ANDROID; NOT OHOS" OFF)
 
 cmake_dependent_option(
   USE_SYSTEM_MIMALLOC "Use system or vendored mimalloc" OFF
