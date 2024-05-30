@@ -124,22 +124,13 @@ else()
     )
 
   # Make sure we don't link against the system libstdc++ or libc++.
-  if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" AND COMPILER_CLANG)
-    # Some bugs about -notstdlib++ on FreeBSD port...
-    # still linking to libgcc
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-builtin-abs")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-builtin-abs")
-
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nodefaultlibs")
-
-    set(libcxx_PUBLIC_LIBRARIES
-      ${libcxx_PUBLIC_LIBRARIES}
-      pthread c gcc_s m rt
-      )
-  elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0 AND NOT (MINGW AND MINGW_MSVCRT100))
+  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0 AND NOT (MINGW AND MINGW_MSVCRT100))
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++")
+    if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-L${CMAKE_CURRENT_SOURCE_DIR}/freebsd")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-L${CMAKE_CURRENT_SOURCE_DIR}/freebsd")
+    endif()
   else()
     # Gcc has a built-in abs() definition with default visibility.
     # If it was not disabled, it would conflict with libc++'s abs()
@@ -155,19 +146,20 @@ else()
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83931); -nodefaultlibs
     # removes all of the default libraries, so add back the ones that we need.
     if (UNIX)
-      set(libcxx_PUBLIC_LIBRARIES
-        ${libcxx_PUBLIC_LIBRARIES}
-        c m
-        )
       if (APPLE)
         set(libcxx_PUBLIC_LIBRARIES
           ${libcxx_PUBLIC_LIBRARIES}
-          gcc_eh gcc System
+          c m gcc_eh gcc System
+          )
+      elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+          pthread c gcc_s m rt
           )
       else()
         set(libcxx_PUBLIC_LIBRARIES
           ${libcxx_PUBLIC_LIBRARIES}
-          gcc_s rt
+          c m gcc_s rt
           )
       endif()
     elseif (MINGW AND MINGW_MSVCRT100)
