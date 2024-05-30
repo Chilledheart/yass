@@ -15,6 +15,14 @@
 #include "feature.h"
 #include "version.h"
 
+#ifdef HAVE_TCMALLOC
+#include <gperftools/tcmalloc.h>
+#endif
+
+#ifdef HAVE_MIMALLOC
+#include <mimalloc.h>
+#endif
+
 namespace config {
 
 static void ParseConfigFileOption(int argc, const char** argv) {
@@ -59,6 +67,12 @@ static void ParseConfigFileOption(int argc, const char** argv) {
       std::cout << absl::flags_internal::ShortProgramInvocationName() << " " << YASS_APP_TAG << std::endl;
       std::cout << "Last Change: " << YASS_APP_LAST_CHANGE << std::endl;
       std::cout << "Features: " << YASS_APP_FEATURES << std::endl;
+#ifdef HAVE_TCMALLOC
+      std::cerr << "TCMALLOC: " << tc_version(nullptr, nullptr, nullptr) << std::endl;
+#endif
+#ifdef HAVE_MIMALLOC
+      std::cerr << "MIMALLOC: " << mi_version() << std::endl;
+#endif
 #ifndef NDEBUG
       std::cout << "Debug build (NDEBUG not #defined)" << std::endl;
 #endif
@@ -72,6 +86,12 @@ static void ParseConfigFileOption(int argc, const char** argv) {
   std::cerr << "Application starting: " << YASS_APP_TAG << std::endl;
   std::cerr << "Last Change: " << YASS_APP_LAST_CHANGE << std::endl;
   std::cerr << "Features: " << YASS_APP_FEATURES << std::endl;
+#ifdef HAVE_TCMALLOC
+  std::cerr << "TCMALLOC: " << tc_version(nullptr, nullptr, nullptr) << std::endl;
+#endif
+#ifdef HAVE_MIMALLOC
+  std::cerr << "MIMALLOC: " << mi_version() << std::endl;
+#endif
 #ifndef NDEBUG
   std::cerr << "Debug build (NDEBUG not #defined)\n" << std::endl;
 #endif
@@ -96,6 +116,12 @@ void ReadConfigFileAndArguments(int argc, const char** argv) {
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG << " type: " << ProgramTypeToStr(pType);
   LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
   LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
+#ifdef HAVE_TCMALLOC
+  LOG(WARNING) << "TCMALLOC: " << tc_version(nullptr, nullptr, nullptr);
+#endif
+#ifdef HAVE_MIMALLOC
+  LOG(WARNING) << "MIMALLOC: " << mi_version();
+#endif
 #ifndef NDEBUG
   LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
 #endif
