@@ -225,7 +225,7 @@ jobs:
           rm -f *.tar.gz
       - name: Build
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test -use-tcmalloc=false \
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
             --clang-path $PWD/third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64 -no-packaging
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}

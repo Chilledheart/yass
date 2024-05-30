@@ -434,10 +434,20 @@ option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
 
-option(USE_TCMALLOC "Build with tcmalloc" OFF)
+cmake_dependent_option(
+  USE_TCMALLOC "Build with tcmalloc" OFF
+  "LINUX" OFF)
 cmake_dependent_option(
   USE_SYSTEM_TCMALLOC "Build with system or vendored tcmalloc" OFF
   USE_TCMALLOC OFF)
+
+cmake_dependent_option(
+  USE_MIMALLOC "Use mimalloc" OFF
+  "NOT USE_TCMALLOC; NOT WIN32; NOT APPLE; NOT ANDROID; NOT OHOS" OFF)
+
+cmake_dependent_option(
+  USE_SYSTEM_MIMALLOC "Use system or vendored mimalloc" OFF
+  USE_MIMALLOC OFF)
 
 option(USE_LIBCXX "Build with libc++" ON)
 
@@ -1908,12 +1918,21 @@ endif()
 if (NOT WIN32 AND NOT APPLE)
   check_library_exists(c pipe2 "" HAVE_PIPE2)
   check_library_exists(c dup3 "" HAVE_DUP3)
+  # for android mallinfo2 is alias to mallinfo
+  check_symbol_exists(mallinfo malloc.h HAVE_MALLINFO)
+  check_symbol_exists(mallinfo2 malloc.h HAVE_MALLINFO2)
 endif()
 if (HAVE_PIPE2)
   add_definitions(-DHAVE_PIPE2)
 endif()
 if (HAVE_DUP3)
   add_definitions(-DHAVE_DUP3)
+endif()
+if (HAVE_MALLINFO)
+  add_definitions(-DHAVE_MALLINFO)
+endif()
+if (HAVE_MALLINFO2)
+  add_definitions(-DHAVE_MALLINFO2)
 endif()
 
 # *****************************************************************************************
@@ -2320,24 +2339,10 @@ set(SUPPORT_LIBS
 # only support platform: linux
 # mac: __thread limitation
 #
+
 if (USE_TCMALLOC AND NOT USE_SYSTEM_TCMALLOC)
-  if (WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    if (NOT (OS_X86 OR OS_X64 OR OS_ARM OR OS_AARCH64 OR OS_MIPS OR OS_MIPS64 OR OS_RISCV64 OR OS_LOONGARCH64))
-      message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
-      set(USE_TCMALLOC OFF)
-    endif()
-    # FIXME tcmalloc's preamble patcher doesn't support arm64 assembly
-    if (WIN32 AND OS_AARCH64)
-      message(WARNING "tcmalloc: arm64 windows is not supported, disabling...")
-      set(USE_TCMALLOC OFF)
-    endif()
-    # FIXME windows binaries doesn't pass UtilsTest.GetHomeDir for both mingw and msvc builds
-    if (WIN32)
-      message(WARNING "tcmalloc: mingw and msvc builds are not supported, disabling...")
-      set(USE_TCMALLOC OFF)
-    endif()
-  else()
-    message(WARNING "tcmalloc: only Linux and FreeBSD are supported, disabling...")
+  if (NOT (OS_X86 OR OS_X64 OR OS_ARM OR OS_AARCH64 OR OS_MIPS OR OS_MIPS64 OR OS_RISCV64 OR OS_LOONGARCH64))
+    message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
     set(USE_TCMALLOC OFF)
   endif()
 endif()
@@ -2389,6 +2394,7 @@ elseif (USE_TCMALLOC)
     ${SUPPORT_DEFINITIONS}
   )
   set(SUPPORT_INCLUDE_DIRS
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/gperftools
     third_party/gperftools/src
     ${SUPPORT_INCLUDE_DIRS}
   )
@@ -2404,6 +2410,69 @@ elseif (USE_TCMALLOC)
   if (MINGW)
     add_link_options(-Wl,-u__tcmalloc)
   endif()
+endif()
+
+# *****************************************************************************************
+#           mimalloc Library
+# *****************************************************************************************
+
+if (USE_SYSTEM_MIMALLOC)
+  find_package(PkgConfig)
+  if (PKG_CONFIG_FOUND)
+    pkg_check_modules(MIMALLOC mimalloc)
+  endif()
+  if(NOT MIMALLOC_FOUND)
+    message(STATUS "System mimalloc not found, using bundled one")
+    set(USE_SYSTEM_MIMALLOC FALSE)
+  endif()
+  if (USE_LIBCXX)
+    message(STATUS "Cannot use system mimalloc with custom libc++, using bundled one")
+    set(USE_SYSTEM_MIMALLOC FALSE)
+  endif()
+endif()
+
+# By default, we build a bundled mimalloc and statically-link it to
+# mold. If you want to dynamically link to the system's
+# libmimalloc.so, pass -DUSE_SYSTEM_MIMALLOC=ON.
+if (USE_MIMALLOC AND USE_SYSTEM_MIMALLOC)
+  message(STATUS "Compiling with system tcmalloc support")
+  list(APPEND YASS_APP_FEATURES "system mimalloc")
+
+  set(MIMALLOC_LIB mimalloc)
+
+  set(SUPPORT_DEFINITIONS
+    HAVE_MIMALLOC
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS
+    ${SUPPORT_LIBS}
+    ${MIMALLOC_LIB}
+  )
+
+elseif(USE_MIMALLOC)
+  message(STATUS "Compiling with bundled mimalloc support")
+
+  set(MI_BUILD_STATIC ON CACHE INTERNAL "")
+  set(MI_BUILD_SHARED OFF CACHE INTERNAL "")
+  set(MI_BUILD_OBJECT OFF CACHE INTERNAL "")
+  set(MI_BUILD_TESTS OFF CACHE INTERNAL "")
+  set(MI_ENABLE_INSTALL OFF CACHE INTERNAL "")
+  set(MI_LIBC_MUSL "${USE_MUSL}" CACHE INTERNAL "")
+  add_subdirectory(third_party/mimalloc EXCLUDE_FROM_ALL)
+  target_compile_definitions(mimalloc-static PRIVATE MI_USE_ENVIRON=0)
+
+  set(MIMALLOC_LIB mimalloc-static)
+
+  set(SUPPORT_DEFINITIONS
+    HAVE_MIMALLOC
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS
+    ${SUPPORT_LIBS}
+    ${MIMALLOC_LIB}
+    )
+
+  list(APPEND YASS_APP_FEATURES "mimalloc")
 endif()
 
 # *****************************************************************************************
@@ -2656,9 +2725,6 @@ set(SUPPORT_LIBS crypto ssl ${SUPPORT_LIBS})
 foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
 endforeach()
-
-set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
-set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 if (BORINGSSL_BUILD_TESTS)
   add_custom_target(check_boringssl
@@ -3714,6 +3780,10 @@ endif()
 
 if (USE_TCMALLOC)
   target_link_libraries(yass_core PUBLIC ${TCMALLOC_LIB})
+endif()
+
+if (USE_MIMALLOC)
+  target_link_libraries(yass_core PUBLIC ${MIMALLOC_LIB})
 endif()
 
 target_include_directories(yass_core PUBLIC

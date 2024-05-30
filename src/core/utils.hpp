@@ -212,9 +212,7 @@ PlatformFile OpenReadFile(const std::string& path);
 PlatformFile OpenReadFile(const std::wstring& path);
 #endif
 
-#ifdef HAVE_TCMALLOC
-void PrintTcmallocStats();
-#endif
+void PrintMallocStats();
 
 #ifdef __APPLE__
 #if BUILDFLAG(IS_IOS)

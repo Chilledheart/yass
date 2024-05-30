@@ -56,7 +56,6 @@ var clangPath string
 var useLibCxxFlag bool
 var enableLtoFlag bool
 var useMoldFlag bool
-var useTcmallocFlag bool
 
 var clangTidyModeFlag bool
 var clangTidyExecutablePathFlag string
@@ -170,7 +169,6 @@ func InitFlag() {
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 	flag.BoolVar(&enableLtoFlag, "enable-lto", true, "Enable lto")
 	flag.BoolVar(&useMoldFlag, "use-mold", false, "Use Mold Linker")
-	flag.BoolVar(&useTcmallocFlag, "use-tcmalloc", true, "Use tcmalloc if possible")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
 	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
@@ -878,11 +876,6 @@ func buildStageGenerateBuildScript() {
 		if msvcTargetArchFlag == "arm" || msvcTargetArchFlag == "arm64" {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_ASM_FLAGS=--target=%s", targetTriple))
 		}
-		if useTcmallocFlag {
-			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
-		} else {
-			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
-		}
 	}
 
 	if systemNameFlag == "darwin" {
@@ -951,11 +944,6 @@ func buildStageGenerateBuildScript() {
 
 		if mingwDir != clangPath {
 			getAndFixMinGWLibunwind(mingwDir)
-		}
-		if useTcmallocFlag {
-			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
-		} else {
-			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
 		}
 	}
 
@@ -1061,14 +1049,16 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DARM_CPU=%s", armCpuFlag))
 		}
 		if subsystem == "" {
-			if useTcmallocFlag {
-				cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
-			} else {
-				cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
-			}
-			// for compatibility, we build only gtk3 package for now
-			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_GTK4=off"))
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
+		} else if subsystem == "musl" {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
+			cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=on")
+		} else {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
+			cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=off")
 		}
+		// for compatibility, we build only gtk3 package for now
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_GTK4=off"))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
 
@@ -1104,11 +1094,9 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", llvmArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", llvmTarget))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
-		if useTcmallocFlag {
-			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
-		} else {
-			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
-		}
+		// FIXME not enabled due to linkage issue
+		cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
+		cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=off")
 		// for compatibility, we build only gtk3 package for now
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_GTK4=off"))
 	}

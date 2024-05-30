@@ -65,3 +65,6 @@
 [submodule "third_party/gperftools"]
 	path = third_party/gperftools
 	url = https://github.com/Chilledheart/gperftools
+[submodule "third_party/mimalloc"]
+	path = third_party/mimalloc
+	url = https://github.com/Chilledheart/mimalloc

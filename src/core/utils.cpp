@@ -18,6 +18,14 @@
 #include <gperftools/malloc_extension.h>
 #endif
 
+#ifdef HAVE_MIMALLOC
+#include <mimalloc.h>
+#endif
+
+#if defined(HAVE_MALLINFO) || defined(HAVE_MALLINFO2) || BUILDFLAG(IS_FREEBSD)
+#include <malloc.h>
+#endif
+
 #include <absl/flags/flag.h>
 #include <absl/flags/internal/program_name.h>
 #include <absl/strings/str_cat.h>
@@ -385,8 +393,8 @@ bool IsProgramConsole(int fd) {
 }
 #endif
 
+void PrintMallocStats() {
 #ifdef HAVE_TCMALLOC
-void PrintTcmallocStats() {
   constexpr const char* properties[] = {
       "generic.current_allocated_bytes",
       "generic.heap_size",
@@ -402,8 +410,39 @@ void PrintTcmallocStats() {
       LOG(ERROR) << "TCMALLOC: " << property << " = " << size << " bytes";
     }
   }
-}
+#elif defined(HAVE_MIMALLOC)
+  auto printer = [](const char* msg, void* arg) { LOG(ERROR) << "MIMALLOC: " << msg; };
+  mi_stats_print_out(printer, nullptr);
+#elif defined(HAVE_MALLINFO2) && !defined(MEMORY_SANITIZER)
+  struct mallinfo2 info = mallinfo2();
+  LOG(ERROR) << "MALLOC: non-mmapped space allocated from system: " << info.arena;
+  LOG(ERROR) << "MALLOC: number of free chunks: " << info.ordblks;
+  LOG(ERROR) << "MALLOC: number of fastbin blocks: " << info.smblks;
+  LOG(ERROR) << "MALLOC: number of mmapped regions: " << info.hblks;
+  LOG(ERROR) << "MALLOC: space in mmapped regions: " << info.hblkhd;
+  LOG(ERROR) << "MALLOC: space available in freed fastbin blocks: " << info.fsmblks;
+  LOG(ERROR) << "MALLOC: total allocated space: " << info.uordblks;
+  LOG(ERROR) << "MALLOC: total free space: " << info.fordblks;
+  LOG(ERROR) << "MALLOC: top-most, releasable (via malloc_trim) space: " << info.keepcost;
+#elif defined(HAVE_MALLINFO) && !defined(MEMORY_SANITIZER)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  struct mallinfo info = mallinfo();
+#pragma GCC diagnostic pop
+  LOG(ERROR) << "MALLOC: non-mmapped space allocated from system: " << info.arena;
+  LOG(ERROR) << "MALLOC: number of free chunks: " << info.ordblks;
+  LOG(ERROR) << "MALLOC: number of fastbin blocks: " << info.smblks;
+  LOG(ERROR) << "MALLOC: number of mmapped regions: " << info.hblks;
+  LOG(ERROR) << "MALLOC: space in mmapped regions: " << info.hblkhd;
+  LOG(ERROR) << "MALLOC: space available in freed fastbin blocks: " << info.fsmblks;
+  LOG(ERROR) << "MALLOC: total allocated space: " << info.uordblks;
+  LOG(ERROR) << "MALLOC: total free space: " << info.fordblks;
+  LOG(ERROR) << "MALLOC: top-most, releasable (via malloc_trim) space: " << info.keepcost;
+#elif BUILDFLAG(IS_FREEBSD)
+  auto printer = [](void* data, const char* msg) { LOG(ERROR) << "MALLOC: " << msg; };
+  malloc_stats_print(printer, nullptr, nullptr);
 #endif
+}
 
 template <typename T>
 static void HumanReadableByteCountBinT(T* ss, uint64_t bytes) {
