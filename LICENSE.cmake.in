@@ -79,3 +79,7 @@
 === zlib ==
 
 @_ZLIB_LICENSE@
+
+=== mimalloc ==
+
+@_MIMALLOC_LICENSE@

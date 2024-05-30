@@ -4710,6 +4710,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/gperftools/COPYING                  _TCMALLOC_LICENSE)
   file(READ third_party/tun2proxy/LICENSE                   _TUN2PROXY_LICENSE)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
+  file(READ third_party/mimalloc/LICENSE                    _MIMALLOC_LICENSE)
 
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
   configure_file("LICENSE.cmake.in" "${LICENSE_FILE}" @ONLY)
