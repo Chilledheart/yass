@@ -2234,7 +2234,7 @@ func postStateArchives() map[string][]string {
 	var dllPaths []string
 	var dbgPaths []string
 
-	if systemNameFlag == "windows" {
+	if systemNameFlag == "windows" || systemNameFlag == "mingw" {
 		entries, _ := ioutil.ReadDir("./")
 		for _, entry := range entries {
 			name := entry.Name()
