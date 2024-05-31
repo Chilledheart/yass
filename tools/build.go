@@ -873,6 +873,10 @@ func buildStageGenerateBuildScript() {
 		if msvcTargetArchFlag == "arm" || msvcTargetArchFlag == "arm64" {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_ASM_FLAGS=--target=%s", targetTriple))
 		}
+
+		// if msvcCrtLinkageFlag == "dynamic" {
+		// 	cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=on")
+		// }
 	}
 
 	if systemNameFlag == "darwin" {
@@ -942,6 +946,10 @@ func buildStageGenerateBuildScript() {
 		if mingwDir != clangPath {
 			getAndFixMinGWLibunwind(mingwDir)
 		}
+
+		// if !mingwAllowXpFlag && targetAbi != "i686" {
+		// 	cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=on")
+		// }
 	}
 
 	if systemNameFlag == "ios" {
