@@ -179,6 +179,8 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
   cairo_debug_reset_static_data();
   FcFini();
 
+  PrintMallocStats();
+
   return ret;
 }
 
