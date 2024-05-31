@@ -436,7 +436,7 @@ option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" 
 
 cmake_dependent_option(
   USE_TCMALLOC "Build with tcmalloc" OFF
-  "LINUX" OFF)
+  "LINUX OR WIN32" OFF)
 cmake_dependent_option(
   USE_SYSTEM_TCMALLOC "Build with system or vendored tcmalloc" OFF
   USE_TCMALLOC OFF)
@@ -2345,6 +2345,15 @@ if (USE_TCMALLOC AND NOT USE_SYSTEM_TCMALLOC)
     message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
     set(USE_TCMALLOC OFF)
   endif()
+  if (MSVC AND NOT MSVC_CRT_LINKAGE STREQUAL "dynamic")
+    message(WARNING "tcmalloc: static crt build is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  # FIXME untested on an woa machine
+  if (WIN32 AND OS_AARCH64)
+    message(WARNING "tcmalloc: aarch64 build on windows is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
 endif()
 
 if (USE_SYSTEM_TCMALLOC)
@@ -2374,7 +2383,7 @@ if (USE_SYSTEM_TCMALLOC AND USE_TCMALLOC)
     ${TCMALLOC_LIB}
     ${SUPPORT_LIBS}
     )
-elseif (USE_TCMALLOC)
+elseif (USE_TCMALLOC AND NOT WIN32)
   message(STATUS "Compiling with bundled tcmalloc support")
 
   set(GPERFTOOLS_BUILD_DEBUGALLOC OFF CACHE BOOL "")
@@ -2402,13 +2411,56 @@ elseif (USE_TCMALLOC)
     ${TCMALLOC_LIB}
     ${SUPPORT_LIBS}
     )
+elseif (USE_TCMALLOC AND WIN32)
+  message(STATUS "Compiling with bundled tcmalloc support")
+
+  set(GPERFTOOLS_BUILD_DEBUGALLOC OFF CACHE BOOL "")
+  set(gperftools_build_minimal ON CACHE BOOL "")
+  set(gperftools_build_benchmark OFF CACHE BOOL "")
+  set(GPERFTOOLS_BUILD_STATIC OFF CACHE BOOL "")
+  set(GPERFTOOLS_ENABLE_INSTALL OFF CACHE BOOL "")
+  set(GPERFTOOLS_BUILD_TESTING OFF CACHE BOOL "")
+  add_subdirectory(third_party/gperftools EXCLUDE_FROM_ALL)
+
+  list(APPEND YASS_APP_FEATURES "tcmalloc_minimal (dll)")
+
+  set(TCMALLOC_LIB tcmalloc_minimal)
+  set_target_properties(tcmalloc_minimal PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_target_properties(tcmalloc_minimal PROPERTIES PREFIX "")
+  set_target_properties(tcmalloc_minimal PROPERTIES OUTPUT_NAME "tcmalloc")
+
+  set(SUPPORT_DEFINITIONS
+    HAVE_TCMALLOC
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_INCLUDE_DIRS
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/gperftools
+    third_party/gperftools/src
+    ${SUPPORT_INCLUDE_DIRS}
+  )
+  set(SUPPORT_LIBS
+    ${TCMALLOC_LIB}
+    ${SUPPORT_LIBS}
+    )
+
+  install(TARGETS tcmalloc_minimal RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
   # patching manually, see tcmalloc's README_windows.txt
   if (MSVC)
-    add_link_options(/INCLUDE:__tcmalloc)
+    if (OS_X86)
+      add_link_options(/INCLUDE:__tcmalloc)
+    else()
+      add_link_options(/INCLUDE:_tcmalloc)
+    endif()
   endif()
   if (MINGW)
-    add_link_options(-Wl,-u__tcmalloc)
+    if (OS_X86)
+      add_link_options(-Wl,-u__tcmalloc)
+    else()
+      add_link_options(-Wl,-u_tcmalloc)
+    endif()
+    # reduce the binary size
+    target_link_options(tcmalloc_minimal PRIVATE "-s")
   endif()
 endif()
 

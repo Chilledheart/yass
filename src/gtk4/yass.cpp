@@ -221,6 +221,8 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
   FcFini();
 #endif
 
+  PrintMallocStats();
+
   return ret;
 }
 
