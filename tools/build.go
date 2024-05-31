@@ -877,6 +877,9 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_ASM_FLAGS=--target=%s", targetTriple))
 		}
 
+		if msvcCrtLinkageFlag == "dynamic" && (msvcTargetArchFlag == "x86" || msvcTargetArchFlag == "x64") {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
+		}
 		// if msvcCrtLinkageFlag == "dynamic" {
 		// 	cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=on")
 		// }
@@ -950,6 +953,9 @@ func buildStageGenerateBuildScript() {
 			getAndFixMinGWLibunwind(mingwDir)
 		}
 
+		if targetAbi == "i686" || targetAbi == "x86_64" {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
+		}
 		// if !mingwAllowXpFlag && targetAbi != "i686" {
 		// 	cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=on")
 		// }
