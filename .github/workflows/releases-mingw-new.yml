@@ -73,8 +73,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            third_party/llvm-mingw-20231128-${{ matrix.variant }}-ubuntu-20.04-x86_64
-          key: ${{ runner.os }}-mingw64-third_party-llvm-20231128-${{ matrix.variant }}
+            third_party/llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64
+          key: ${{ runner.os }}-mingw64-third_party-llvm-20240518-${{ matrix.variant }}
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v4
@@ -110,8 +110,8 @@ jobs:
         if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
-          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
-          tar -xf llvm-mingw-20231128-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240518/llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
           rm -vf llvm-mingw-*.xz
           popd
       - name: "Download dependency: curl"
@@ -162,7 +162,7 @@ jobs:
           export LC_ALL=en_US.UTF-8
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw \
             -build-test -build-benchmark \
-            -mingw-dir $PWD/third_party/llvm-mingw-20231128-${{ matrix.variant }}-ubuntu-20.04-x86_64 \
+            -mingw-dir $PWD/third_party/llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64 \
             ${{ env.BUILD_OPTIONS }}
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}

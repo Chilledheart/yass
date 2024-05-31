@@ -214,6 +214,14 @@ bool IsProgramConsole(HANDLE handle) {
 }
 
 static const wchar_t* kDllWhiteList[] = {
+#ifdef HAVE_TCMALLOC
+    L"tcmalloc.dll",
+#endif
+#ifdef HAVE_MIMALLOC
+    L"mimalloc-override.dll",
+    L"mimalloc-redirect.dll",
+    L"mimalloc-redirect32.dll",
+#endif
 #ifndef _LIBCPP_MSVCRT
     // msvc runtime, still searched current directory
     // under dll search security mode
