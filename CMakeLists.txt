@@ -2425,9 +2425,16 @@ elseif (USE_TCMALLOC AND WIN32)
   list(APPEND YASS_APP_FEATURES "tcmalloc_minimal (dll)")
 
   set(TCMALLOC_LIB tcmalloc_minimal)
+
   set_target_properties(tcmalloc_minimal PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_target_properties(tcmalloc_minimal PROPERTIES PREFIX "")
-  set_target_properties(tcmalloc_minimal PROPERTIES OUTPUT_NAME "tcmalloc")
+
+  if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(TCMALLOC_DLL_SUFFIX "32")
+  else()
+    set(TCMALLOC_DLL_SUFFIX "")
+  endif()
+  set_target_properties(tcmalloc_minimal PROPERTIES OUTPUT_NAME "tcmalloc${TCMALLOC_DLL_SUFFIX}")
 
   set(SUPPORT_DEFINITIONS
     HAVE_TCMALLOC

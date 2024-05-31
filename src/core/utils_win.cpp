@@ -215,13 +215,20 @@ bool IsProgramConsole(HANDLE handle) {
 
 static const wchar_t* kDllWhiteList[] = {
 #ifdef HAVE_TCMALLOC
+#if defined(_M_X64) || defined(_M_ARM64)
     L"tcmalloc.dll",
+#else
+    L"tcmalloc32.dll",
 #endif
+#endif  //  HAVE_TCMALLOC
 #ifdef HAVE_MIMALLOC
     L"mimalloc-override.dll",
+#if defined(_M_X64) || defined(_M_ARM64)
     L"mimalloc-redirect.dll",
+#else
     L"mimalloc-redirect32.dll",
 #endif
+#endif  // HAVE_MIMALLOC
 #ifndef _LIBCPP_MSVCRT
     // msvc runtime, still searched current directory
     // under dll search security mode
@@ -326,7 +333,7 @@ static void CheckDynamicLibraries() {
     const auto me = exe.substr(last + 1);
     if (std::end(kDllWhiteList) !=
         std::find_if(std::begin(kDllWhiteList), std::end(kDllWhiteList),
-                     [&findData](const wchar_t* dll) { return _wcsicmp(dll, findData.cFileName) == 0; })) {
+                     [&findData](const wchar_t* dll) { return dll && _wcsicmp(dll, findData.cFileName) == 0; })) {
       continue;
     }
     std::wostringstream os;
