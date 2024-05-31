@@ -1,3 +1,8 @@
+yass (1.10.4-1) UNRELEASED; urgency=medium
+
+  * miscellaneous fixes
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 31 May 2024 17:17:07 +0800
 yass (1.10.3-1) UNRELEASED; urgency=medium
 
   * net: support https protocol via caddy.
