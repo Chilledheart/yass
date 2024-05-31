@@ -253,6 +253,8 @@ int CYassApp::RunMainLoop() {
     return ret;
   }
 
+  PrintMallocStats();
+
   return static_cast<int>(msg.wParam);
 }
 

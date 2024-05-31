@@ -212,5 +212,7 @@ int main(int argc, const char* argv[]) {
 
   io_context.run();
 
+  PrintMallocStats();
+
   return 0;
 }
