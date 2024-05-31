@@ -130,6 +130,18 @@ jobs:
           sudo tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
           cmake --version
           rm -f *.tar.gz
+      - name: Populate depedencies (i686)
+        if: ${{ matrix.arch == 'i686' }}
+        run: |
+          # fix for missing i386 deb packages from deb.sury.org repository
+          sudo add-apt-repository ppa:ondrej/php
+          # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
+          # sudo apt-get install -y --allow-downgrades libpcre2-8-0=10.34-7ubuntu0.1 libpcre2-16-0=10.34-7ubuntu0.1 libpcre2-32-0=10.34-7ubuntu0.1 libpcre2-dev=10.34-7ubuntu0.1 libgd3=2.2.5-5.2ubuntu2.1
+          sudo dpkg --add-architecture i386 && sudo apt-get update -qq && sudo apt-get install -y wine wine32
+      - name: Populate depedencies (x86_64)
+        if: ${{ matrix.arch == 'x86_64' || matrix.arch == 'aarch64' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y wine wine64
       - name: Patch libcxx for windows xp
         if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
         run: |
@@ -157,17 +169,11 @@ jobs:
         run: |
           # copy curl dll required by yass_test
           cp -v third_party/curl-8.4.0_7-win32-mingw/bin/libcurl.dll build-mingw-winxp-${{ matrix.arch }}/
-          # fix for missing i386 deb packages from deb.sury.org repository
-          sudo add-apt-repository ppa:ondrej/php
-          # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
-          # sudo apt-get install -y --allow-downgrades libpcre2-8-0=10.34-7ubuntu0.1 libpcre2-16-0=10.34-7ubuntu0.1 libpcre2-32-0=10.34-7ubuntu0.1 libpcre2-dev=10.34-7ubuntu0.1 libgd3=2.2.5-5.2ubuntu2.1
-          sudo dpkg --add-architecture i386 && sudo apt-get update -qq && sudo apt-get install -y wine wine32
       - name: Populate depedencies (Tests-x86_64)
         if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # copy curl dll required by yass_test
           cp -v third_party/curl-8.4.0_7-win64-mingw/bin/libcurl-x64.dll build-mingw-winxp-${{ matrix.arch }}/
-          sudo apt-get update -qq && sudo apt-get install -y wine wine64
       - name: Run tests
         if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
         run: |

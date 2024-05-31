@@ -138,6 +138,7 @@ jobs:
           rm -rf $PREFIX
           mkdir $PREFIX
           cp -f yass.exe $PREFIX/
+          # cp -fv *.dll $PREFIX/
           "/c/Program Files/7-Zip/7z.exe" a -tzip ../$PREFIX.zip $PREFIX
 
           # generate debuginfo archive
