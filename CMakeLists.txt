@@ -1934,6 +1934,28 @@ endif()
 if (HAVE_MALLINFO2)
   add_definitions(-DHAVE_MALLINFO2)
 endif()
+if (MINGW)
+  # see https://github.com/mingw-w64/mingw-w64/blob/master/mingw-w64-headers/crt/_mingw.h.in#L215
+  # 0xE00 stands for UCRT
+  check_c_source_compiles ("
+  #include <_mingw.h>
+  #if __MSVCRT_VERSION__ < 0x0E00 && !defined(_UCRT)
+  int main() {}
+  #endif
+  " HAVE_MINGW_MSVCRT)
+  check_c_source_compiles ("
+  #include <_mingw.h>
+  #if __MSVCRT_VERSION__ >= 0x0E00 || defined(_UCRT)
+  int main() {}
+  #endif
+  " HAVE_MINGW_UCRT)
+  if (HAVE_MINGW_MSVCRT)
+    list(APPEND YASS_APP_FEATURES "mingw msvcrt")
+  endif()
+  if (HAVE_MINGW_UCRT)
+    list(APPEND YASS_APP_FEATURES "mingw ucrt")
+  endif()
+endif()
 
 # *****************************************************************************************
 #           Core Support Libraries
