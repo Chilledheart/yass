@@ -47,7 +47,7 @@ jobs:
           - arch: i686
             variant: msvcrt
           - arch: x86_64
-            variant: msvcrt
+            variant: ucrt
           - arch: aarch64
             variant: ucrt
     env:

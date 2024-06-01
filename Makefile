@@ -1,5 +1,6 @@
 SRC_DIR := src
 SRC_FILES := $(wildcard $(SRC_DIR)/*.mm)
+SRC_FILES := $(wildcard $(SRC_DIR)/*.cc)
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 SRC_FILES += $(wildcard $(SRC_DIR)/*.hpp)
 SRC_FILES += $(wildcard $(SRC_DIR)/android/*.cpp)
