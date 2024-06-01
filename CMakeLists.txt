@@ -3840,6 +3840,169 @@ if (ENABLE_CLANG_TIDY)
 endif()
 
 # *****************************************************************************************
+#           delayload code
+# *****************************************************************************************
+if (WIN32)
+  # This is a superset of all the delayloads needed for chrome.exe, chrome.dll,
+  # and chrome_elf.dll. The linker will automatically ignore anything which is not
+  # linked to the binary at all (it is harmless to have an unmatched /delayload).
+  #
+  # We delayload most libraries as the dlls are simply not required at startup (or
+  # at all, depending on the process type). In unsandboxed process they will load
+  # when first needed.
+  #
+  # Some dlls open handles when they are loaded, and we may not want them to be
+  # loaded in renderers or other sandboxed processes. Conversely, some dlls must
+  # be loaded before sandbox lockdown.
+  #
+  # Some dlls themselves load others - in particular, to avoid unconditionally
+  # loading user32.dll - we require that the following dlls are all delayloaded:
+  # user32, gdi32, comctl32, comdlg32, cryptui, d3d9, dwmapi, imm32, msi, ole32,
+  # oleacc, rstrtmgr, shell32, shlwapi, and uxtheme.
+  #
+  # Advapi32.dll is unconditionally loaded at process startup on Windows 10, but
+  # on Windows 11 it is not, which makes it worthwhile to delay load it.
+  # Additionally, advapi32.dll exports several functions that are forwarded to
+  # other DLLs such as cryptbase.dll. If calls to those functions are present but
+  # there are some processes where the functions are never called then delay
+  # loading of advapi32.dll avoids pulling in those DLLs (such as cryptbase.dll)
+  # unnecessarily, even if advapi32.dll itself is loaded.
+  if (MSVC)
+    set(DELAY_LDFLAGS
+      "/DELAYLOAD:api-ms-win-core-synch-l1-2-0.dll"
+      "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll"
+      "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll"
+      "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll"
+      "/DELAYLOAD:advapi32.dll"
+      "/DELAYLOAD:comctl32.dll"
+      "/DELAYLOAD:comdlg32.dll"
+      "/DELAYLOAD:credui.dll"
+      "/DELAYLOAD:cryptui.dll"
+      "/DELAYLOAD:d3d11.dll"
+      "/DELAYLOAD:d3d12.dll"
+      "/DELAYLOAD:d3d9.dll"
+      "/DELAYLOAD:dwmapi.dll"
+      "/DELAYLOAD:dxgi.dll"
+      "/DELAYLOAD:dxva2.dll"
+      "/DELAYLOAD:esent.dll"
+      "/DELAYLOAD:fontsub.dll"
+      "/DELAYLOAD:gdi32.dll"
+      "/DELAYLOAD:hid.dll"
+      "/DELAYLOAD:imagehlp.dll"
+      "/DELAYLOAD:imm32.dll"
+      "/DELAYLOAD:msi.dll"
+      "/DELAYLOAD:netapi32.dll"
+      "/DELAYLOAD:ncrypt.dll"
+      "/DELAYLOAD:ole32.dll"
+      "/DELAYLOAD:oleacc.dll"
+      "/DELAYLOAD:pdh.dll"
+      "/DELAYLOAD:propsys.dll"
+      "/DELAYLOAD:psapi.dll"
+      "/DELAYLOAD:rpcrt4.dll"
+      "/DELAYLOAD:rstrtmgr.dll"
+      "/DELAYLOAD:setupapi.dll"
+      "/DELAYLOAD:shell32.dll"
+      "/DELAYLOAD:shlwapi.dll"
+      "/DELAYLOAD:uiautomationcore.dll"
+      "/DELAYLOAD:urlmon.dll"
+      "/DELAYLOAD:user32.dll"
+      "/DELAYLOAD:usp10.dll"
+      "/DELAYLOAD:uxtheme.dll"
+      "/DELAYLOAD:wer.dll"
+      "/DELAYLOAD:wevtapi.dll"
+      "/DELAYLOAD:wininet.dll"
+      "/DELAYLOAD:winusb.dll"
+      "/DELAYLOAD:wsock32.dll"
+      "/DELAYLOAD:wtsapi32.dll"
+
+      "/DELAYLOAD:crypt32.dll"
+      "/DELAYLOAD:dbghelp.dll"
+      "/DELAYLOAD:dhcpcsvc.dll"
+      "/DELAYLOAD:dwrite.dll"
+      "/DELAYLOAD:iphlpapi.dll"
+      "/DELAYLOAD:oleaut32.dll"
+      "/DELAYLOAD:secur32.dll"
+      "/DELAYLOAD:userenv.dll"
+      "/DELAYLOAD:winhttp.dll"
+      "/DELAYLOAD:winmm.dll"
+      "/DELAYLOAD:winspool.drv"
+      "/DELAYLOAD:wintrust.dll"
+      "/DELAYLOAD:ws2_32.dll"
+      )
+    add_link_options(${DELAY_LDFLAGS})
+  endif()
+  if (MINGW AND USE_LLD)
+    set(DELAY_LDFLAGS
+      "-Wl,--delayload=api-ms-win-core-synch-l1-2-0.dll"
+      "-Wl,--delayload=api-ms-win-core-winrt-error-l1-1-0.dll"
+      "-Wl,--delayload=api-ms-win-core-winrt-l1-1-0.dll"
+      "-Wl,--delayload=api-ms-win-core-winrt-string-l1-1-0.dll"
+      "-Wl,--delayload=advapi32.dll"
+      "-Wl,--delayload=comctl32.dll"
+      "-Wl,--delayload=comdlg32.dll"
+      "-Wl,--delayload=credui.dll"
+      "-Wl,--delayload=cryptui.dll"
+      "-Wl,--delayload=d3d11.dll"
+      "-Wl,--delayload=d3d12.dll"
+      "-Wl,--delayload=d3d9.dll"
+      "-Wl,--delayload=dwmapi.dll"
+      "-Wl,--delayload=dxgi.dll"
+      "-Wl,--delayload=dxva2.dll"
+      "-Wl,--delayload=esent.dll"
+      "-Wl,--delayload=fontsub.dll"
+      "-Wl,--delayload=gdi32.dll"
+      "-Wl,--delayload=hid.dll"
+      "-Wl,--delayload=imagehlp.dll"
+      "-Wl,--delayload=imm32.dll"
+      "-Wl,--delayload=msi.dll"
+      "-Wl,--delayload=netapi32.dll"
+      "-Wl,--delayload=ncrypt.dll"
+      "-Wl,--delayload=ole32.dll"
+      "-Wl,--delayload=oleacc.dll"
+      "-Wl,--delayload=pdh.dll"
+      "-Wl,--delayload=propsys.dll"
+      "-Wl,--delayload=psapi.dll"
+      "-Wl,--delayload=rpcrt4.dll"
+      "-Wl,--delayload=rstrtmgr.dll"
+      "-Wl,--delayload=setupapi.dll"
+      "-Wl,--delayload=shell32.dll"
+      "-Wl,--delayload=shlwapi.dll"
+      "-Wl,--delayload=uiautomationcore.dll"
+      "-Wl,--delayload=urlmon.dll"
+      "-Wl,--delayload=user32.dll"
+      "-Wl,--delayload=usp10.dll"
+      "-Wl,--delayload=uxtheme.dll"
+      "-Wl,--delayload=wer.dll"
+      "-Wl,--delayload=wevtapi.dll"
+      "-Wl,--delayload=wininet.dll"
+      "-Wl,--delayload=winusb.dll"
+      "-Wl,--delayload=wsock32.dll"
+      "-Wl,--delayload=wtsapi32.dll"
+
+      "-Wl,--delayload=crypt32.dll"
+      "-Wl,--delayload=dbghelp.dll"
+      "-Wl,--delayload=dhcpcsvc.dll"
+      "-Wl,--delayload=dwrite.dll"
+      "-Wl,--delayload=iphlpapi.dll"
+      "-Wl,--delayload=oleaut32.dll"
+      "-Wl,--delayload=secur32.dll"
+      "-Wl,--delayload=userenv.dll"
+      "-Wl,--delayload=winhttp.dll"
+      "-Wl,--delayload=winmm.dll"
+      "-Wl,--delayload=winspool.drv"
+      "-Wl,--delayload=wintrust.dll"
+      "-Wl,--delayload=ws2_32.dll"
+      )
+    add_link_options(${DELAY_LDFLAGS})
+  endif()
+
+  # https://docs.microsoft.com/en-us/cpp/build/reference/understanding-the-helper-function?view=msvc-170
+  # see chrome/app/delay_load_failure_hook_win.cc
+  add_library(delayload_hook STATIC src/delay_load_failure_hook_win.cc)
+  link_libraries(delayload_hook)
+endif()
+
+# *****************************************************************************************
 #           Source code
 # *****************************************************************************************
 
@@ -4434,87 +4597,6 @@ if (GUI)
       ${GUI_LIBRARIES}
       yass_core
     )
-
-    if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
-      # Most of the dlls are simply not required at startup (or at all, depending
-      # on how the browser is used). The following dlls are interconnected and need to
-      # be delayloaded together to ensure user32 does not load too early or at all,
-      # depending on the process type: user32, gdi32, comctl32, comdlg32, cryptui,
-      # d3d9, dwmapi, imm32, msi, ole32, oleacc, rstrtmgr, shell32, shlwapi, and
-      # uxtheme.
-      set (DELAY_LDFLAGS
-        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll"
-        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll"
-        "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll"
-        "/DELAYLOAD:comctl32.dll"
-        "/DELAYLOAD:comdlg32.dll"
-        "/DELAYLOAD:credui.dll"
-        "/DELAYLOAD:cryptui.dll"
-        "/DELAYLOAD:d3d11.dll"
-        "/DELAYLOAD:d3d9.dll"
-        "/DELAYLOAD:dwmapi.dll"
-        "/DELAYLOAD:dxgi.dll"
-        "/DELAYLOAD:dxva2.dll"
-        "/DELAYLOAD:esent.dll"
-        "/DELAYLOAD:gdi32.dll"
-        "/DELAYLOAD:hid.dll"
-        "/DELAYLOAD:imagehlp.dll"
-        "/DELAYLOAD:imm32.dll"
-        "/DELAYLOAD:msi.dll"
-        "/DELAYLOAD:netapi32.dll"
-        "/DELAYLOAD:ncrypt.dll"
-        "/DELAYLOAD:ole32.dll"
-        "/DELAYLOAD:oleacc.dll"
-        "/DELAYLOAD:propsys.dll"
-        "/DELAYLOAD:psapi.dll"
-        "/DELAYLOAD:rpcrt4.dll"
-        "/DELAYLOAD:rstrtmgr.dll"
-        "/DELAYLOAD:setupapi.dll"
-        "/DELAYLOAD:shell32.dll"
-        "/DELAYLOAD:shlwapi.dll"
-        "/DELAYLOAD:urlmon.dll"
-        "/DELAYLOAD:user32.dll"
-        "/DELAYLOAD:usp10.dll"
-        "/DELAYLOAD:uxtheme.dll"
-        "/DELAYLOAD:wer.dll"
-        "/DELAYLOAD:wevtapi.dll"
-        "/DELAYLOAD:wininet.dll"
-        "/DELAYLOAD:winusb.dll"
-        "/DELAYLOAD:wsock32.dll"
-        "/DELAYLOAD:wtsapi32.dll"
-
-        "/DELAYLOAD:advapi32.dll"
-        "/DELAYLOAD:crypt32.dll"
-        "/DELAYLOAD:dbghelp.dll"
-        "/DELAYLOAD:dhcpcsvc.dll"
-        "/DELAYLOAD:dwrite.dll"
-        "/DELAYLOAD:iphlpapi.dll"
-        "/DELAYLOAD:oleaut32.dll"
-        "/DELAYLOAD:secur32.dll"
-        "/DELAYLOAD:uiautomationcore.dll"
-        "/DELAYLOAD:userenv.dll"
-        "/DELAYLOAD:winhttp.dll"
-        "/DELAYLOAD:winmm.dll"
-        "/DELAYLOAD:winspool.drv"
-        "/DELAYLOAD:wintrust.dll"
-        "/DELAYLOAD:ws2_32.dll"
-        )
-      # TODO implement own delay load helper
-      # https://docs.microsoft.com/en-us/cpp/build/reference/understanding-the-helper-function?view=msvc-170
-      # __pfnDliFailureHook2: Delay load failure hook that generates a crash report. By default a failure
-      # to delay load will trigger an exception handled by the delay load runtime and
-      # this won't generate a crash report.
-      # https://docs.microsoft.com/en-us/cpp/build/reference/failure-hooks?view=vs-2019
-      # __pfnDliNotifyHook2: verify if loaded libraries are allowed
-      # FIXME it seems delay loader's delayimp library isn't be found correctly
-      # when it comes with static CRT build.
-      string(REPLACE ";" " " DELAY_LDFLAGS "${DELAY_LDFLAGS}")
-      set_target_properties(${APP_NAME} PROPERTIES
-        LINK_FLAGS "${DELAY_LDFLAGS}")
-
-      # enforce default delayload implementation
-      target_link_libraries(${APP_NAME} PUBLIC delayimp)
-    endif()
 
     if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
         set_target_properties(${APP_NAME} PROPERTIES
