@@ -226,23 +226,31 @@ HMODULE LoadRasapi32Library() {
   return LoadLibraryExW(L"rasapi32.dll", nullptr, 0);
 }
 
+static std::once_flag Rasapi32InitOnceFlag;
+
 DWORD WINAPI RasEnumEntriesW(LPCWSTR unnamedParam1,
                              LPCWSTR unnamedParam2,
                              LPRASENTRYNAMEW unnamedParam3,
                              LPDWORD unnamedParam4,
                              LPDWORD unnamedParam5) {
-  HMODULE raspi32Module = LoadRasapi32Library();
+  static HMODULE m;
+  std::call_once(Rasapi32InitOnceFlag, [&]() {
+    m = LoadRasapi32Library();
+    DCHECK_NE(m, nullptr);
+  });
+  if (m == nullptr) {
+    ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return FALSE;
+  }
 
   static const auto fPointer =
-      reinterpret_cast<PFNRASENUMENTRIESW>(reinterpret_cast<void*>(::GetProcAddress(raspi32Module, "RasEnumEntriesW")));
+      reinterpret_cast<PFNRASENUMENTRIESW>(reinterpret_cast<void*>(::GetProcAddress(m, "RasEnumEntriesW")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
   }
 
   DWORD ret = fPointer(unnamedParam1, unnamedParam2, unnamedParam3, unnamedParam4, unnamedParam5);
-
-  ::FreeLibrary(raspi32Module);
 
   return ret;
 }
@@ -1060,12 +1068,9 @@ bool GetAllRasConnection(std::vector<std::wstring>* result) {
       LOG(WARNING) << "RasEnumEntriesA: mismatched dwCb and dwEntries";
       return false;
     }
-    // Allocate the memory needed for the array of RAS entry names.
-    lpRasEntryName = reinterpret_cast<RASENTRYNAMEW*>(malloc(sizeof(RASENTRYNAMEW) * dwEntries));
-    if (lpRasEntryName == nullptr) {
-      LOG(WARNING) << "RasEnumEntries: not enough memory";
-      return false;
-    }
+    std::vector<RASENTRYNAMEW> vRasEntryName;
+    vRasEntryName.resize(dwEntries);
+    lpRasEntryName = &vRasEntryName[0];
     // The first RASENTRYNAME structure in the array must contain the structure size
     for (DWORD i = 0; i < dwEntries; ++i) {
       lpRasEntryName[i].dwSize = sizeof(RASENTRYNAMEW);
@@ -1075,27 +1080,25 @@ bool GetAllRasConnection(std::vector<std::wstring>* result) {
     dwRet = RasEnumEntriesW(nullptr, nullptr, lpRasEntryName, &dwCb, &dwEntries);
 
     // If successful, print the RAS entry names
-    if (dwRet == ERROR_SUCCESS) {
-      LOG(INFO) << "RasEnumEntries success found: " << dwEntries << " entries";
+    if (dwRet == ERROR_SUCCESS && dwEntries != 0) {
+      DCHECK_LE(dwEntries, vRasEntryName.size());
+      vRasEntryName.resize(dwEntries);
       for (DWORD i = 0; i < dwEntries; i++) {
         result->emplace_back(lpRasEntryName[i].szEntryName);
       }
-    } else {
-      PLOG(WARNING) << "RasEnumEntries failed";
     }
-    // Deallocate memory for the connection buffer
-    free(lpRasEntryName);
-    lpRasEntryName = nullptr;
-  } else if (dwRet == ERROR_SUCCESS) {
-    LOG(INFO) << "RasEnumEntries success found: " << dwEntries << " entries";
+  } else if (dwRet == ERROR_SUCCESS && dwEntries != 0) {
+    DCHECK_LE(dwEntries, std::size(rasEntryNames));
     for (DWORD i = 0; i < dwEntries; i++) {
       result->emplace_back(lpRasEntryName[i].szEntryName);
     }
-  } else {
-    PLOG(WARNING) << "RasEnumEntries failed";
   }
-  if (dwRet == ERROR_SUCCESS && result->empty()) {
+  if (dwRet == ERROR_SUCCESS && dwEntries != 0) {
+    LOG(INFO) << "RasEnumEntries: found: " << dwEntries << " entries";
+  } else if (dwRet == ERROR_SUCCESS && dwEntries == 0) {
     LOG(INFO) << "RasEnumEntries: there were no RAS entry names found";
+  } else if (dwRet != ERROR_SUCCESS) {
+    PLOG(WARNING) << "RasEnumEntries failed";
   }
   return dwRet == ERROR_SUCCESS;
 }
