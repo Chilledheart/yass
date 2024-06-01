@@ -1777,6 +1777,11 @@ if (WIN32)
     set(CMAKE_C_CREATE_CONSOLE_EXE "-mconsole -Xlinker --subsystem -Xlinker console${SUBSYSTEM_VERSION_SUFFIX}")
     set(CMAKE_CXX_CREATE_CONSOLE_EXE "-mconsole -Xlinker --subsystem -Xlinker console${SUBSYSTEM_VERSION_SUFFIX}")
   endif()
+
+  if (MINGW AND MINGW_MSVCRT100)
+    # see https://github.com/mingw-w64/mingw-w64/blob/master/mingw-w64-headers/configure.ac#L172
+    add_definitions(-D__MSVCRT_VERSION__=0xA00)
+  endif()
 endif()
 
 # On windows preload settings
