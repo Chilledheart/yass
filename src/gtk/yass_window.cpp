@@ -11,6 +11,7 @@
 #include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
 #include "feature.h"
+#include "freedesktop/utils.hpp"
 #include "gtk/option_dialog.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass.hpp"

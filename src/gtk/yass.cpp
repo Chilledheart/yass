@@ -20,6 +20,7 @@
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
+#include "freedesktop/utils.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass_window.hpp"
 #include "version.h"
