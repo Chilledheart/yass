@@ -181,7 +181,6 @@ void YASSWindow::OnStartButtonClicked() {
   stop_button_->setEnabled(false);
 
   server_host_->setEnabled(false);
-  server_host_->setEnabled(false);
   server_sni_->setEnabled(false);
   server_port_->setEnabled(false);
   username_->setEnabled(false);
@@ -297,7 +296,6 @@ void YASSWindow::StartFailed() {
   stop_button_->setEnabled(false);
 
   server_host_->setEnabled(true);
-  server_host_->setEnabled(true);
   server_sni_->setEnabled(true);
   server_port_->setEnabled(true);
   username_->setEnabled(true);
@@ -318,7 +316,6 @@ void YASSWindow::Stopped() {
   start_button_->setEnabled(true);
   stop_button_->setEnabled(false);
 
-  server_host_->setEnabled(true);
   server_host_->setEnabled(true);
   server_sni_->setEnabled(true);
   server_port_->setEnabled(true);
