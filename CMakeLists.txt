@@ -425,10 +425,6 @@ option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
 
-cmake_dependent_option(USE_GTK4
-  "Build with gtk4 (GUI)" ON
-  "GUI AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
-
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(BUILD_TESTS "Build with test." OFF)
@@ -503,6 +499,14 @@ option(ENABLE_GOLD "Enable build with GOLD" ON)
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
+
+cmake_dependent_option(USE_QT6
+  "Build with Qt6 (GUI)" OFF
+  "GUI AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
+
+cmake_dependent_option(USE_GTK4
+  "Build with gtk4 (GUI)" ON
+  "GUI AND NOT USE_QT6 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html
@@ -2123,6 +2127,15 @@ elseif (GUI)
   if (NOT PKG_CONFIG_FOUND)
     message(WARNING "pkg-config (required to search gtk+ path) not found, disabling GUI build")
     set(GUI off)
+  elseif(USE_QT6)
+    find_package(Qt6 REQUIRED Widgets Gui LinguistTools)
+    set(GUI_USE_FILE "")
+    set(GUI_INCLUDE_DIRS "")
+    set(GUI_DEFINITIONS "")
+    set(GUI_C_CXX_FLAGS "")
+    set(GUI_LIBRARY_DIRS "")
+    set(GUI_LIBRARIES Qt::Widgets Qt::Gui)
+    set(GUI_FLAVOUR "qt6")
   else()
     pkg_check_modules(FONTCONFIG fontconfig)
     if (NOT FONTCONFIG_FOUND)
@@ -4513,12 +4526,22 @@ if (GUI)
           src/ios/utils.mm
           src/ios/utils.cpp
           src/ios/main.mm)
+    elseif(GUI_FLAVOUR STREQUAL "qt6")
+        list(APPEND SRC_FILES
+          src/qt6/yass_window.hpp
+          src/qt6/yass_window.cpp
+          src/qt6/yass.hpp
+          src/qt6/yass.cpp
+          src/qt6/option_dialog.cpp
+          src/freedesktop/utils.cpp
+        )
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
           src/gtk/yass_window.cpp
           src/gtk/option_dialog.cpp
           src/gtk/utils_gtk.cpp
+          src/freedesktop/utils.cpp
         )
         include(CompilePo)
         create_po_target(yass en src/gtk/yass_en.po)
@@ -4539,7 +4562,9 @@ if (GUI)
           src/gtk4/yass.cpp
           src/gtk4/yass_window.cpp
           src/gtk4/option_dialog.cpp
-          src/gtk/utils_gtk.cpp)
+          src/gtk/utils_gtk.cpp
+          src/freedesktop/utils.cpp
+        )
         # HOLDPLACE for TODO gettext support
         include(CompilePo)
         create_po_target(yass en src/gtk4/yass_en.po)
@@ -4570,6 +4595,29 @@ if (GUI)
       target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
       set_target_properties(${APP_NAME} PROPERTIES
         LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/harmony/export.lds -u RegisterEntryModule")
+    elseif(GUI_FLAVOUR STREQUAL "qt6")
+      add_executable(${APP_NAME}
+        ${SRC_FILES}
+        ${GUI_USE_FILE}
+        )
+      file(GLOB TS_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/yass_*.ts")
+      # Custom target to update .ts files and include new strings from source files
+      # Depends on Qt's LinguistTools
+      get_target_property(QT_LUPDATE_EXECUTABLE Qt::lupdate IMPORTED_LOCATION)
+      add_custom_target(update-ts
+                          COMMAND ${QT_LUPDATE_EXECUTABLE} -extensions cc,cpp,hpp
+                                                           -locations none
+                                                           -I "${CMAKE_CURRENT_SOURCE_DIR}/src"
+                                                           "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
+                                                           -ts ${TS_FILES}
+                          WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
+                          VERBATIM
+                          COMMAND_EXPAND_LISTS)
+      # Based on https://gist.github.com/giraldeau/546ba5512a74dfe9d8ea0862d66db412
+      set_source_files_properties(${TS_FILES} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/src/qt6/lang")
+      qt_add_translation(QM_FILES ${TS_FILES} OPTIONS -removeidentical -silent)
+      configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/lang.qrc" "${CMAKE_CURRENT_BINARY_DIR}/src/qt6/lang/lang.qrc" COPYONLY)
+      target_sources(${APP_NAME} PRIVATE ${QM_FILES} "${CMAKE_CURRENT_BINARY_DIR}/src/qt6/lang/lang.qrc")
     else()
       add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
           ${SRC_FILES}
@@ -4600,6 +4648,14 @@ if (GUI)
     elseif(GUI_FLAVOUR STREQUAL "ios")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/ios)
+    elseif(GUI_FLAVOUR STREQUAL "qt6")
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6)
+      set_target_properties(
+        ${APP_NAME}
+        PROPERTIES AUTOMOC ON
+                   AUTOUIC ON
+                   AUTORCC ON)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk)
@@ -4911,24 +4967,24 @@ if (GUI)
         install(TARGETS ${APP_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
       endif()
 
-      if (GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
+      if (GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
         install(FILES
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/it.gui.yass.desktop
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/it.gui.yass.desktop
           DESTINATION share/applications)
 
         install(FILES
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.png
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.png
           DESTINATION share/pixmaps)
 
         install(DIRECTORY
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/16x16
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/22x22
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/24x24
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/32x32
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/48x48
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/128x128
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/256x256
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/512x512
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/16x16
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/22x22
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/24x24
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/32x32
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/48x48
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/128x128
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/256x256
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/512x512
           DESTINATION share/icons/hicolor)
       endif()
     endif()
