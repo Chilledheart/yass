@@ -2128,7 +2128,7 @@ elseif (GUI)
     message(WARNING "pkg-config (required to search gtk+ path) not found, disabling GUI build")
     set(GUI off)
   elseif(USE_QT6)
-    find_package(Qt6 REQUIRED Widgets Gui LinguistTools)
+    find_package(Qt6 REQUIRED Widgets Gui OPTIONAL_COMPONENTS LinguistTools)
     set(GUI_USE_FILE "")
     set(GUI_INCLUDE_DIRS "")
     set(GUI_DEFINITIONS "")
@@ -4600,24 +4600,28 @@ if (GUI)
         ${SRC_FILES}
         ${GUI_USE_FILE}
         )
-      file(GLOB TS_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/yass_*.ts")
-      # Custom target to update .ts files and include new strings from source files
-      # Depends on Qt's LinguistTools
-      get_target_property(QT_LUPDATE_EXECUTABLE Qt::lupdate IMPORTED_LOCATION)
-      add_custom_target(update-ts
-                          COMMAND ${QT_LUPDATE_EXECUTABLE} -extensions cc,cpp,hpp
-                                                           -locations none
-                                                           -I "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                                                           "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
-                                                           -ts ${TS_FILES}
-                          WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
-                          VERBATIM
-                          COMMAND_EXPAND_LISTS)
-      # Based on https://gist.github.com/giraldeau/546ba5512a74dfe9d8ea0862d66db412
-      set_source_files_properties(${TS_FILES} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/src/qt6/lang")
-      qt_add_translation(QM_FILES ${TS_FILES} OPTIONS -removeidentical -silent)
-      configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/lang.qrc" "${CMAKE_CURRENT_BINARY_DIR}/src/qt6/lang/lang.qrc" COPYONLY)
-      target_sources(${APP_NAME} PRIVATE ${QM_FILES} "${CMAKE_CURRENT_BINARY_DIR}/src/qt6/lang/lang.qrc")
+      if (NOT CMAKE_CROSSCOMPILING AND TARGET Qt::lupdate)
+        file(GLOB TS_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/yass_*.ts")
+        # Custom target to update .ts files and include new strings from source files
+        # Depends on Qt's LinguistTools
+        get_target_property(QT_LUPDATE_EXECUTABLE Qt::lupdate IMPORTED_LOCATION)
+        add_custom_target(update-ts
+                            COMMAND ${QT_LUPDATE_EXECUTABLE} -extensions cc,cpp,hpp
+                                                             -locations none
+                                                             -I "${CMAKE_CURRENT_SOURCE_DIR}/src"
+                                                             "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
+                                                             -ts ${TS_FILES}
+                            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
+                            VERBATIM
+                            COMMAND_EXPAND_LISTS)
+        # Based on https://gist.github.com/giraldeau/546ba5512a74dfe9d8ea0862d66db412
+        set_source_files_properties(${TS_FILES} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang")
+        qt_add_translation(QM_FILES ${TS_FILES} OPTIONS -removeidentical -silent)
+        target_sources(${APP_NAME} PRIVATE ${QM_FILES} "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/lang.qrc")
+      else()
+        file(GLOB QM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/yass_*.qm")
+        target_sources(${APP_NAME} PRIVATE ${QM_FILES} "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/lang.qrc")
+      endif()
     else()
       add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
           ${SRC_FILES}
