@@ -2,6 +2,7 @@
 /* Copyright (c) 2024 Chilledheart  */
 
 #include "qt6/yass.hpp"
+#include "qt6/tray_icon.hpp"
 #include "qt6/yass_window.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
@@ -10,9 +11,9 @@
 #include <absl/strings/str_cat.h>
 #include <locale.h>
 #include <stdarg.h>
+#include <QLibraryInfo>
 #include <QTimer>
 #include <QTranslator>
-#include <QLibraryInfo>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #include "config/config.hpp"
@@ -79,12 +80,12 @@ bool YASSApp::Init() {
 #if defined(_WIN32)
   (void)qt_translator_->load("qt_" + locale.name());
 #else
-  (void)qt_translator_->load("qt_" + locale.name(),
-                             QLibraryInfo::path(QLibraryInfo::TranslationsPath));
+  (void)qt_translator_->load("qt_" + locale.name(), QLibraryInfo::path(QLibraryInfo::TranslationsPath));
 #endif
 
   if (!my_translator_->load(QString(":/lang/yass_%1.qm").arg(locale.name()))) {
-    LOG(ERROR) << "Failed to find language resource: " << locale.name().toUtf8().data() << " fallback to en_us language";
+    LOG(ERROR) << "Failed to find language resource: " << locale.name().toUtf8().data()
+               << " fallback to en_us language";
     (void)my_translator_->load(":/lang/yass_en.qm");
   }
   qApp->installTranslator(qt_translator_);
@@ -92,6 +93,10 @@ bool YASSApp::Init() {
 
   main_window_ = new YASSWindow();
   main_window_->show();
+
+  tray_icon_ = new TrayIcon(this);
+  tray_icon_->show();
+
   worker_ = std::make_unique<Worker>();
 
   if (Utils::GetAutoStart()) {

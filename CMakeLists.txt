@@ -4532,7 +4532,10 @@ if (GUI)
           src/qt6/yass_window.cpp
           src/qt6/yass.hpp
           src/qt6/yass.cpp
+          src/qt6/option_dialog.hpp
           src/qt6/option_dialog.cpp
+          src/qt6/tray_icon.hpp
+          src/qt6/tray_icon.cpp
           src/freedesktop/utils.cpp
         )
     elseif(GUI_FLAVOUR STREQUAL "gtk3")

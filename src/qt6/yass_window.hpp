@@ -19,6 +19,8 @@ class YASSWindow : public QMainWindow {
  public:
   YASSWindow(QWidget* parent = nullptr);
 
+  void showWindow();
+
   friend class YASSApp;
 
  public slots:
