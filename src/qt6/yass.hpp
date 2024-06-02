@@ -7,6 +7,7 @@
 
 #include "cli/cli_worker.hpp"
 
+class TrayIcon;
 class QTimer;
 class QTranslator;
 class YASSWindow;
@@ -27,6 +28,8 @@ class YASSApp : public QApplication {
   std::string GetStatus() const;
   enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED, MAX_STATE };
   YASSState GetState() const { return state_; }
+
+  YASSWindow* mainWindow() { return main_window_; }
 
  signals:
   void OnStartedSignal();
@@ -51,6 +54,7 @@ class YASSApp : public QApplication {
 
   friend class YASSWindow;
   YASSWindow* main_window_ = nullptr;
+  TrayIcon* tray_icon_ = nullptr;
 
   std::unique_ptr<Worker> worker_;
   std::string error_msg_;

@@ -195,6 +195,13 @@ void YASSWindow::OnStartButtonClicked() {
   App()->OnStart();
 }
 
+void YASSWindow::showWindow() {
+  showNormal();
+  show();
+  raise();
+  activateWindow();
+}
+
 void YASSWindow::OnStopButtonClicked() {
   start_button_->setEnabled(false);
   stop_button_->setEnabled(false);
