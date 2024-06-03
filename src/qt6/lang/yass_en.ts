@@ -37,6 +37,21 @@
     </message>
 </context>
 <context>
+    <name>TrayIcon</name>
+    <message>
+        <source>Option</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Exit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>YASSApp</name>
     <message>
         <source>Connected with conns: </source>

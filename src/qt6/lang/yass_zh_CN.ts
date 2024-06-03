@@ -37,6 +37,24 @@
     </message>
 </context>
 <context>
+    <name>TrayIcon</name>
+    <message>
+        <source>Option</source>
+        <translatorcomment>选项</translatorcomment>
+        <translation>选项</translation>
+    </message>
+    <message>
+        <source>Exit</source>
+        <translatorcomment>退出</translatorcomment>
+        <translation>退出</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translatorcomment>File</translatorcomment>
+        <translation>文件</translation>
+    </message>
+</context>
+<context>
     <name>YASSApp</name>
     <message>
         <source>Connected with conns: </source>
