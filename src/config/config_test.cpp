@@ -9,6 +9,11 @@
 #include <gmock/gmock.h>
 #include <cstdlib>
 #include "config/config_impl.hpp"
+#include "core/process_utils.hpp"
+#include "core/rand_util.hpp"
+#include "core/utils_fs.hpp"
+
+using namespace yass;
 
 ABSL_FLAG(bool, test_bool, true, "Test bool value");
 ABSL_FLAG(int32_t, test_signed_val, 0, "Test int32_t value");
@@ -20,6 +25,7 @@ ABSL_FLAG(std::string, test_string, "", "Test string value");
 class ConfigTest : public ::testing::Test {
  public:
   void SetUp() override {
+    key_prefix_ = absl::StrCat("pid_", GetPID(), "_run_", RandUint64());
 #if !(defined(_WIN32) || defined(__APPLE__))
     original_configfile_ = config::g_configfile;
     const char* tmpdir = getenv("TMPDIR");
@@ -29,16 +35,20 @@ class ConfigTest : public ::testing::Test {
 #else
       tmpdir = "/tmp";
 #endif
-    config::g_configfile = absl::StrCat(tmpdir, "/", "yass.json");
+    config::g_configfile = absl::StrCat(tmpdir, "/", "yass_unittest_", key_prefix(), ".tmp");
 #endif
   }
   void TearDown() override {
 #if !(defined(_WIN32) || defined(__APPLE__))
+    RemoveFile(config::g_configfile);
     config::g_configfile = original_configfile_;
 #endif
   }
 
+  const std::string& key_prefix() const { return key_prefix_; }
+
  private:
+  std::string key_prefix_;
 #if !(defined(_WIN32) || defined(__APPLE__))
   std::string original_configfile_;
 #endif
@@ -46,150 +56,156 @@ class ConfigTest : public ::testing::Test {
 
 TEST_F(ConfigTest, RWBool) {
   auto config_impl = config::ConfigImpl::Create();
-  bool test_bool = true;
+  constexpr bool test_bool = true;
+  const std::string test_key = absl::StrCat("test_bool_", key_prefix());
 
   absl::SetFlag(&FLAGS_test_bool, test_bool);
 
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Write("test_bool", FLAGS_test_bool));
+  EXPECT_TRUE(config_impl->Write(test_key, FLAGS_test_bool));
   ASSERT_TRUE(config_impl->Close());
 
   absl::SetFlag(&FLAGS_test_bool, false);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
-  EXPECT_TRUE(config_impl->Read("test_bool", &FLAGS_test_bool));
+  EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_bool));
   ASSERT_TRUE(config_impl->Close());
 
   EXPECT_EQ(absl::GetFlag(FLAGS_test_bool), test_bool);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Delete("test_bool"));
+  EXPECT_TRUE(config_impl->Delete(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
 TEST_F(ConfigTest, RWInt32) {
   auto config_impl = config::ConfigImpl::Create();
-  int32_t test_signed_val = -12345;
+  constexpr int32_t test_signed_val = -12345;
+  const std::string test_key = absl::StrCat("test_signed_val_", key_prefix());
 
   absl::SetFlag(&FLAGS_test_signed_val, test_signed_val);
 
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Write("test_signed_val", FLAGS_test_signed_val));
+  EXPECT_TRUE(config_impl->Write(test_key, FLAGS_test_signed_val));
   ASSERT_TRUE(config_impl->Close());
 
   absl::SetFlag(&FLAGS_test_signed_val, 0);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
-  EXPECT_TRUE(config_impl->Read("test_signed_val", &FLAGS_test_signed_val));
+  EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_signed_val));
   ASSERT_TRUE(config_impl->Close());
 
   EXPECT_EQ(absl::GetFlag(FLAGS_test_signed_val), test_signed_val);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Delete("test_signed_val"));
+  EXPECT_TRUE(config_impl->Delete(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
 TEST_F(ConfigTest, RWUint32) {
   auto config_impl = config::ConfigImpl::Create();
-  uint32_t test_unsigned_val = 12345U;
+  constexpr uint32_t test_unsigned_val = 12345U;
+  const std::string test_key = absl::StrCat("test_unsigned_val_", key_prefix());
 
   absl::SetFlag(&FLAGS_test_unsigned_val, test_unsigned_val);
 
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Write("test_unsigned_val", FLAGS_test_unsigned_val));
+  EXPECT_TRUE(config_impl->Write(test_key, FLAGS_test_unsigned_val));
   ASSERT_TRUE(config_impl->Close());
 
   absl::SetFlag(&FLAGS_test_unsigned_val, 0);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
-  EXPECT_TRUE(config_impl->Read("test_unsigned_val", &FLAGS_test_unsigned_val));
+  EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_unsigned_val));
   ASSERT_TRUE(config_impl->Close());
 
   EXPECT_EQ(absl::GetFlag(FLAGS_test_unsigned_val), test_unsigned_val);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Delete("test_unsigned_val"));
+  EXPECT_TRUE(config_impl->Delete(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
 TEST_F(ConfigTest, RWInt64) {
   auto config_impl = config::ConfigImpl::Create();
-  int64_t test_signed_64val = -123456LL - INT32_MAX;
+  constexpr int64_t test_signed_64val = -123456LL - INT32_MAX;
+  const std::string test_key = absl::StrCat("test_signed_64val_", key_prefix());
 
   absl::SetFlag(&FLAGS_test_signed_64val, test_signed_64val);
 
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Write("test_signed_64val", FLAGS_test_signed_64val));
+  EXPECT_TRUE(config_impl->Write(test_key, FLAGS_test_signed_64val));
   ASSERT_TRUE(config_impl->Close());
 
   absl::SetFlag(&FLAGS_test_signed_64val, 0);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
-  EXPECT_TRUE(config_impl->Read("test_signed_64val", &FLAGS_test_signed_64val));
+  EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_signed_64val));
   ASSERT_TRUE(config_impl->Close());
 
   EXPECT_EQ(absl::GetFlag(FLAGS_test_signed_64val), test_signed_64val);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Delete("test_signed_64val"));
+  EXPECT_TRUE(config_impl->Delete(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
 TEST_F(ConfigTest, RWUint64) {
   auto config_impl = config::ConfigImpl::Create();
-  uint64_t test_unsigned_64val = 123456ULL + UINT32_MAX;
+  constexpr uint64_t test_unsigned_64val = 123456ULL + UINT32_MAX;
+  const std::string test_key = absl::StrCat("test_unsigned_64val_", key_prefix());
 
   absl::SetFlag(&FLAGS_test_unsigned_64val, test_unsigned_64val);
 
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Write("test_unsigned_64val", FLAGS_test_unsigned_64val));
+  EXPECT_TRUE(config_impl->Write(test_key, FLAGS_test_unsigned_64val));
   ASSERT_TRUE(config_impl->Close());
 
   absl::SetFlag(&FLAGS_test_unsigned_64val, 0);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
-  EXPECT_TRUE(config_impl->Read("test_unsigned_64val", &FLAGS_test_unsigned_64val));
+  EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_unsigned_64val));
   ASSERT_TRUE(config_impl->Close());
 
   EXPECT_EQ(absl::GetFlag(FLAGS_test_unsigned_64val), test_unsigned_64val);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Delete("test_unsigned_64val"));
+  EXPECT_TRUE(config_impl->Delete(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
 TEST_F(ConfigTest, RWString) {
   auto config_impl = config::ConfigImpl::Create();
   constexpr std::string_view test_string = "test-str";
+  const std::string test_key = absl::StrCat("test_string_", key_prefix());
 
   absl::SetFlag(&FLAGS_test_string, test_string);
 
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Write("test_string", FLAGS_test_string));
+  EXPECT_TRUE(config_impl->Write(test_key, FLAGS_test_string));
   ASSERT_TRUE(config_impl->Close());
 
   absl::SetFlag(&FLAGS_test_string, "");
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
-  EXPECT_TRUE(config_impl->Read("test_string", &FLAGS_test_string));
+  EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_string));
   ASSERT_TRUE(config_impl->Close());
 
   EXPECT_EQ(absl::GetFlag(FLAGS_test_string), test_string);
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
-  EXPECT_TRUE(config_impl->Delete("test_string"));
+  EXPECT_TRUE(config_impl->Delete(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
