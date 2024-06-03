@@ -72,6 +72,10 @@ YASSApp::YASSApp(int& argc, char** argv) : QApplication(argc, argv) {
 }
 
 bool YASSApp::Init() {
+  setApplicationVersion(YASS_APP_TAG);
+  setWindowIcon(QIcon::fromTheme("yass", QIcon(":/res/images/yass.png")));
+  setDesktopFileName("it.gui.yass");
+
   qt_translator_ = new QTranslator(this);
   my_translator_ = new QTranslator(this);
   // TODO changable locale
