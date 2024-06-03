@@ -16,6 +16,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QScreen>
 #include <QStatusBar>
 #include <QVBoxLayout>
 
@@ -182,6 +183,17 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   LoadChanges();
 }
 
+void YASSWindow::moveToCenter() {
+  move(screen()->geometry().center() - frameGeometry().center());
+}
+
+void YASSWindow::showWindow() {
+  showNormal();
+  show();
+  raise();
+  activateWindow();
+}
+
 void YASSWindow::OnStartButtonClicked() {
   start_button_->setEnabled(false);
   stop_button_->setEnabled(false);
@@ -199,13 +211,6 @@ void YASSWindow::OnStartButtonClicked() {
   timeout_->setEnabled(false);
 
   App()->OnStart();
-}
-
-void YASSWindow::showWindow() {
-  showNormal();
-  show();
-  raise();
-  activateWindow();
 }
 
 void YASSWindow::OnStopButtonClicked() {

@@ -93,6 +93,7 @@ bool YASSApp::Init() {
 
   main_window_ = new YASSWindow();
   main_window_->show();
+  main_window_->moveToCenter();
 
   tray_icon_ = new TrayIcon(this);
   tray_icon_->show();
