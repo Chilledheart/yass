@@ -1,3 +1,9 @@
+yass (1.10.5-1) UNRELEASED; urgency=medium
+
+  * miscellaneous fixes
+  * fix gtk3 wayland app icon issue
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 3 Jun 2024 12:03:18 +0800
 yass (1.10.4-1) UNRELEASED; urgency=medium
 
   * miscellaneous fixes
