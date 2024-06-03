@@ -4527,6 +4527,10 @@ if (GUI)
           src/ios/utils.cpp
           src/ios/main.mm)
     elseif(GUI_FLAVOUR STREQUAL "qt6")
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/yass.qrc
+          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.png
+          DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
         list(APPEND SRC_FILES
           src/qt6/yass_window.hpp
           src/qt6/yass_window.cpp
@@ -4537,7 +4541,7 @@ if (GUI)
           src/qt6/tray_icon.hpp
           src/qt6/tray_icon.cpp
           src/freedesktop/utils.cpp
-          src/qt6/yass.qrc
+          ${CMAKE_CURRENT_BINARY_DIR}/yass.qrc
         )
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
