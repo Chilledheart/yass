@@ -10,6 +10,7 @@
 #include <QComboBox>
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QIntValidator>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenuBar>
@@ -116,6 +117,7 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   server_host_ = new QLineEdit;
   server_sni_ = new QLineEdit;
   server_port_ = new QLineEdit;
+  server_port_->setValidator(new QIntValidator(0, UINT16_MAX, this));
   username_ = new QLineEdit;
   password_ = new QLineEdit;
   password_->setEchoMode(QLineEdit::Password);
@@ -133,9 +135,13 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
 
   local_host_ = new QLineEdit;
   local_port_ = new QLineEdit;
+  local_port_->setValidator(new QIntValidator(0, UINT16_MAX, this));
   doh_url_ = new QLineEdit;
+  doh_url_->setPlaceholderText("https://1.1.1.1/dns-query");
   dot_host_ = new QLineEdit;
+  dot_host_->setPlaceholderText("1.1.1.1");
   timeout_ = new QLineEdit;
+  timeout_->setValidator(new QIntValidator(0, INT32_MAX, this));
 
   autostart_ = new QCheckBox;
   systemproxy_ = new QCheckBox;
