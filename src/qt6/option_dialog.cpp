@@ -5,6 +5,7 @@
 #include <absl/flags/flag.h>
 #include <QCheckBox>
 #include <QGridLayout>
+#include <QIntValidator>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -35,8 +36,11 @@ OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
 
   tcp_keep_alive_ = new QCheckBox;
   tcp_keep_alive_cnt_ = new QLineEdit;
+  tcp_keep_alive_cnt_->setValidator(new QIntValidator(0, INT32_MAX, this));
   tcp_keep_alive_idle_timeout_ = new QLineEdit;
+  tcp_keep_alive_idle_timeout_->setValidator(new QIntValidator(0, INT32_MAX, this));
   tcp_keep_alive_interval_ = new QLineEdit;
+  tcp_keep_alive_interval_->setValidator(new QIntValidator(0, INT32_MAX, this));
   enable_post_quantum_kyber_ = new QCheckBox;
 
   grid->addWidget(tcp_keep_alive_, 0, 1);
