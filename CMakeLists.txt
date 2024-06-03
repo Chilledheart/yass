@@ -4537,6 +4537,7 @@ if (GUI)
           src/qt6/tray_icon.hpp
           src/qt6/tray_icon.cpp
           src/freedesktop/utils.cpp
+          src/qt6/yass.qrc
         )
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES

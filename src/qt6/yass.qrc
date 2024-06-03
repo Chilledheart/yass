@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/res">
+    <file>images/yass.png</file>
+  </qresource>
+</RCC>

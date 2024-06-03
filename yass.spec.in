@@ -259,6 +259,9 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Mon Jun 3 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.5-1
+  - miscellaneous fixes
+  - fix gtk3 wayland app icon issue
 * Fri May 31 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.4-1
   - miscellaneous fixes
 * Sun May 26 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.3-1

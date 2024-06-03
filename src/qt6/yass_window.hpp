@@ -19,6 +19,7 @@ class YASSWindow : public QMainWindow {
  public:
   YASSWindow(QWidget* parent = nullptr);
 
+  void moveToCenter();
   void showWindow();
 
   friend class YASSApp;
