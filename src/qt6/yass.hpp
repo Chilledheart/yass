@@ -37,6 +37,7 @@ class YASSApp : public QApplication {
   void OnStoppedSignal();
 
  private slots:
+  void OnQuit();
   void OnStarted();
   void OnStartFailed(const std::string& error_msg);
   void OnStopped();

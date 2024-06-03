@@ -10,6 +10,7 @@
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <QLibraryInfo>
 #include <QTimer>
@@ -58,10 +59,36 @@ int main(int argc, const char** argv) {
 
   YASSApp program(argc, const_cast<char**>(argv));
 
+#ifndef _WIN32
+  // setup signal handler
+  signal(SIGPIPE, SIG_IGN);
+
+  struct sigaction sig_handler;
+
+  sig_handler.sa_handler = [](int signal_num) { App()->quit(); };
+  sigemptyset(&sig_handler.sa_mask);
+  sig_handler.sa_flags = 0;
+
+  sigaction(SIGINT, &sig_handler, nullptr);
+
+  /* Block SIGPIPE in all threads, this can happen if a thread calls write on
+     a closed pipe. */
+  sigset_t sigpipe_mask;
+  sigemptyset(&sigpipe_mask);
+  sigaddset(&sigpipe_mask, SIGPIPE);
+  sigset_t saved_mask;
+  if (pthread_sigmask(SIG_BLOCK, &sigpipe_mask, &saved_mask) == -1) {
+    PLOG(WARNING) << "pthread_sigmask failed";
+    return -1;
+  }
+#endif
+
+  // call program init
   if (!program.Init()) {
     return 0;
   }
 
+  // enter event loop
   return program.exec();
 }
 
@@ -75,6 +102,8 @@ bool YASSApp::Init() {
   setApplicationVersion(YASS_APP_TAG);
   setWindowIcon(QIcon::fromTheme("yass", QIcon(":/res/images/yass.png")));
   setDesktopFileName("it.gui.yass");
+
+  QObject::connect(this, &QCoreApplication::aboutToQuit, this, &YASSApp::OnQuit);
 
   qt_translator_ = new QTranslator(this);
   my_translator_ = new QTranslator(this);
@@ -174,6 +203,11 @@ void YASSApp::OnStop(bool quiet) {
     callback = [this]() { emit OnStoppedSignal(); };
   }
   worker_->Stop(std::move(callback));
+}
+
+void YASSApp::OnQuit() {
+  LOG(WARNING) << "Application Exit";
+  PrintMallocStats();
 }
 
 void YASSApp::OnStarted() {
