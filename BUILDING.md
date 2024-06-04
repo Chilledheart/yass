@@ -2,14 +2,14 @@
 
 ## Windows (MinGW)
 
-1. Make sure you have [Chocolatey][chocolatey] installed.
+1. Install [Chocolatey][chocolatey] Package Manager.
 
 Run the following command in ADMINISTRATIVE powershell:
 ```
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
 
-2. Make sure you have [Git], [Perl], [CMake], [Ninja] and [Golang] installed.
+2. Install required tools via [Chocolatey].
 
 Run the following command in ADMINISTRATIVE shell:
 ```
@@ -26,6 +26,42 @@ choco install golang
 git clone https://github.com/Chilledheart/yass
 cd yass
 ./scripts/build-mingw.sh
+```
+
+## Windows (MSYS2)
+
+1. Download and run MSYS2 installer from [MSYS2 site][msys2].
+2. Install required tools
+
+Run `MSYS2 CLANG64` in Start Menu:
+```
+pacman -S mingw-w64-clang-x86_64-clang \
+          mingw-w64-clang-x86_64-gcc-compat \
+          mingw-w64-clang-x86_64-perl \
+          mingw-w64-clang-x86_64-go \
+          mingw-w64-clang-x86_64-cmake \
+          mingw-w64-clang-x86_64-ninja \
+          mingw-w64-clang-x86_64-nasm \
+          git
+```
+
+Notes: you might need to get `GOROOT` manually after install `mingw-w64-clang-x86_64-go`
+package by running:
+```
+export GOROOT=/clang64/lib/go
+export GOPATH=/clang64
+```
+
+3. Compiling the program.
+
+Run `MSYS2 CLANG64` in Start Menu:
+```
+git clone https://github.com/Chilledheart/yass
+cd yass
+mkdir build
+cd build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
+ninja yass
 ```
 
 ## Windows (MSVC)
@@ -51,10 +87,9 @@ cd yass
 
 Notes: please make sure you have [LLVM][llvm-win64] (17.0 or above).
 
-5. Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu.
+5. Compile the program with Release configuration.
 
-6. Compile the program with Release configuration.
-
+Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu:
 ```
 git clone https://github.com/Chilledheart/yass
 cd yass
@@ -66,47 +101,14 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-## Windows (MSYS2)
-
-1. Install MSYS2 from [MSYS2 site][msys2].
-2. Run MSYS2 CLANG64 in Start Menu.
-3. Install required tools
-```
-pacman -S mingw-w64-clang-x86_64-clang \
-          mingw-w64-clang-x86_64-gcc-compat \
-          mingw-w64-clang-x86_64-perl \
-          mingw-w64-clang-x86_64-go \
-          mingw-w64-clang-x86_64-cmake \
-          mingw-w64-clang-x86_64-ninja \
-          mingw-w64-clang-x86_64-nasm \
-          git
-```
-
-Notes: you might need to get `GOROOT` manually after install `mingw-w64-clang-x86_64-go`
-package by running:
-```
-export GOROOT=/clang64/lib/go
-export GOPATH=/clang64
-```
-
-4. Compiling the program.
-```
-git clone https://github.com/Chilledheart/yass
-cd yass
-mkdir build
-cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
-ninja yass
-```
-
 ## macOS
 
-1. Make sure you have [Xcode] and [Homebrew] installed:
+1. Make sure you have both of [Xcode] and [Homebrew] installed:
 
 Run in `Terminal`:
 ```
-xcode-select --install
 xcode-select -s /Applications/Xcode.app
+xcode-select --install
 xcodebuild -runFirstLaunch
 ```
 
