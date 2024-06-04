@@ -59,14 +59,12 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and wixtoolset 3
+      - name: Cache clang
         id: clang-cache
         uses: actions/cache@v4
         with:
           path: |
-            third_party/nasm
             third_party/llvm-build/Release+Asserts
-            third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 llvm
         id: mingw-cache

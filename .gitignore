@@ -11,6 +11,7 @@ sscxx
 *.zip
 /third_party/llvm-build
 /third_party/vcredist
+/third_party/nsis
 /third_party/nasm
 /third_party/wix311
 /third_party/mingw32
@@ -57,6 +58,7 @@ sscxx
 *.bz2
 *.rpm
 *.deb
+*.zst
 /tools/build
 /build-*
 /cmake-build-*
