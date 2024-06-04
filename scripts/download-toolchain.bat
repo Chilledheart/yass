@@ -34,3 +34,16 @@ rmdir /s /q wix311
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..
 del /s /q third_party\wix311*.zip
+
+echo "Install dependency: nsis"
+
+cd third_party
+curl -C - -L -o nsis-3.10.zip "https://sourceforge.net/projects/nsis/files/NSIS%%203/3.10/nsis-3.10.zip/download"
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+"C:\Program Files\7-Zip\7z.exe" x nsis-3.10.zip -aoa
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+rmdir /s /q nsis
+rename nsis-3.10 nsis
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+cd ..
+del /s /q third_party\nsis-*.zip
