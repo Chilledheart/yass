@@ -9,6 +9,9 @@ MACHINE=$(uname -m)
 
 WITH_CPU=${WITH_CPU:-${MACHINE}}
 
+LLVM_MINGW_VER=20240518
+NASM_VER=2.16.03
+
 case "$WITH_CPU" in
   x86|i586|i686)
     WITH_CPU="i686"
@@ -23,38 +26,59 @@ esac
 
 case "$ARCH" in
   MINGW*|MSYS*)
-    if [ ! -d third_party/llvm-mingw-20231128-ucrt-${MACHINE} ]; then
+    if [ ! -d third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE} ]; then
       pushd third_party
-      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-${MACHINE}.zip
-      "/c/Program Files/7-Zip/7z.exe" x llvm-mingw-20231128-ucrt-${MACHINE}.zip -aoa
-      rm -f llvm-mingw-20231128-ucrt-${MACHINE}.zip
+      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VER}/llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}.zip
+      "/c/Program Files/7-Zip/7z.exe" x llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}.zip -aoa
+      rm -f llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}.zip
       popd
     fi
-    LLVM_BASE="$PWD/third_party/llvm-mingw-20231128-ucrt-${MACHINE}"
+    LLVM_BASE="$PWD/third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}"
     ;;
   Linux)
-    if [ ! -d third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-${MACHINE} ]; then
+    if [ ! -d third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE} ]; then
       pushd third_party
-      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
-      tar -xf llvm-mingw-20231128-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
-      rm -f llvm-mingw-20231128-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
+      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VER}/llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
+      tar -xf llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
+      rm -f llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
       popd
     fi
-    LLVM_BASE="$PWD/third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-${MACHINE}"
+    LLVM_BASE="$PWD/third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}"
     ;;
   Darwin)
-    if [ ! -d third_party/llvm-mingw-20231128-ucrt-macos-universal ]; then
+    if [ ! -d third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal ]; then
       pushd third_party
-      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-macos-universal.tar.xz
-      tar -xf llvm-mingw-20231128-ucrt-macos-universal.tar.xz
-      rm -f llvm-mingw-20231128-ucrt-macos-universal.tar.xz
+      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VER}/llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal.tar.xz
+      tar -xf llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal.tar.xz
+      rm -f llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal.tar.xz
       popd
     fi
-    LLVM_BASE="$PWD/third_party/llvm-mingw-20231128-ucrt-macos-universal"
+    LLVM_BASE="$PWD/third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal"
     ;;
   *)
     echo "Unsupported OS ${ARCH}"
     exit 1
+    ;;
+esac
+
+case "$ARCH" in
+  MINGW*|MSYS*)
+    if [ ! -d third_party/nasm ]; then
+      pushd third_party
+      curl -C - -L -O https://www.nasm.us/pub/nasm/releasebuilds/${NASM_VER}/win64/nasm-${NASM_VER}-win64.zip
+      "/c/Program Files/7-Zip/7z.exe" x nasm-${NASM_VER}-win64.zip -aoa
+      rm -rf nasm
+      mv -f nasm-${NASM_VER} nasm
+      rm -f nasm-${NASM_VER}-win64.zip
+      popd
+    fi
+    export PATH="$PWD/third_party/nasm:$PATH"
+    ;;
+  *)
+    NASM_EXE="$(which nasm)"
+    if [ -z "$NASM_EXE" ]; then
+      echo "nasm is required but not found in PATH"
+    fi
     ;;
 esac
 

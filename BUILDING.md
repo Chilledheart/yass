@@ -9,7 +9,7 @@ Run the following command in ADMINISTRATIVE powershell:
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
 
-2. Make sure you have [Git], [Perl], [CMake], [Ninja], [Golang] and [NASM] installed.
+2. Make sure you have [Git], [Perl], [CMake], [Ninja] and [Golang] installed.
 
 Run the following command in ADMINISTRATIVE shell:
 ```
@@ -18,13 +18,6 @@ choco install strawberryperl --version=5.38.2.2
 choco install cmake.portable --version=3.28.5
 choco install ninja
 choco install golang
-choco install nasm
-```
-
-Note:
-You need put [NASM] in `PATH` like below (C: stands for system drive letter)
-```
-C:\Program Files\NASM
 ```
 
 3. Open `Git Bash` from Start Menu and run
