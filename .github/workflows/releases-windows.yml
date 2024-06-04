@@ -124,9 +124,6 @@ jobs:
           set "VSCMD_START_DIR=%CD%"
           set Platform=${{ matrix.arch }}
 
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
-
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
           tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -build-benchmark -build-test || exit /b
@@ -223,9 +220,6 @@ jobs:
 
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
 
           call "scripts\callxp-%Platform%.cmd"
 

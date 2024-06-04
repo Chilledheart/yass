@@ -2,8 +2,8 @@
 
 ## Prerequisite
 In addition, make sure you have these packages INSTALLED on your system.
-- MinGW: [NSIS]
-- MSVC: [NSIS] and [wixtoolset][wix3] (put installation path in PATH environment variable)
+- MinGW: [NSIS] and [7Zip]
+- MSVC: [NSIS], [7Zip] and [wixtoolset][wix3] (put installation path in PATH environment variable)
 - macOS: [Xcode]
 - Debian: fakeroot devscripts debhelper clang
 - Fedora and Fedora-like: rpm-build rpm-devel rpmlint rpmdevtools clang
@@ -75,5 +75,6 @@ Make sure you have [Xcode] installed on your system.
 TBD
 
 [NSIS]: https://nsis.sourceforge.io/Download
+[7Zip]: https://www.7-zip.org/
 [wix3]: https://wixtoolset.org/docs/wix3/
 [Xcode]: https://apps.apple.com/us/app/xcode/id497799835?mt=12

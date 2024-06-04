@@ -13,6 +13,7 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManage
 
 Run the following command in ADMINISTRATIVE shell:
 ```
+choco install 7zip.install
 choco install git.install
 choco install strawberryperl --version=5.38.2.2
 choco install cmake.portable --version=3.28.5

@@ -248,6 +248,23 @@ func prebuildFindSourceDirectory() {
 		glog.Fatalf("Cannot find top dir of the source tree")
 	}
 
+	// pretend PATH
+	if runtime.GOOS == "windows" {
+		path := os.Getenv("PATH")
+		path = "C:\\Program Files (x86)\\NASM;" + path
+		path = "C:\\Program Files\\NASM;" + path
+		path = "C:\\Program Files (x86)\\WiX Toolset v3.14\\bin;" + path
+		path = "C:\\Program Files\\CMake\\bin;" + path
+		path = "C:\\Program Files (x86)\\NSIS;" + path
+		path = "C:\\Program Files (x86)\\7-Zip;" + path
+		path = "C:\\Program Files\\7-Zip;" + path
+		path = "C:\\ProgramData\\chocolatey\\bin;" + path
+		path = filepath.Join(projectDir, "third_party", "nasm") + ";" + path
+		path = filepath.Join(projectDir, "third_party", "wix311") + ";" + path
+		path = filepath.Join(projectDir, "third_party", "nsis") + ";" + path
+		os.Setenv("PATH", path)
+	}
+
 	if _, err = os.Stat(".git"); err == nil {
 		cmd := exec.Command("git", "describe", "--abbrev=0", "--tags", "HEAD")
 		var outb, errb bytes.Buffer
@@ -2095,7 +2112,7 @@ func generateNSIS(output string, dllPaths []string) {
 	}
 	glog.Info("Feeding NSIS compiler...")
 	if runtime.GOOS == "windows" {
-		cmdRun([]string{"C:\\Program Files (x86)\\NSIS\\makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
+		cmdRun([]string{"makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
 	} else {
 		cmdRun([]string{"makensis", "-XSetCompressor /FINAL lzma", "yass.nsi"}, true)
 	}
@@ -2104,7 +2121,7 @@ func generateNSIS(output string, dllPaths []string) {
 func generateNSISSystemInstaller(output string) {
 	glog.Info("Feeding CPack NSIS compiler...")
 	if runtime.GOOS == "windows" {
-		cmdRun([]string{"C:\\Program Files\\CMake\\bin\\cpack.exe"}, true)
+		cmdRun([]string{"cpack.exe"}, true)
 	} else {
 		cmdRun([]string{"cpack"}, true)
 	}
@@ -2317,7 +2334,7 @@ func postStateArchives() map[string][]string {
 
 func get7zPath() string {
 	if runtime.GOOS == "windows" {
-		return "C:\\Program Files\\7-Zip\\7z.exe"
+		return "7z.exe"
 	} else {
 		return "7z"
 	}

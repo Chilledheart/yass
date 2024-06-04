@@ -72,7 +72,6 @@ case "$ARCH" in
       rm -f nasm-${NASM_VER}-win64.zip
       popd
     fi
-    export PATH="$PWD/third_party/nasm:$PATH"
     ;;
   *)
     NASM_EXE="$(which nasm)"
