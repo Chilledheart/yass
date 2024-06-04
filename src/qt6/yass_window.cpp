@@ -402,12 +402,14 @@ void YASSWindow::OnOption() {
 
 void YASSWindow::OnAbout() {
   QString title, text;
+
   title = tr("About ") + QString::fromUtf8(YASS_APP_PRODUCT_NAME) + " " + QString::fromUtf8(YASS_APP_PRODUCT_VERSION);
-  text += tr("Authors: ") + QString::fromUtf8(YASS_APP_COMPANY_NAME) + "\n";
+
   text += tr("Last Change: ") + QString::fromUtf8(YASS_APP_LAST_CHANGE) + "\n";
   text += tr("Enabled Feature: ") + QString::fromUtf8(YASS_APP_FEATURES) + "\n";
   text += tr("Website: ") + QString::fromUtf8(YASS_APP_WEBSITE) + "\n";
   text += tr("Copyright: ") + QString::fromUtf8(YASS_APP_COPYRIGHT) + "\n";
-  text += tr("License: ") + QString::fromUtf8("GPL 2.0") + "\n";
+  text += tr("Authors: ") + QString::fromUtf8(YASS_APP_COMPANY_NAME) + "\n";
+  text += tr("License: ") + tr("GNU General Public License, version 2 only") + "\n";
   QMessageBox::about(this, title, text);
 }

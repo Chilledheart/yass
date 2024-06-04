@@ -208,5 +208,9 @@
         <source>License: </source>
         <translation>分发许可证: </translation>
     </message>
+    <message>
+        <source>GNU General Public License, version 2 only</source>
+        <translation>GNU 通用公共许可证，仅限第2版</translation>
+    </message>
 </context>
 </TS>

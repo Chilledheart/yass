@@ -204,5 +204,9 @@
         <source>License: </source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>GNU General Public License, version 2 only</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>
