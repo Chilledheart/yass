@@ -55,7 +55,7 @@ jobs:
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libarchive-tools
+          sudo apt-get install -y libarchive-tools zstd
       - name: Build tarball and zip archive
         run: |
           ./scripts/build-src.sh

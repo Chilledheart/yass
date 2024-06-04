@@ -57,6 +57,7 @@ sscxx
 *.bz2
 *.rpm
 *.deb
+*.zst
 /tools/build
 /build-*
 /cmake-build-*
