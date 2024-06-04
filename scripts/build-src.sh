@@ -30,6 +30,7 @@ rm -f yass-${VERSION}.tar yass-${VERSION}.tar.gz yass-${VERSION}.tar.bz2
 
 gzip -9 --keep yass-${VERSION}.tar
 bzip2 -9 --keep yass-${VERSION}.tar
+zstd -T0 -19 -f --keep yass-${VERSION}.tar
 
 rm -f yass-${VERSION}.tar
 
@@ -42,16 +43,16 @@ rm -f yass-${VERSION}.tar
 
 echo "md5sum "
 echo "======================================================================"
-md5sum *.tar.gz *.tar.bz2 *.zip
+md5sum *.tar.gz *.tar.bz2 *.tar.zst *.zip
 
 echo "sha1sum "
 echo "======================================================================"
-sha1sum *.tar.gz *.tar.bz2 *.zip
+sha1sum *.tar.gz *.tar.bz2 *.tar.zst *.zip
 
 echo "sha256sum "
 echo "======================================================================"
-sha256sum *.tar.gz *.tar.bz2 *.zip
+sha256sum *.tar.gz *.tar.bz2 *.tar.zst *.zip
 
 echo "sha512sum "
 echo "======================================================================"
-sha512sum *.tar.gz *.tar.bz2 *.zip
+sha512sum *.tar.gz *.tar.bz2 *.tar.zst *.zip
