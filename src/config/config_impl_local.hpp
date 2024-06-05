@@ -81,7 +81,9 @@ class ConfigImplLocal : public ConfigImpl {
       return false;
     }
 
-    std::string json_content = root_.dump(4);
+    // Call with defaults except in the case of UTF-8 errors which we replace
+    // invalid UTF-8 characters instead of throwing an exception.
+    std::string json_content = root_.dump(4, ' ', false, nlohmann::detail::error_handler_t::replace);
     if (static_cast<ssize_t>(json_content.size()) != WriteFileWithBuffer(path_, json_content)) {
       std::cerr << "failed to write to path: \"" << path_ << " with content \"" << json_content << "\"" << std::endl;
       return false;
