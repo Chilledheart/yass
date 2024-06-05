@@ -3968,6 +3968,7 @@ if (WIN32)
       "/DELAYLOAD:winspool.drv"
       "/DELAYLOAD:wintrust.dll"
       "/DELAYLOAD:ws2_32.dll"
+      "/DELAYLOAD:mswsock.dll"
       )
     add_link_options(${DELAY_LDFLAGS})
   endif()
@@ -4032,6 +4033,7 @@ if (WIN32)
       "-Wl,--delayload=winspool.drv"
       "-Wl,--delayload=wintrust.dll"
       "-Wl,--delayload=ws2_32.dll"
+      "-Wl,--delayload=mswsock.dll"
       )
     add_link_options(${DELAY_LDFLAGS})
   endif()
