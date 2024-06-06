@@ -33,7 +33,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 125-2
+  CACHE_EPOCH: 126-1
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
@@ -56,7 +56,7 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and wixtoolset 3
+      - name: Cache clang, nasm, nsis and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v4
         with:
@@ -64,7 +64,8 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+            third_party/nsis
+          key: ${{ runner.os }}-toolchain-nsis-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache msvc curl
         id: curl-cache
         uses: actions/cache@v4
@@ -87,7 +88,7 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Download dependency: clang, nasm and wixtoolset 3"
+      - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
@@ -112,9 +113,6 @@ jobs:
           set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           set Platform=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
@@ -160,7 +158,8 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+            third_party/nsis
+          key: ${{ runner.os }}-toolchain-nsis-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 llvm
         id: mingw-cache
         uses: actions/cache@v4

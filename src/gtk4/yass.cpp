@@ -21,6 +21,7 @@
 #include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
 #include "feature.h"
+#include "freedesktop/utils.hpp"
 #include "gtk4/option_dialog.hpp"
 #include "gtk4/yass_window.hpp"
 #include "version.h"

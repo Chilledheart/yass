@@ -24,7 +24,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 125-2
+  CACHE_EPOCH: 126-1
   GOPROXY: direct
 jobs:
   windows-release:
@@ -44,7 +44,7 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and wixtoolset 3
+      - name: Cache clang, nasm, nsis and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v4
         with:
@@ -52,7 +52,8 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+            third_party/nsis
+          key: ${{ runner.os }}-toolchain-nsis-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache msvc curl
         id: curl-cache
         uses: actions/cache@v4
@@ -89,7 +90,7 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Download dependency: clang, nasm and wixtoolset 3"
+      - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
@@ -123,9 +124,6 @@ jobs:
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           set Platform=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
@@ -171,7 +169,7 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and wixtoolset 3
+      - name: Cache clang, nasm, nsis and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v4
         with:
@@ -179,7 +177,8 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+            third_party/nsis
+          key: ${{ runner.os }}-toolchain-nsis-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v4
         with:
@@ -193,7 +192,7 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Download dependency: clang, nasm and wixtoolset 3"
+      - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
@@ -223,9 +222,6 @@ jobs:
 
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
 
           call "scripts\callxp-%Platform%.cmd"
 

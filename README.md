@@ -5,76 +5,54 @@
 [![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/Chilledheart/yass/latest/total)](https://github.com/Chilledheart/yass/releases/latest)
 
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
-[![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 [![homebrew cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
-yass is client-server model based and efficient forward proxy
-supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
+[![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
+[![aur yass-proxy-gtk3](https://img.shields.io/aur/version/yass-proxy-gtk3)](https://aur.archlinux.org/packages/yass-proxy-gtk3)
+[![aur yass-proxy-qt6](https://img.shields.io/aur/version/yass-proxy-qt6)](https://aur.archlinux.org/packages/yass-proxy-qt6)
+[![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
+
+yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5 protocol running on PC and mobile devices.
+
+## License
+[GPLv2-only][license-link]
 
 ## Features
 
-- Better scaled, less memory consumption and CPU cycles.
-- Easier to maintain and adopt new features.
-- Safe memory layout.
+### Android/iOS/macOS (M1/M2/M3 only) comes with VPN Service support
+Mobile users including macOS (M1/M2/M3) machines use YASS as VPN Service more than Global Proxy.
 
-More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki).
+See [Supporteded Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System) for more.
+See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store) for more.
 
-## Usages
+### Post Quantum Kyber Support
+Post Quantum Kyber Support (not enabled by default) is added on all of supported Platforms.
+
+See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-android-release-arm64-1.9.5.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-android-release-arm-1.9.5.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-ios-release-arm64-1.9.5.ipa)
-- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-win7-release-x86_64-1.9.5-system-installer.exe) or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-winxp-release-i686-1.9.5-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-mingw-release-aarch64-1.9.5-system-installer.exe)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-macos-release-x64-1.9.5.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-macos-release-arm64-1.9.5.dmg)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-android-release-arm64-1.10.4.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-android-release-arm-1.10.4.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-mingw-win7-release-x86_64-1.10.4-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-mingw-winxp-release-i686-1.10.4-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-mingw-release-aarch64-1.10.4-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-macos-release-x64-1.10.4.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-macos-release-arm64-1.10.4.dmg)
 > via homebrew: `brew install --cask yass`
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass.el7.x86_64.1.9.5-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.9.5/yass-client-ubuntu-16.04-xenial_amd64.1.9.5.deb)
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass.el7.x86_64.1.10.4.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-ubuntu-16.04-xenial_amd64.1.10.4.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.9.5)
+View more at [Release Page](https://github.com/Chilledheart/yass/releases/tag/1.10.4)
 
-### Status of Package Store
-Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
+### NaïveProxy-Compatible Protocol Support
+Cipher http2 and https are NaïveProxy-compatible.
 
-### Build from Source
-Take a look at [BUILDING.md] for more instructions.
+See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
 
-### Screenshots
-Visit wiki's [Supported Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System)
+## Usages
+Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
 
-### Usages
-Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
-
-### Important notes before use
-
-#### NaïveProxy Protocol Support
-It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
-#### Fix disk space occupation issue for mobile users
-Starting with release 1.9.2 and 1.8.5, it will no longer keep log file and will not occupy extra disk space for Android/iOS/HarmonyOS client.
-#### Android vpn service support
-Android releases from 1.5.24 are signed and have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
-#### iOS packet tunnel support
-iOS releases from 1.5.22 have fixed memory pressure crashes and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
-#### macOS packet tunnel support (M1/M2/M3 only)
-For Apple Silicon macOS Users such as M1/M2/M3, you can also install [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) version via [TestFlight](https://testflight.apple.com/join/6AkiEq09).
-#### Notarized macOS releases
-macOS releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
-#### MinGW Build (alias Window Build)
-MinGW 64-bit releases from 1.6.5 and 1.7.1 no longer require Visual C++ 2010 Runtime.
-
-For Windows XP Users, please make Visual C++ 2010 Runtime installed and use 32-bit releases.
-Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
-#### Supplementary support for missing ISRG (Let's Encrypt Root) on some Windows 11 Installation and Android prior to 7.1.1
-Releases from 1.5.25 and 1.6.4 fixes an issue that ISRG Root 1 and ISRG Root 2 might be missing in some machines and that causes troubles.
-#### MSVC Build(previous Windows Build) prebuilt binaries removed
-Due to the fact of possibly violating GPL license by linking static Visual C++ Runtime or distribute the CRT dll files
-we are still supporting MSVC builds, but the prebuilt binaries are removed from the release page.
-You can build MSVC binaries by yourself or switch to MinGW builds.
+## Build from Source
+Take a look at [instructions](BUILDING.md).
 
 ## Sponsor Me
 Please visit [the pages site](https://letshack.info).
-
-## License
-It is licensed with [GPLv2][license-link].
 
 ## Build Status
 
@@ -97,9 +75,40 @@ It is licensed with [GPLv2][license-link].
 [![MSVC Build](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml)
 [![Old MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 
+## Additional Features
+
+### SOCKS cipher Support
+Experimental socks4/socks4a/socks5/socks5h cipher support is added for both of CLI and GUI.
+
+### DoH (DNS over HTTPS) and DoT (DNS over TLS) Support
+Experimental DoH and DoT support is added for both of CLI and GUI.
+
+### Supplementary Support for ISRG Root X2 and ISRG Root X1 ca which is missing on some machines
+These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
+
+### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
+These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
+
+### Specify Rate Limit (Command Line only)
+Pass `--limit_rate rate` to command line.
+Limits the _rate_ of response transmission to a client.
+Uint can be `(none)`, `k` and `m`.
+
+### Specify TCP Congestion Algorithm (Command Line only)
+Pass `--congestion_algorithm algo` to command line.
+Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux only).
+See more at manpage [_tcp(7)_](https://linux.die.net/man/7/tcp)
+
+### Use custom CA (Command Line only)
+Pass `--certificate_chain_file file` to command line.
+Use custom certificate chain provided by _file_ to verify server's certificate.
+
+### Use server Side Support (Commmand Line only)
+All ciphers supported by client are also supported by `yass_server`.
+See more at manpage _yass_server(1)_
+
+See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
+
 [license-link]: LICENSE
-[naiveproxy]: https://github.com/klzgrad/naiveproxy
-[HTTP2]: https://datatracker.ietf.org/doc/html/rfc9113
-[vs2010_x64]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
+[KB2999226]: https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
-[BUILDING.md]: BUILDING.md

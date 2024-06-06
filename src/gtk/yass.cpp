@@ -20,6 +20,7 @@
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
+#include "freedesktop/utils.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass_window.hpp"
 #include "version.h"
@@ -98,6 +99,9 @@ YASSApp::YASSApp()
 #endif
       idle_source_(g_timeout_source_new(200)) {
   g_set_application_name(kAppName);
+  // for wayland's fix see https://gitlab.gnome.org/GNOME/gtk/-/issues/2822
+  // In order to achieve this with GTK+3 call g_set_prgname() with the application id you passed to #GtkApplication.
+  g_set_prgname(kAppId);
 
   gdk_init(nullptr, nullptr);
   gtk_init(nullptr, nullptr);

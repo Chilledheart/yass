@@ -1595,7 +1595,8 @@ void ServerConnection::OnConnect() {
       }
       headers.emplace_back("padding"s, padding);
     }
-    int submit_result = adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame));
+    int submit_result =
+        adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame), false);
     if (submit_result < 0) {
       adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::INTERNAL_ERROR, ""sv);
     }

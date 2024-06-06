@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/lang">
+        <file>yass_en.qm</file>
+        <file>yass_zh_CN.qm</file>
+    </qresource>
+</RCC>

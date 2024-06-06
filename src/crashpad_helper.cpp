@@ -16,7 +16,6 @@
 using namespace std::string_literals;
 
 #ifdef __ANDROID__
-extern struct android_app* a_app;
 extern std::string a_data_dir;
 #endif
 

@@ -1,17 +1,26 @@
 # Building Instruments
 
-## Build Binary
+## Windows (MinGW)
 
-### Windows (MinGW llvm-mingw)
+1. Install [Chocolatey][chocolatey] Package Manager.
 
-1. Make sure you have [Git for Windows][gitforwindows] installed.
-2. Make sure you have [Perl], [CMake] (3.13 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+Run the following command in ADMINISTRATIVE powershell:
+```
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```
 
-  * A recent version of Perl is required.
-    On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
-    [Strawberry Perl](http://strawberryperl.com/) also works but it adds [GCC] to `PATH`,
-    which can confuse some build tools when identifying the compiler
-    (removing `C:\Strawberry\c\bin` from `PATH` should resolve any problems).
+2. Install required tools via [Chocolatey].
+
+Run the following command in ADMINISTRATIVE shell:
+```
+choco install 7zip.install
+choco install git.install
+choco install strawberryperl --version=5.38.2.2
+choco install cmake.portable --version=3.28.5
+choco install ninja
+choco install golang
+```
+
 3. Open `Git Bash` from Start Menu and run
 
 ```
@@ -20,9 +29,43 @@ cd yass
 ./scripts/build-mingw.sh
 ```
 
-4. Enjoy
+## Windows (MSYS2)
 
-### Windows (MSVC)
+1. Download and run MSYS2 installer from [MSYS2 site][msys2].
+2. Install required tools
+
+Run `MSYS2 CLANG64` in Start Menu:
+```
+pacman -S mingw-w64-clang-x86_64-clang \
+          mingw-w64-clang-x86_64-gcc-compat \
+          mingw-w64-clang-x86_64-perl \
+          mingw-w64-clang-x86_64-go \
+          mingw-w64-clang-x86_64-cmake \
+          mingw-w64-clang-x86_64-ninja \
+          mingw-w64-clang-x86_64-nasm \
+          git
+```
+
+Notes: you might need to get `GOROOT` manually after install `mingw-w64-clang-x86_64-go`
+package by running:
+```
+export GOROOT=/clang64/lib/go
+export GOPATH=/clang64
+```
+
+3. Compiling the program.
+
+Run `MSYS2 CLANG64` in Start Menu:
+```
+git clone https://github.com/Chilledheart/yass
+cd yass
+mkdir build
+cd build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
+ninja yass
+```
+
+## Windows (MSVC)
 
 1. Make sure you have [Git for Windows][gitforwindows] installed.
 2. Make sure you have [Perl], [CMake] (3.13 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
@@ -45,10 +88,9 @@ cd yass
 
 Notes: please make sure you have [LLVM][llvm-win64] (17.0 or above).
 
-5. Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu.
+5. Compile the program with Release configuration.
 
-6. Compile the program with Release configuration.
-
+Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu:
 ```
 git clone https://github.com/Chilledheart/yass
 cd yass
@@ -60,97 +102,26 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-### Windows (MinGW MSYS2)
+## macOS
 
-1. Install MSYS2 Package from [official site][msys2].
-2. Run MSYS2 CLANG64 in Start Menu.
-3. Install required tools
-```
-pacman -S mingw-w64-clang-x86_64-clang \
-          mingw-w64-clang-x86_64-gcc-compat \
-          mingw-w64-clang-x86_64-perl \
-          mingw-w64-clang-x86_64-go \
-          mingw-w64-clang-x86_64-cmake \
-          mingw-w64-clang-x86_64-ninja \
-          mingw-w64-clang-x86_64-nasm \
-          git
-```
-
-Notes: you might need to get `GOROOT` manually after install `mingw-w64-clang-x86_64-go`
-package by running:
-```
-export GOROOT=/clang64/lib/go
-export GOPATH=/clang64
-```
-
-4. Compiling the program.
-```
-git clone https://github.com/Chilledheart/yass
-cd yass
-mkdir build
-cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
-ninja yass
-```
-5. Enjoy
-
-### macOS
-
-1. Make sure you have [Xcode Command Line Tools][xcode-commandline] installed ([Xcode] if possible):
+1. Make sure you have both of [Xcode] and [Homebrew] installed:
 
 Run in `Terminal`:
 ```
+xcode-select -s /Applications/Xcode.app
 xcode-select --install
+xcodebuild -runFirstLaunch
 ```
-2. Install the required build tools...
 
-(for [Homebrew] users)
+Run in `Terminal`:
+```
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+2. Install the required build tools via homebrew
 
 Run in `Terminal`:
 ```
 brew install ninja cmake go p7zip
-```
-
-(for [MacPorts] users)
-
-Run in `Terminal`:
-```
-sudo port install ninja cmake go p7zip
-```
-
-(for people who don't use [MacPorts] or [Homebrew])
-
-1. [CMake]
-
-Run in Terminal:
-```
-cd $TMPDIR
-curl -L -O https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-macos10.10-universal.dmg
-hdiutil attach cmake-3.25.1-macos10.10-universal.dmg
-ditto /Volumes/cmake-3.25.1-macos10.10-universal/CMake.app /Applications/CMake.app
-hdiutil detach /Volumes/cmake-3.25.1-macos10.10-universal
-echo 'export PATH="/Applications/CMake.app/Contents/bin:${PATH}"' >> .zprofile
-export PATH="/Applications/CMake.app/Contents/bin:${PATH}"
-```
-2. [Ninja]
-
-Run in Terminal:
-```
-cd $TMPDIR
-curl -L -O https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-mac.zip
-unzip ninja-mac.zip
-sudo install -m 755 ninja /usr/local/bin/ninja
-```
-3. [Golang]
-
-Run in Terminal:
-```
-cd $TMPDIR
-# Change to https://go.dev/dl/go1.18.10.darwin-arm64.tar.gz if you are using Apple Silicon
-curl -L -O https://go.dev/dl/go1.18.10.darwin-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.18.10.darwin-amd64.tar.gz
-echo 'export PATH="/usr/local/go/bin:${PATH}"' >> .zprofile
-export PATH="/usr/local/go/bin:${PATH}"
 ```
 
 3. Compile the program with Release configuration.
@@ -163,71 +134,59 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-
-### Debian/Ubuntu
+## Debian/Ubuntu
 1. Install GNU C++ Compiler:
+
+Run in `Console`:
 ```
 sudo apt-get install -y build-essential git
 ```
+
 2. Install required dependencies:
+
+Run in `Console`:
 ```
-sudo apt-get install -y \
-    cmake \
-    ninja-build \
-    pkg-config \
-    perl \
-    gettext \
-    libgtk-3-dev
+sudo apt-get install -y cmake ninja-build pkg-config perl gettext libgtk-3-dev golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (17.0 or above) and [CMake] (3.13 or above).
-
-For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
+Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.13 or above).
 
 You might want to give these APT/PPA sites a look if the requirements are not meet:
 
 * [PPA for Ubuntu Toolchain](https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test)
 * [Kitware CMake](https://apt.kitware.com/)
 
-3. Install Golang manually:
-```
-cd /tmp
-wget https://go.dev/dl/go1.18.10.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.18.10.linux-amd64.tar.gz
-echo 'export PATH="/usr/local/go/bin:${PATH}"' >> ~/.bashrc
-export PATH="/usr/local/go/bin:${PATH}"
-```
-4. Compile the program with Release configuration.
+3. Compile the program with Release configuration.
+
+Run in `Console`:
 ```
 git clone https://github.com/Chilledheart/yass
 cd yass
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on -DENABLE_GOLD=off -DUSE_LIBCXX=off -DUSE_GTK4=off ..
 ninja yass
 ```
 
-### Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux
+## Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux
 1. Install GNU C++ Compiler:
+
+Run in `Console`:
 ```
-sudo yum install -y gcc gcc-c++ \
-    make python bash coreutils diffutils patch git
+sudo yum install -y gcc gcc-c++ make python bash coreutils diffutils patch git
 ```
 2. Install required dependencies:
+
+Run in `Console`:
 ```
-sudo yum install -y \
-    cmake \
-    ninja-build \
-    pkg-config \
-    perl \
-    gtk3-devel \
-    gettext \
-    golang
+sudo yum install -y cmake ninja-build pkg-config perl gtk3-devel gettext golang
+```
+or (for RHEL/CentOS users)
+```
+sudo yum install -y cmake3 ninja-build pkg-config perl gtk3-devel gettext golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (17.0 or above) and [CMake] (3.13 or above).
-
-For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
+Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.13 or above).
 
 You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
 
@@ -247,140 +206,51 @@ subscription-manager repos --enable rhel-*-optional-rpms \
 * [EPEL] 9: `yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm`
 
 3. Compile the program with Release configuration.
+
+Run in `Console`:
 ```
 git clone https://github.com/Chilledheart/yass
 cd yass
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on -DENABLE_GOLD=off -DUSE_LIBCXX=off -DUSE_GTK4=off ..
 ninja yass
 ```
 
-### FreeBSD
-1. Install Clang Compiler (Optional):
+## FreeBSD
+1. Install Clang Compiler:
 
 It is impossible to upgrade system compiler without upgrading OS,
-so you can install latest [Clang]:
+so you have to install latest [Clang] (not required since FreeBSD 14.1):
+
+Run in `Console`:
 ```
-pkg install llvm17-lite
+pkg install llvm18-lite
 ```
-Notes: please make sure you have [Clang] (17.0 or above) and [CMake] (3.13 or above).
 
 2. Install required dependencies:
-```
-pkg install -y \
-    git \
-    cmake \
-    ninja \
-    pkgconf \
-    perl5 \
-    gettext \
-    gtk3 \
-    go
-```
 
-Notes: please install `src.txz` package of system otherwise you might need to create symbolics of unwind.h like below:
-
+Run in `Console`:
 ```
-ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
-ln -sf /usr/include/c++/v1/unwind-arm.h /usr/include/unwind-arm.h
-ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
+pkg install -y git cmake ninja pkgconf perl5 gettext gtk3 go
 ```
-
-Notes: Not required since FreeBSD 13.1
 
 3. Compile the program with Release configuration.
+
+Run in `Console`:
 ```
 git clone https://github.com/Chilledheart/yass
 cd yass
-export PATH="/usr/local/llvm17/bin:$PATH"
+export PATH="/usr/local/llvm18/bin:$PATH"
 export CC=clang
 export CXX=clang++
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on -DUSE_GTK4=off ..
 ninja yass
 ```
 
-## Build Packaging
-
-### MinGW/Packaging
-
-Make sure you have [Golang] installed on your system.
-
-Run in `Git Bash` in Start Menu:
-```
-./scripts/build-mingw.sh
-```
-
-### macOS/Packaging
-
-Make sure you have [Golang] installed on your system.
-
-Run in `Terminal`:
-```
-cd tools
-go build
-cd ..
-./tools/build
-```
-
-### Debian/Packaging
-
-1. Install Packaging Tools
-```
-sudo apt-get install -y git build-essential fakeroot devscripts debhelper
-```
-
-2. Install [Clang] and put its binaries in `PATH`
-
-3. Generate Packages under parent directory
-```
-export CC=clang
-export CXX=clang++
-./scripts/build-deb.sh
-```
-
-### Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux Packaging
-
-1. Install Packaging Tools
-```
-sudo yum install -y gcc gcc-c++ \
-    rpm-build rpm-devel rpmlint make python bash coreutils diffutils patch rpmdevtools
-```
-
-2. Install [Clang] and put its binaries in `PATH`
-
-3. Generate Packages under current directory
-```
-export CC=clang
-export CXX=clang++
-./scripts/build-rpm.sh
-```
-
-### FreeBSD/Packaging
-
-Make sure you have [Golang] installed on your system.
-
-Run in Terminal:
-```
-cd tools
-go build
-cd ..
-./tools/build
-```
-
-### Android/Packaging
-See [android's README.md](android/README.md)
-
-### HarmonyOS/Packaging
-See [harmonyOS's README.md](harmony/README.md)
-
-### iOS/Packaging
-Make sure you have Xcode installed on your system.
-
-TBD
-
+[chocolatey]: https://chocolatey.org/install#individual
 [gitforwindows]: https://gitforwindows.org/
 [visualstudio]: https://visualstudio.microsoft.com/downloads/
 [Perl]: https://www.perl.org/get.html
@@ -390,11 +260,8 @@ TBD
 [Golang]: https://go.dev/dl/
 [GCC]: https://gcc.gnu.org/
 [NASM]: https://www.nasm.us/
-[xcode-commandline]: https://developer.apple.com/download/more/
 [Xcode]: https://apps.apple.com/us/app/xcode/id497799835?mt=12
-[MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://docs.brew.sh/Installation
-[python]: https://www.python.org/downloads/
-[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/LLVM-17.0.6-win64.exe
+[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.6/LLVM-18.1.6-win64.exe
 [msys2]: https://www.msys2.org/
 [EPEL]: https://docs.fedoraproject.org/en-US/epel

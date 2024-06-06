@@ -2182,7 +2182,7 @@ void CliConnection::connected() {
       FillNonindexHeaderValue(RandUint64(), &padding[0], padding.size());
       headers.emplace_back("padding"s, padding);
     }
-    int submit_result = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), nullptr);
+    int submit_result = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), false, nullptr);
     if (submit_result < 0) {
       adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::INTERNAL_ERROR, ""sv);
     } else {
