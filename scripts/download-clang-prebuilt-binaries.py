@@ -102,19 +102,13 @@ def main():
                f'clang-{clang_revision}-{clang_arch}.tgz')
   download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clang-tidy-{clang_revision}.tgz',
                f'clang-tidy-{clang_revision}-{clang_arch}.tgz')
-  download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/libclang-{clang_revision}.tgz',
-               f'libclang-{clang_revision}-{clang_arch}.tgz')
-  download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clangd-{clang_revision}.tgz',
-               f'clangd-{clang_revision}-{clang_arch}.tgz')
   extract_tarfile(f'clang-{clang_revision}-{clang_arch}.tgz')
   extract_tarfile(f'clang-tidy-{clang_revision}-{clang_arch}.tgz')
-  extract_tarfile(f'libclang-{clang_revision}-{clang_arch}.tgz')
-  extract_tarfile(f'clangd-{clang_revision}-{clang_arch}.tgz')
 
   # create a shim to lld-link
   os.chdir('bin')
   if platform.system() == 'Windows':
-    write_output(['clang-cl.exe', '..\..\..\..\scripts\llvm-lib.c', '/DWIN32',
+    write_output(['clang-cl.exe', '..\\..\\..\\..\\scripts\\llvm-lib.c', '/DWIN32',
                   '/DWIN32_LEAN_AND_MEAN', '/D_UNICODE', '/DUNICODE', '/MT',
                   '/O2', '/Ob2', '/DNDEBUG', 'shell32.lib'], check=True)
   else:
