@@ -18,7 +18,7 @@ on:
   schedule:
     - cron: '0 16 * * *'
 env:
-  CACHE_EPOCH: 126-1
+  CACHE_EPOCH: 127-1
   GOPROXY: direct
 jobs:
   sanitizer-linux:
