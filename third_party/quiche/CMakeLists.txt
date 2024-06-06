@@ -669,6 +669,7 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/uber_received_packet_manager.cc
   src/quiche/quic/core/uber_received_packet_manager.h
   src/quiche/quic/core/web_transport_stats.cc
+  src/quiche/quic/core/web_transport_write_blocked_list.cc
   src/quiche/quic/core/web_transport_interface.h
   src/quiche/quic/platform/api/quic_bug_tracker.h
   src/quiche/quic/platform/api/quic_client_stats.h
