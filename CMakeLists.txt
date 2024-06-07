@@ -505,7 +505,7 @@ cmake_dependent_option(USE_QT6
   "GUI AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
 cmake_dependent_option(USE_GTK4
-  "Build with gtk4 (GUI)" ON
+  "Build with gtk4 (GUI)" OFF
   "GUI AND NOT USE_QT6 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
 # Dynamic users are supported from version 235
@@ -2151,7 +2151,7 @@ elseif (GUI)
 
     # fix up for loongarch64 gtk support
     # see https://github.com/microcai/gentoo-zh/pull/4486
-    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
+    if (USE_GTK4 AND CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
       message(STATUS "Blacklist gtk4 for loongarch64 target")
       set(USE_GTK4 OFF)
     endif()
