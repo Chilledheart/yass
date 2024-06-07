@@ -2,6 +2,5 @@ usr/bin/yass
 usr/share/pixmaps/yass.png
 usr/share/applications/it.gui.yass.desktop
 usr/share/icons/hicolor/*/apps/yass.png
-usr/share/locale/en/LC_MESSAGES/yass.mo
-usr/share/locale/zh_CN/LC_MESSAGES/yass.mo
+usr/share/locale/*/LC_MESSAGES/yass.mo
 usr/share/doc/yass/LICENSE

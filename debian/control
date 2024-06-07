@@ -14,8 +14,11 @@ Build-Depends:
  ca-certificates,
  pkg-config,
  zlib1g-dev,
- libglib2.0-dev <!nogui>,
- libgtk-3-dev <!nogui>
+ libglib2.0-dev <gtk3>,
+ libgtk-3-dev <gtk3>,
+ libglib2.0-dev <gtk4>,
+ libgtk-4-dev <gtk4>,
+ qt6-base-dev <qt6>
 Rules-Requires-Root: no
 Homepage: https://github.com/Chilledheart/yass
 Vcs-Git: https://github.com/Chilledheart/yass.git
@@ -24,7 +27,7 @@ Vcs-Browser: https://github.com/Chilledheart/yass
 Package: yass
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Build-Profiles: <!nogui>
+Build-Profiles: <gtk3> <gtk4> <qt6>
 Recommends: ca-certificates
 Depends:
  lsb-base (>= 3.0-6),
@@ -37,7 +40,7 @@ Description: lightweight and secure http/socks4/socks5 proxy
 Package: yass-dbg
 Section: debug
 Architecture: any
-Build-Profiles: <!nogui>
+Build-Profiles: <gtk3> <gtk4> <qt6>
 Depends:
     yass (= ${binary:Version}),
     ${misc:Depends},

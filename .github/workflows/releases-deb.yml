@@ -148,11 +148,11 @@ jobs:
         if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
           echo "DEB_BUILD_PROFILES=nocheck cross ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
-      - name: Set nogui build profile (armel/mipsel/mips64el and riscv64 only)
-        if: ${{ env.HOST_ARCH == 'armel' || env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' || env.HOST_ARCH == 'riscv64' }}
+      - name: Set gtk3 build profile (none of armel/mipsel/mips64el and riscv64)
+        if: ${{ env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
         run: |
-          echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
-          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=gtk3 ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
+          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=gtk3" >> $GITHUB_ENV
       - name: Set clang build profile
         run: |
           echo "DEB_BUILD_PROFILES=clang ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
