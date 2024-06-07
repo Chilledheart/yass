@@ -70,7 +70,7 @@ jobs:
             qemu_suffix: aarch64
     runs-on: ubuntu-20.04
     env:
-      OPENWRT_FLAGS: arch=${{ matrix.arch_name }} release=22.03.5 gcc_ver=11.2.0 ${{ matrix.openwrt }}
+      OPENWRT_FLAGS: arch=${{ matrix.arch_name }} release=23.05.3 gcc_ver=12.3.0 ${{ matrix.openwrt }}
       SDK_ROOT: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch_name }}
       SDK_HOME: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch_name }}-home
     steps:
@@ -116,7 +116,7 @@ jobs:
             openwrt-sdk-*.Linux-x86_64
             ${{ env.SDK_ROOT }}
             ${{ env.SDK_HOME }}
-          key: openwrt-sdkhome-v0-${{ matrix.arch_name }}-v1
+          key: openwrt-sdkhome-${{ matrix.arch_name }}-23-05-03
       - name: Build build tool
         run: |
           cd tools
