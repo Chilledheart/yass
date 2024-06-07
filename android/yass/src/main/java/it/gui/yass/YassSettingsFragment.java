@@ -24,7 +24,7 @@ public class YassSettingsFragment extends PreferenceFragment {
 
         if (enablePostQuantumKyberPref != null) {
             enablePostQuantumKyberPref.setOnPreferenceChangeListener((preference, newValue) -> {
-                Log.d("enablePostQuantumKyber", String.format("enablePostQuantumKyber enabled: %s", newValue));
+                Log.d("Preferences", String.format("Setting Preferences: %s -> %s", EnablePostQuantumKyberPreferenceKey, newValue));
                 YassUtils.setEnablePostQuantumKyber((Boolean) newValue);
                 return true; // Return true if the event is handled.
             });
