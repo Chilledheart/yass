@@ -155,7 +155,8 @@ mkdir build
 cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
-   -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
+   -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on \
+   -DUSE_GTK4=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_OLD_SYSTEMD_SERVICE="%use_old_systemd_service" \
    -DUSE_TCMALLOC=on -DUSE_SYSTEM_TCMALLOC="%enable_system_gperftools_opt" \
    -DUSE_SYSTEM_ZLIB=on \

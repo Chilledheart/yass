@@ -1088,8 +1088,6 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
 			cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=off")
 		}
-		// for compatibility, we build only gtk3 package for now
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_GTK4=off"))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
 
@@ -1128,8 +1126,6 @@ func buildStageGenerateBuildScript() {
 		// FIXME not enabled due to linkage issue
 		cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
 		cmakeArgs = append(cmakeArgs, "-DUSE_MIMALLOC=off")
-		// for compatibility, we build only gtk3 package for now
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_GTK4=off"))
 	}
 	cmakeCmd := append([]string{"cmake", ".."}, cmakeArgs...)
 	if noConfigureFlag {
