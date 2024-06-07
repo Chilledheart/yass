@@ -35,7 +35,7 @@ sscxx
 /third_party/depot_tools
 *.aps
 *.build
-/debian/.debhelper
+/debian/*.debhelper
 /debian/tmp
 /debian/debhelper-build-stamp
 /debian/yass-dbg

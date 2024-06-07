@@ -57,7 +57,7 @@ commands:
       - run:
           command: |
             sudo apt-get update -qq
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cmake ninja-build qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libglx-dev libgl1-mesa-dev qt6-l10n-tools libncurses5 gettext libcurl4-openssl-dev dpkg-dev
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cmake ninja-build qt6-base-dev libglx-dev libgl1-mesa-dev libncurses5 gettext libcurl4-openssl-dev dpkg-dev
             curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
             sudo tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
             cmake --version

@@ -4632,6 +4632,10 @@ if (GUI)
         file(GLOB QM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/yass_*.qm")
         target_sources(${APP_NAME} PRIVATE ${QM_FILES} "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang/lang.qrc")
       endif()
+      # dummy place holder
+      install(FILES src/qt6/yass.placeholder.mo
+        DESTINATION share/locale/en/LC_MESSAGES
+        RENAME yass.mo)
     else()
       add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
           ${SRC_FILES}

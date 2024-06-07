@@ -6,3 +6,5 @@
 *.patch text eol=lf
 *.ts    text eol=lf
 *.qm    binary
+*.mo    binary
+*.gmo   binary
