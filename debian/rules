@@ -51,8 +51,6 @@ ifneq ($(filter riscv64,$(DEB_HOST_GNU_CPU)),)
 override_dh_auto_configure: ASMFLAGS += -march=rv64gc -mabi=lp64d
 override_dh_auto_configure: CFLAGS += -march=rv64gc -mabi=lp64d
 override_dh_auto_configure: CXXFLAGS += -march=rv64gc -mabi=lp64d
-# lto mess with d extension support
-CMAKE_OPTIONS += -DENABLE_LTO=off
 endif
 endif
 
@@ -60,6 +58,7 @@ ifneq ($(filter cross,$(DEB_BUILD_PROFILES)),)
 override_dh_auto_configure: PKG_CONFIG = ${DEB_HOST_GNU_TYPE}-pkg-config
 endif
 
+override_dh_auto_configure: CMAKE_OPTIONS += -DENABLE_LTO=on -DENABLE_LLD=on
 override_dh_auto_configure: CMAKE_OPTIONS += -DUSE_SYSTEM_ZLIB=on
 override_dh_auto_configure: CMAKE_OPTIONS += -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=$(DEB_HOST_ARCH)
 override_dh_auto_configure: CMAKE_OPTIONS += -DUSE_OLD_SYSTEMD_SERVICE=on
