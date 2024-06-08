@@ -119,7 +119,7 @@ jobs:
           REM start to build with workaround
           mkdir build-mingw
           cd build-mingw
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_MSVCRT100=on -DMINGW_WORKAROUND=on .. ${{ env.CMAKE_OPTIONS }} -DCMAKE_C_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_ASM_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_SYSROOT="%CD%\..\third_party\${{ matrix.mingw_dir }}\${{ matrix.arch }}-w64-mingw32" -DUSE_TCMALLOC=on
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_MSVCRT100=on -DMINGW_WORKAROUND=on .. ${{ env.CMAKE_OPTIONS }} -DCMAKE_C_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_ASM_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_SYSROOT="%CD%\..\third_party\${{ matrix.mingw_dir }}\${{ matrix.arch }}-w64-mingw32" -DUSE_TCMALLOC=on -DENABLE_LLD=on
           ninja yass yass_benchmark yass_test
       - name: Packaging
         shell: bash

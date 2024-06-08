@@ -453,7 +453,6 @@ cmake_dependent_option(
   USE_NGHTTP2 OFF)
 
 option(USE_ICF "Build with ICF" OFF)
-option(USE_LTO "Build with LTO" OFF)
 option(USE_CURL "Build with libcurl (test only)" ON)
 
 option(USE_CARES "Build with c-ares" ON)
@@ -492,9 +491,10 @@ option(USE_SYSTEM_ZLIB "Build with system or vendered zlib" OFF)
 option(USE_SYSTEM_JSON "Build with system or vendered json library" OFF)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source (linux only)" OFF)
-option(ENABLE_LTO "Enable build with LTO" ON)
-option(ENABLE_LLD "Enable build with LLD" ON)
-option(ENABLE_GOLD "Enable build with GOLD" ON)
+option(ENABLE_LTO "Enable build with LTO" OFF)
+
+option(ENABLE_LLD "Enable build with LLD" OFF)
+option(ENABLE_GOLD "Enable build with GOLD" OFF)
 
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
@@ -526,7 +526,14 @@ endif()
 if (USE_MOLD OR USE_LLD OR USE_GOLD)
   set(USE_ICF ON)
 else()
-  set(ENABLE_LTO OFF)
+  if (ENABLE_LTO)
+    set(ENABLE_LTO FALSE)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT USE_LTO_CMAKE OUTPUT LTO_REASON)
+    if (NOT USE_LTO_CMAKE)
+      message(WARNING "LTO is not supported: ${LTO_REASON}, disabling")
+    endif()
+  endif()
 endif()
 
 if (ENABLE_CLANG_TIDY)
@@ -594,18 +601,26 @@ if (ENABLE_LTO AND IS_RELEASE_BUILD)
     endif()
   endif()
 
-  ## adopt Full LTO
-  ## old gcc has regression on c++17 mode
-  ## https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81004
-  if (COMPILER_GCC AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.3.1)
-    set(LTO ON)
-    set(LTO_FLAVOUR "full")
-  endif()
-
   if (LTO)
     message(STATUS "Compiling with ${LTO_FLAVOUR} LTO")
     list(APPEND YASS_APP_FEATURES "lto ${LTO_FLAVOUR}")
+    set(USE_LTO_CMAKE OFF)
   endif()
+endif()
+
+if (USE_LTO_CMAKE AND ${CMAKE_GENERATOR} MATCHES "^Xcode.*" AND IS_RELEASE_BUILD)
+  set(USE_LTO_CMAKE OFF)
+  # https://gitlab.kitware.com/cmake/cmake/-/issues/16749
+  set(CMAKE_XCODE_ATTRIBUTE_LLVM_LTO "YES_THIN")
+  message(STATUS "Compiling with Xcode's LTO")
+  list(APPEND YASS_APP_FEATURES "lto thin")
+endif()
+
+if (USE_LTO_CMAKE AND IS_RELEASE_BUILD)
+  message(STATUS "Compiling with CMake's LTO")
+  list(APPEND YASS_APP_FEATURES "lto auto")
+else()
+  set(USE_LTO_CMAKE OFF)
 endif()
 
 if (NOT MSVC)
@@ -2372,6 +2387,27 @@ set(SUPPORT_LIBS
   ${SUPPORT_LIBS}
   )
 
+if (USE_LTO_CMAKE)
+  set_target_properties(
+    absl_base
+    absl_core_headers
+    absl_flat_hash_map
+    absl_flat_hash_set
+    absl_flags
+    absl_flags_parse
+    absl_flags_marshalling
+    absl_synchronization
+    absl_stacktrace
+    absl_symbolize
+    absl_status
+    absl_statusor
+    absl_strings
+    absl_time
+    absl_optional
+    absl_failure_signal_handler
+    PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 # *****************************************************************************************
 #           tcmalloc Library
 # *****************************************************************************************
@@ -2433,6 +2469,10 @@ elseif (USE_TCMALLOC AND NOT WIN32)
   set(GPERFTOOLS_ENABLE_INSTALL OFF CACHE BOOL "")
   set(GPERFTOOLS_BUILD_TESTING OFF CACHE BOOL "")
   add_subdirectory(third_party/gperftools EXCLUDE_FROM_ALL)
+  if (USE_LTO_CMAKE)
+    set_property(TARGET tcmalloc_minimal_static
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 
   list(APPEND YASS_APP_FEATURES "tcmalloc_minimal")
 
@@ -2461,6 +2501,10 @@ elseif (USE_TCMALLOC AND WIN32)
   set(GPERFTOOLS_ENABLE_INSTALL OFF CACHE BOOL "")
   set(GPERFTOOLS_BUILD_TESTING OFF CACHE BOOL "")
   add_subdirectory(third_party/gperftools EXCLUDE_FROM_ALL)
+  if (USE_LTO_CMAKE)
+    set_property(TARGET tcmalloc_minimal
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 
   list(APPEND YASS_APP_FEATURES "tcmalloc_minimal (dll)")
 
@@ -2567,6 +2611,10 @@ elseif(USE_MIMALLOC AND NOT WIN32)
   set(MI_LIBC_MUSL "${USE_MUSL}" CACHE INTERNAL "")
   add_subdirectory(third_party/mimalloc EXCLUDE_FROM_ALL)
   target_compile_definitions(mimalloc-static PRIVATE MI_USE_ENVIRON=0)
+  if (USE_LTO_CMAKE)
+    set_property(TARGET mimalloc-static
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 
   set(MIMALLOC_LIB mimalloc-static)
   add_library(mimalloc_override OBJECT src/mimalloc.cc)
@@ -2594,6 +2642,10 @@ elseif(USE_MIMALLOC AND WIN32)
   add_subdirectory(third_party/mimalloc EXCLUDE_FROM_ALL)
   target_compile_definitions(mimalloc PRIVATE MI_USE_ENVIRON=0)
   target_compile_definitions(mimalloc PRIVATE _DLL=1)
+  if (USE_LTO_CMAKE)
+    set_property(TARGET mimalloc
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 
   set(MIMALLOC_LIB mimalloc)
 
@@ -2980,6 +3032,10 @@ add_library(asio_core STATIC
   src/net/asio.cpp
   src/net/asio_throw_exceptions.hpp
 )
+if (USE_LTO_CMAKE)
+  set_property(TARGET asio_core
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 target_include_directories(asio_core PUBLIC
   src)
 target_include_directories(asio_core PUBLIC
@@ -3020,6 +3076,10 @@ endif()
 add_library(asio STATIC
   src/net/asio_ssl.cpp
 )
+if (USE_LTO_CMAKE)
+  set_property(TARGET asio
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 target_link_libraries(asio PUBLIC
   asio_core
   absl::flags
@@ -3127,7 +3187,6 @@ set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 # *****************************************************************************************
 #           json Library
 # *****************************************************************************************
-
 
 if (USE_SYSTEM_JSON)
   check_cxx_source_compiles ("
@@ -4105,6 +4164,11 @@ else()
   target_sources(yass_core PRIVATE src/core/utils_freebsd.cpp)
 endif()
 
+if (USE_LTO_CMAKE)
+  set_property(TARGET yass_core
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 if (OHOS)
   target_link_libraries(yass_core PUBLIC libhilog_ndk.z.so)
 endif()
@@ -4279,6 +4343,11 @@ add_library(yass_net STATIC
   ${files} ${hfiles}
   )
 
+if (USE_LTO_CMAKE)
+  set_property(TARGET yass_net
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 target_include_directories(yass_net PUBLIC
   ${SUPPORT_INCLUDE_DIRS})
 
@@ -4303,6 +4372,11 @@ add_library(yass_cli_nogui_lib OBJECT
   src/cli/cli_connection_stats.cpp
   src/cli/cli_connection_stats.hpp
   )
+
+if (USE_LTO_CMAKE)
+  set_property(TARGET yass_cli_nogui_lib
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 target_include_directories(yass_cli_nogui_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -4312,6 +4386,10 @@ add_library(yass_cli_lib STATIC
   src/cli/cli_worker.cpp
   $<TARGET_OBJECTS:yass_cli_nogui_lib>
   )
+if (USE_LTO_CMAKE)
+  set_property(TARGET yass_cli_lib
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 target_include_directories(yass_cli_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -4322,6 +4400,10 @@ if (CLI)
     src/cli/cli.cpp
   )
   minject_patch_exetuable(yass_cli)
+  if (USE_LTO_CMAKE)
+    set_property(TARGET yass_cli
+                 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 
   if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
@@ -4364,6 +4446,10 @@ add_library(yass_server_lib OBJECT
   src/server/server_connection.cpp
   src/server/server_connection.hpp
   )
+if (USE_LTO_CMAKE)
+  set_property(TARGET yass_server_lib
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 target_include_directories(yass_server_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -4374,6 +4460,10 @@ if (SERVER)
     src/server/server.cpp
     )
   minject_patch_exetuable(yass_server)
+  if (USE_LTO_CMAKE)
+    set_property(TARGET yass_server
+                 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 
   if (WIN32)
     set(SERVER_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_server.manifest")
@@ -4642,6 +4732,11 @@ if (GUI)
           ${GUI_USE_FILE}
           )
       minject_patch_exetuable(${APP_NAME})
+    endif()
+
+    if (USE_LTO_CMAKE)
+      set_property(TARGET ${APP_NAME}
+                   PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
 
     target_include_directories(${APP_NAME} PRIVATE
@@ -4916,6 +5011,11 @@ if (GUI)
 
         set_source_files_properties("src/ios/extensions/PrivacyInfo.xcprivacy" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
+
+        if (USE_LTO_CMAKE)
+          set_property(TARGET network-extension
+            PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        endif()
 
         target_include_directories(network-extension PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -5195,6 +5295,11 @@ if (BUILD_TESTS)
   else()
     set(USE_CURL OFF)
   endif()
+
+  if (USE_LTO_CMAKE)
+    set_property(TARGET yass_test
+                 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 endif()
 
 if (BUILD_BENCHMARKS)
@@ -5222,6 +5327,12 @@ if (BUILD_BENCHMARKS)
       ${yass_benchmark_SOURCE})
     minject_patch_exetuable(yass_benchmark)
   endif()
+
+  if (USE_LTO_CMAKE)
+    set_property(TARGET yass_benchmark
+                 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
+
   target_include_directories(yass_benchmark PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cli

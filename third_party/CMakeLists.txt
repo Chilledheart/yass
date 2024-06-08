@@ -35,6 +35,10 @@ set(RE2_HEADERS
   )
 
 add_library(re2 ${RE2_SOURCES} ${RE2_HEADERS})
+if (USE_LTO_CMAKE)
+  set_property(TARGET re2
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 target_include_directories(re2 PUBLIC re2)
 
 target_link_libraries(re2 PUBLIC
@@ -222,6 +226,11 @@ add_library(double_conversion STATIC
   googleurl-override/base/third_party/double_conversion/double-conversion/utils.h
 )
 
+if (USE_LTO_CMAKE)
+  set_property(TARGET double_conversion
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 target_include_directories(double_conversion PRIVATE
   googleurl-override/base/third_party/double_conversion/double-conversion
 )
@@ -229,6 +238,11 @@ target_include_directories(double_conversion PRIVATE
 target_compile_options(double_conversion PRIVATE -Wno-unused-const-variable -Wno-unused-function)
 
 target_link_libraries(url PUBLIC double_conversion)
+
+if (USE_LTO_CMAKE)
+  set_property(TARGET url
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 target_include_directories(url PUBLIC
   googleurl-override
