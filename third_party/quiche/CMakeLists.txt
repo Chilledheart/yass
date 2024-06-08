@@ -721,6 +721,11 @@ add_library(quiche STATIC
   #${quiche_protos_SRCS}
   )
 
+if (USE_LTO_CMAKE)
+  set_property(TARGET quiche
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 target_include_directories(quiche PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/overrides
   ${CMAKE_CURRENT_BINARY_DIR}/src
@@ -805,6 +810,11 @@ if (USE_BALSA_HTTP_PARSER)
     src/quiche/balsa/standard_header_map.cc
     )
 
+  if (USE_LTO_CMAKE)
+    set_property(TARGET balsa
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
+
   target_include_directories(balsa PUBLIC
     src
     )
@@ -816,3 +826,4 @@ if (USE_BALSA_HTTP_PARSER)
     absl::memory
     absl::strings)
 endif()
+

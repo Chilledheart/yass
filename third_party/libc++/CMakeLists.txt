@@ -452,6 +452,11 @@ else()
   endif()
 endif()
 
+if (USE_LTO_CMAKE)
+  set_property(TARGET cxx
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 if (NOT APPLE AND (ASAN OR TSAN OR MSAN))
   # In {a,t,m}san configurations, operator new and operator delete will be
   # provided by the sanitizer runtime library.  Since libc++ defines these
@@ -555,6 +560,11 @@ if (NOT MSVC)
   target_compile_definitions(cxxabi PRIVATE ${libcxx_DEFINITIONS})
   target_compile_definitions(cxxabi PRIVATE ${libcxx_PUBLIC_DEFINITIONS})
   target_compile_options(cxxabi PRIVATE ${libcxx_CFLAGS})
+
+  if (USE_LTO_CMAKE)
+    set_property(TARGET cxxabi
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 
   target_include_directories(cxxabi PRIVATE
     ../libc++
