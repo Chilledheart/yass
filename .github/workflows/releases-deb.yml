@@ -35,7 +35,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 127-3
+  CACHE_EPOCH: 127-4
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
