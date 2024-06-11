@@ -31,14 +31,14 @@ Post Quantum Kyber Support (not enabled by default) is added on all of supported
 See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-android-release-arm64-1.10.4.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-android-release-arm-1.10.4.apk)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-android-release-arm64-1.11.0.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-android-release-arm-1.11.0.apk)
 - iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09)
-- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-mingw-win7-release-x86_64-1.10.4-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-mingw-winxp-release-i686-1.10.4-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-mingw-release-aarch64-1.10.4-system-installer.exe)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-macos-release-x64-1.10.4.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-macos-release-arm64-1.10.4.dmg)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-win7-release-x86_64-1.11.0-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-winxp-release-i686-1.11.0-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-release-aarch64-1.11.0-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-x64-1.11.0.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-arm64-1.11.0.dmg)
 > via homebrew: `brew install --cask yass`
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass.el7.x86_64.1.10.4.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.10.4/yass-ubuntu-16.04-xenial_amd64.1.10.4.deb)
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass.el7.x86_64.1.11.0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-ubuntu-16.04-xenial_amd64.1.11.0.deb)
 
-View more at [Release Page](https://github.com/Chilledheart/yass/releases/tag/1.10.4)
+View more at [Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.0)
 
 ### NaïveProxy-Compatible Protocol Support
 Cipher http2 and https are NaïveProxy-compatible.
