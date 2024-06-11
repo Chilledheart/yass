@@ -90,7 +90,7 @@ commands:
             export "CXX=$PWD/third_party/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_TCMALLOC=on ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=on -DUSE_TCMALLOC=on ..
 
   configure-qt6:
     steps:
@@ -100,7 +100,7 @@ commands:
             export "CXX=$PWD/third_party/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DUSE_QT6=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_TCMALLOC=on ..
+            cmake -G Ninja -DGUI=on -DUSE_QT6=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=on -DUSE_TCMALLOC=on ..
 
   configure-gcc:
     steps:
@@ -130,7 +130,7 @@ commands:
             export "CXX=clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=on ..
 
   configure-asan:
     steps:
@@ -140,7 +140,7 @@ commands:
             export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DASAN=on ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DASAN=on -DUSE_LIBCXX=on ..
 
   configure-ubsan:
     steps:
@@ -160,7 +160,7 @@ commands:
             export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DTSAN=on ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DTSAN=on -DUSE_LIBCXX=on ..
 
   configure-msan:
     steps:
@@ -170,7 +170,7 @@ commands:
             export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DMSAN=on -DUSE_CURL=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DMSAN=on -DUSE_CURL=off -DUSE_LIBCXX=on ..
 
   build:
     steps:

@@ -29,13 +29,13 @@ jobs:
         build_type: [Debug, Release]
         sanitizer:
           - name: address
-            cmake_options: -DASAN=on
+            cmake_options: -DASAN=on -DUSE_LIBCXX=on
           - name: undefined behavior
             cmake_options: -DUBSAN=on -DUSE_LIBCXX=off
           - name: thread
-            cmake_options: -DTSAN=on
+            cmake_options: -DTSAN=on -DUSE_LIBCXX=on
           - name: memory
-            cmake_options: -DMSAN=on -DUSE_CURL=off
+            cmake_options: -DMSAN=on -DUSE_LIBCXX=on -DUSE_CURL=off
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
