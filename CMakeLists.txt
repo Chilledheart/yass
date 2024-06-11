@@ -445,7 +445,7 @@ cmake_dependent_option(
   USE_SYSTEM_MIMALLOC "Use system or vendored mimalloc" OFF
   USE_MIMALLOC OFF)
 
-option(USE_LIBCXX "Build with libc++" ON)
+option(USE_LIBCXX "Build with custom libc++" OFF)
 
 option(USE_NGHTTP2 "Build with libnghttp2" ON)
 cmake_dependent_option(
