@@ -410,7 +410,11 @@ void PrintMallocStats() {
   for (auto property : properties) {
     size_t size;
     if (MallocExtension_GetNumericProperty(property, &size)) {
-      LOG(ERROR) << "TCMALLOC: " << property << " = " << size << " bytes";
+      if (std::string_view(property).ends_with("_bytes")) {
+        LOG(ERROR) << "TCMALLOC: " << property << " = " << size << " bytes";
+      } else {
+        LOG(ERROR) << "TCMALLOC: " << property << " = " << size;
+      }
     }
   }
 #elif defined(HAVE_MIMALLOC)
