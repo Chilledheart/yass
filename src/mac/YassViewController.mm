@@ -13,6 +13,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
+#include "mac/YassAppDelegate.h"
 #include "mac/YassWindowController.h"
 #include "mac/utils.h"
 
@@ -39,11 +40,25 @@
   [self.autoStart setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn : NSControlStateValueOff)];
   [self.systemProxy setState:(GetSystemProxy() ? NSControlStateValueOn : NSControlStateValueOff)];
   [self LoadChanges];
-  [self.startButton setEnabled:TRUE];
-  [self.stopButton setEnabled:FALSE];
 }
 
 - (void)viewWillAppear {
+  // vc might be dismissed in starting/stopping state, refresh the state
+  YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
+  switch ([appDelegate getState]) {
+    case STARTED:
+      [self Started];
+      break;
+    case START_FAILED:
+      [self StartFailed];
+      break;
+    case STOPPED:
+      [self Stopped];
+      break;
+    default:
+      break;
+  }
+
   [self.view.window center];
 }
 
