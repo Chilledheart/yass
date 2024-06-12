@@ -22,6 +22,10 @@
 #include <mimalloc.h>
 #endif
 
+#if defined(ADDRESS_SANITIZER) || defined(THREAD_SANITIZER) || defined(MEMORY_SANITIZER)
+#include <sanitizer/allocator_interface.h>
+#endif
+
 #if defined(HAVE_MALLINFO) || defined(HAVE_MALLINFO2) || BUILDFLAG(IS_FREEBSD)
 #include <malloc.h>
 #endif
@@ -420,6 +424,11 @@ void PrintMallocStats() {
 #elif defined(HAVE_MIMALLOC)
   auto printer = [](const char* msg, void* arg) { LOG(ERROR) << "MIMALLOC: " << msg; };
   mi_stats_print_out(printer, nullptr);
+#elif defined(ADDRESS_SANITIZER) || defined(THREAD_SANITIZER) || defined(MEMORY_SANITIZER)
+  LOG(ERROR) << "SANITIZER: current allocated: " << __sanitizer_get_current_allocated_bytes() << " bytes";
+  LOG(ERROR) << "SANITIZER: heap size: " << __sanitizer_get_heap_size() << " bytes";
+  LOG(ERROR) << "SANITIZER: free size: " << __sanitizer_get_free_bytes() << " bytes";
+  LOG(ERROR) << "SANITIZER: unmap size: " << __sanitizer_get_unmapped_bytes() << " bytes";
 #elif defined(HAVE_MALLINFO2) && !defined(MEMORY_SANITIZER)
   struct mallinfo2 info = mallinfo2();
   LOG(ERROR) << "MALLOC: non-mmapped space allocated from system: " << info.arena;
