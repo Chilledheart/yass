@@ -37,7 +37,7 @@ See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-x64-1.11.0.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-arm64-1.11.0.dmg)
 > via homebrew: `brew install --cask yass`
 - Linux/GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass.el7.x86_64.1.11.0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-ubuntu-16.04-xenial_amd64.1.11.0.deb) (require glibc >= 2.23)
-- Linux/GTK4 download rpm or download deb (require glibc >= 2.35)
+- Linux/GTK4 download rpm or download deb (require glibc >= 2.34)
 - Linux/Qt6 download rpm or download deb (require glibc >= 2.36)
 
 View more at [Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.0)
