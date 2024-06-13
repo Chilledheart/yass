@@ -9,15 +9,9 @@ RUN yum clean all && \
     git make python3 bash coreutils gh systemd \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \
-    gtk4-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel \
+    gtk3-devel gtk4-devel qt6-qtbase-devel \
+    zlib-devel c-ares-devel libnghttp2-devel curl-devel \
     json-devel mbedtls-devel gperftools-devel && \
-  yum clean all && \
-  rm -rf /var/cache/yum && rm -rf /var/cache/dnf
-
-# Install toolchain
-RUN yum clean all && \
-  rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
-  yum install -y clang lld && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
 

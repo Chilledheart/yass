@@ -83,18 +83,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container:
-        - 'centos7'
-        - 'centos8'
-        - 'fedora39'
-        - 'opensuse15'
-        # - 'centos9'
+        include:
+          - container: 'centos7'
+            gui_variant: gtk3
+          - container: 'centos8'
+            gui_variant: gtk3
+          # - container: 'centos9'
+          #   gui_variant: gtk3
+          # - container: 'centos9'
+          #   gui_variant: gtk4
+          - container: 'opensuse15'
+            gui_variant: gtk3
+          # - container: 'opensuse15'
+          #   gui_variant: gtk4
+          - container: 'fedora39'
+            gui_variant: gtk3
+          - container: 'fedora39'
+            gui_variant: gtk4
+          - container: 'fedora39'
+            gui_variant: qt6
     runs-on: ubuntu-22.04
     needs: docker_publish
     container:
       image: 'ghcr.io/chilledheart/${{ matrix.container }}'
-    env:
-      DISTRO: ${{ matrix.container }}
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -107,7 +118,7 @@ jobs:
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v4
-        if: ${{ env.DISTRO != 'centos7' }}
+        if: ${{ matrix.container != 'centos7' }}
         with:
           path: |
             third_party/llvm-build/Release+Asserts
@@ -115,7 +126,7 @@ jobs:
       - name: Cache clang (el7)
         id: clang-cache-el7
         uses: actions/cache@v3
-        if: ${{ env.DISTRO == 'centos7' }}
+        if: ${{ matrix.container == 'centos7' }}
         with:
           path: |
             third_party/llvm-build/Release+Asserts
@@ -130,26 +141,40 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-docker-
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' && env.DISTRO != 'centos7' }}
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' && matrix.container != 'centos7' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: "Install dependency: prebuilt clang and clang-tidy binaries (el7 patch)"
-        if: ${{ steps.clang-cache-el7.outputs.cache-hit != 'true' && env.DISTRO == 'centos7' }}
+        if: ${{ steps.clang-cache-el7.outputs.cache-hit != 'true' && matrix.container == 'centos7' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
           ./scripts/libstdc++-el7.sh
-      - name: Set clang environment (centos and opensuse only)
-        if: ${{ env.DISTRO == 'centos7' || env.DISTRO == 'centos8' || env.DISTRO == 'centos9' || env.DISTRO == 'opensuse15' }}
+      - name: Set clang environment
         run: |
+          # use custom compiler
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
-      - name: Set LTO environment
-        if: ${{ env.DISTRO == 'centos7' }}
+          echo "USE_CLANG=1" >> $GITHUB_ENV
+      - name: Set c++ standard library environment
+        if: ${{ matrix.container == 'centos7' || matrix.container == 'centos8' || matrix.container == 'centos9' || matrix.container == 'opensuse15' }}
+        run: |
+          # use custom libc++
+          echo "USE_LIBCXX=1" >> $GITHUB_ENV
+      - name: Set LLD environment
+        if: ${{ matrix.container == 'centos7' }}
         run: |
           # newer ld.lld doesn't work on glibc 2.17
           echo "DISABLE_LLD=1" >> $GITHUB_ENV
+      - name: Set QT6 environment
+        if: ${{ matrix.gui_variant == 'qt6' }}
+        run: |
+          echo "USE_QT6=1" >> $GITHUB_ENV
+      - name: Set GTK4 environment
+        if: ${{ matrix.gui_variant == 'gtk4' }}
+        run: |
+          echo "USE_GTK4=1" >> $GITHUB_ENV
       - name: Build RPM packages
         run: |
           ./scripts/build-rpm.sh

@@ -45,19 +45,25 @@
 %endif
 
 # libc++ is only built with clang now
+%bcond_with use_libcxx
+%if %{with use_libcxx}
+%global enable_libcxx_opt on
+%else
+%global enable_libcxx_opt off
+%endif
+
+# disable some warnings on clang compiler in fedora
 %bcond_with toolchain_clang
 %if %{with toolchain_clang}
 %global _clang_extra_ldflags %nil
 %global toolchain clang
-%global enable_libcxx_opt on
 %else
 %global toolchain gcc
-%global enable_libcxx_opt off
 %endif
 
 # on centos 8, gperftools sits in epel repo
 # and it is not compatible with custom libc++
-%if 0%{?fedora} && !%{with toolchain_clang}
+%if 0%{?fedora} && !%{with use_libcxx}
 %global enable_system_gperftools_opt on
 %else
 %global enable_system_gperftools_opt off
@@ -69,6 +75,22 @@
 %global enable_lld_opt off
 %else
 %global enable_lld_opt on
+%endif
+
+# use_qt6
+%bcond_with use_qt6
+%if %{with use_qt6} && !%{with use_libcxx}
+%global enable_use_qt6_opt on
+%else
+%global enable_use_qt6_opt off
+%endif
+
+# use_gtk4
+%bcond_with use_gtk4
+%if !%{with use_qt6} && %{with use_gtk4}
+%global enable_use_gtk4_opt on
+%else
+%global enable_use_gtk4_opt off
 %endif
 
 # force use old systemd unit files
@@ -94,10 +116,17 @@ License: GPLv2
 %endif
 URL: https://github.com/Chilledheart/%{name}
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
-%if 0%{?rhel} == 9 || 0%{?fedora} || 0%{?sle_version}
+%if %{with use_qt6} && !%{with use_libcxx}
+BuildRequires: qt6-qtbase-devel
+%endif
+%if !%{with use_qt6} && %{with use_gtk4}
 BuildRequires: gtk4-devel
-%else
+%endif
+%if !%{with use_qt6} && !%{with use_gtk4}
 BuildRequires: gtk3-devel
+%endif
+%if !%{with use_qt6}
+BuildRequires: glib2-devel
 %endif
 %if 0%{?rhel} < 9 || 0%{?fedora} || 0%{?sle_version}
 BuildRequires: perl
@@ -109,13 +138,12 @@ BuildRequires: cmake >= 3.12, pkg-config
 BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 %if 0%{?fedora}
-BuildRequires: clang, lld
 BuildRequires: c-ares-devel
 %endif
 %if 0%{?fedora} || 0%{?sle_version}
 BuildRequires: mbedtls-devel
 %endif
-%if 0%{?fedora} && !%{with toolchain_clang}
+%if 0%{?fedora} && !%{with use_libcxx}
 BuildRequires: gperftools-devel
 %endif
 %if 0%{?fedora}
@@ -131,7 +159,6 @@ BuildRequires: ninja
 %else
 BuildRequires: ninja-build
 %endif
-BuildRequires: glib2-devel
 BuildRequires: curl-devel
 BuildRequires: desktop-file-utils
 BuildRequires: systemd
@@ -156,7 +183,8 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on \
-   -DUSE_GTK4=on -DGUI=on -DCLI=on -DSERVER=on \
+   -DUSE_QT6="%enable_use_qt6_opt" -DUSE_GTK4="%enable_use_gtk4_opt" -DGUI=on \
+   -DCLI=on -DSERVER=on \
    -DUSE_OLD_SYSTEMD_SERVICE="%use_old_systemd_service" \
    -DUSE_TCMALLOC=on -DUSE_SYSTEM_TCMALLOC="%enable_system_gperftools_opt" \
    -DUSE_SYSTEM_ZLIB=on \
