@@ -97,9 +97,21 @@ fi
 ARCH=${HOST_ARCH:-$BUILD_ARCH}
 DISTRO=$(scripts/get-debian-name.py $HOST_DISTRO)
 
+USE_QT6=$(echo $DEB_BUILD_PROFILES | grep qt6 || :)
+USE_GTK4=$(echo $DEB_BUILD_PROFILES | grep gtk4 || :)
+USE_GTK3=$(echo $DEB_BUILD_PROFILES | grep gtk3 || :)
+
+if [ ! -z "$USE_QT6" ]; then
+  GUI_SUFFIX=-qt6
+elif [ ! -z "$USE_GTK4" ]; then
+  GUI_SUFFIX=-gtk4
+elif [ ! -z "$USE_GTK3" ]; then
+  GUI_SUFFIX=-gtk3
+fi
+
 if [ -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" ]; then
-  mv -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
-  mv -f ../"yass-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}-dbg_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
+  mv -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass${GUI_SUFFIX}-${DISTRO}_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
+  mv -f ../"yass-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass${GUI_SUFFIX}-${DISTRO}-dbg_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
 fi
 
 mv -f ../"yass-server_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-server-${DISTRO}_${ARCH}.${TAG}${SUBVERSION_SUFFIX}.deb"
