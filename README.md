@@ -36,7 +36,7 @@ See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/
 - Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-win7-release-x86_64-1.11.0-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-winxp-release-i686-1.11.0-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-release-aarch64-1.11.0-system-installer.exe)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-x64-1.11.0.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-arm64-1.11.0.dmg)
 > via homebrew: `brew install --cask yass`
-- Linux/GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass.el7.x86_64.1.11.0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-ubuntu-16.04-xenial_amd64.1.11.0.deb) (require glibc >= 2.23)
+- Linux/GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass.el7.x86_64.1.11.0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-ubuntu-16.04-xenial_amd64.1.11.0.deb) (require glibc >= 2.16)
 - Linux/GTK4 download rpm or download deb (require glibc >= 2.34)
 - Linux/Qt6 download rpm or download deb (require glibc >= 2.36)
 
