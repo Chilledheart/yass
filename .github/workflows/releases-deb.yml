@@ -46,11 +46,20 @@ jobs:
       matrix:
         distro: [xenial]
         arch: [amd64, i386]
+        gui_variant: [gtk3]
         include:
           - distro: bionic
             arch: arm64
+            gui_variant: gtk3
+          - distro: jammy
+            arch: amd64
+            gui_variant: gtk4
+          - distro: bookworm
+            arch: amd64
+            gui_variant: qt6
           - distro: sid
             arch: riscv64
+            gui_variant: none
         # XFAIL stretch
         # XFAIL focal-i386,jammy-i386,noble-i386
         # XFAIL sid-riscv64 (gui, curl)
@@ -65,8 +74,6 @@ jobs:
         #     arch: mips64el
     env:
       DEBIAN_FRONTEND: 'noninteractive'
-      HOST_ARCH: '${{ matrix.arch }}'
-      HOST_DISTRO: '${{ matrix.distro }}'
     steps:
       - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
@@ -75,7 +82,7 @@ jobs:
           git fetch --tags --unshallow
           git submodule update --init --depth 1
       - name: Patch libcxxabi for both of armel and armhf
-        if: ${{ env.HOST_ARCH == 'armel' || env.HOST_ARCH == 'armhf' }}
+        if: ${{ matrix.arch == 'armel' || matrix.arch == 'armhf' }}
         run: |
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
@@ -114,7 +121,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y sbuild debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Populate dependencies (deboostrap update for sid fix)
-        if: ${{ env.HOST_DISTRO == 'sid' }}
+        if: ${{ matrix.distro == 'sid' }}
         run: |
           curl -L -O http://mirrors.kernel.org/ubuntu/pool/main/d/debootstrap/debootstrap_1.0.132ubuntu1_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debootstrap*.deb
@@ -127,32 +134,32 @@ jobs:
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
       - name: Pre-Populate sysroot (distro option)
-        if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid' }}
+        if: ${{ matrix.distro == 'stretch' || matrix.distro == 'buster' || matrix.distro == 'bullseye' || matrix.distro == 'bookworm' || matrix.distro == 'sid' }}
         run: |
           echo "mksbuild_distro_opts=--distro=debian" >> $GITHUB_ENV
       - name: Pre-Populate BUILD_ARCH (i386)
-        if: ${{ env.HOST_ARCH == 'i386' }}
+        if: ${{ matrix.arch == 'i386' }}
         run: |
           echo "mksbuild_arch_opts=--arch=i386" >> $GITHUB_ENV
           echo "BUILD_ARCH=i386" >> $GITHUB_ENV
       - name: Pre-Populate BUILD_ARCH (amd64)
-        if: ${{ env.HOST_ARCH != 'i386' }}
+        if: ${{ matrix.arch != 'i386' }}
         run: |
           echo "mksbuild_arch_opts=--arch=amd64" >> $GITHUB_ENV
           echo "BUILD_ARCH=$(dpkg-architecture -q DEB_BUILD_ARCH)" >> $GITHUB_ENV
       - name: Set check build profile
-        if: ${{ env.HOST_ARCH == 'i386' || env.HOST_ARCH == 'amd64' }}
+        if: ${{ matrix.arch == 'i386' || matrix.arch == 'amd64' }}
         run: |
           echo "DEB_BUILD_PROFILES=check ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
       - name: Set cross build profile
-        if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
+        if: ${{ matrix.arch != 'i386' && matrix.arch != 'amd64' }}
         run: |
           echo "DEB_BUILD_PROFILES=nocheck cross ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
-      - name: Set gtk3 build profile (none of armel/mipsel/mips64el and riscv64)
-        if: ${{ env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
+      - name: Set gui build profile (none of armel/mipsel/mips64el and riscv64)
+        if: ${{ matrix.gui_variant != 'none' }}
         run: |
-          echo "DEB_BUILD_PROFILES=gtk3 ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
-          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=gtk3" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=${{ matrix.gui_variant }} ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
+          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=${{ matrix.gui_variant }}" >> $GITHUB_ENV
       - name: Set clang build profile
         run: |
           echo "DEB_BUILD_PROFILES=clang ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
@@ -169,7 +176,7 @@ jobs:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
-          key: ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v3
+          key: ${{ runner.os }}-22.04-schroot-${{ matrix.distro }}-${{ matrix.arch }}-${{ matrix.gui_variant }}-v0
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
@@ -178,63 +185,63 @@ jobs:
       - name: Populate sysroot
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo -n sudo -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_distro_opts }} || true
+          sudo -n sudo -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ matrix.distro }} --target=${{ matrix.arch }} ${{ env.mksbuild_distro_opts }} || true
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get clean
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get update -qq
       - name: Populate sysroot (crosscompile toolchain)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'i386' && matrix.arch != 'amd64' }}
         run: |
-          export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            dpkg --add-architecture ${{ env.HOST_ARCH }}
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ matrix.arch }} -q DEB_HOST_GNU_TYPE)
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            dpkg --add-architecture ${{ matrix.arch }}
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get update -qq
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} libstdc++6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ matrix.arch }} libstdc++6:${{ matrix.arch }} linux-libc-dev:${{ matrix.arch }}
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
       - name: Populate sysroot (crosscompile toolchain, for bookworm and later distro)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'i386' && matrix.arch != 'amd64' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             bash -c "[ ! -f /usr/share/pkg-config-crosswrapper ] && cp -v $PWD/debian/pkg-config-crosswrapper /usr/share/pkg-config-crosswrapper || :"
       - name: Populate sysroot (standard toolchain)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y fakeroot advancecomp apt-utils file build-essential pkg-config debhelper lockfile-progs optipng tzdata ucf
       - name: Populate sysroot (amd64 runtime for clang)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH == 'i386' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'i386' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             cp -f /etc/apt/sources.list /etc/apt/sources.list.amd64
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             sed -i s/i386/amd64/g /etc/apt/sources.list.amd64
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             bash -c "cat /etc/apt/sources.list /etc/apt/sources.list.amd64 | tee /tmp/sources.list"
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             mv -f /tmp/sources.list /etc/apt/sources.list
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             dpkg --add-architecture amd64
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get update -qq
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y libc6:amd64 libstdc++6:amd64 zlib1g:amd64
       - name: Populate sysroot (ca-certificates, git)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y ca-certificates git
       - name: Populate sysroot (golang, new distro)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO != 'trusty' && env.HOST_DISTRO != 'xenial' && env.HOST_DISTRO != 'bionic' && env.HOST_DISTRO != 'stretch' && env.HOST_DISTRO != 'buster' && env.HOST_DISTRO != 'bullseye' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.distro != 'trusty' && matrix.distro != 'xenial' && matrix.distro != 'bionic' && matrix.distro != 'stretch' && matrix.distro != 'buster' && matrix.distro != 'bullseye' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y golang
       - name: Populate sysroot (golang, old distro)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'trusty' || env.HOST_DISTRO == 'xenial' || env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye') }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (matrix.distro == 'trusty' || matrix.distro == 'xenial' || matrix.distro == 'bionic' || matrix.distro == 'stretch' || matrix.distro == 'buster' || matrix.distro == 'bullseye') }}
         run: |
           # shipped with debian bullseye
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang_1.15~1_${{ env.BUILD_ARCH }}.deb
@@ -245,48 +252,58 @@ jobs:
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-go_1.15.15-1~deb11u4_${{ env.BUILD_ARCH }}.deb
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-src_1.15.15-1~deb11u4_${{ env.BUILD_ARCH }}.deb
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-doc_1.15.15-1~deb11u4_all.deb
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             dpkg --force-depends -i $PWD/*.deb || true
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y -f
           rm -f *.deb
       - name: Populate dependencie (cmake)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y cmake ninja-build
       - name: Populate dependencie (cmake, overwrite)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
           curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             cmake --version
           rm -f *.tar.gz
       - name: Populate dependencie (base)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y perl gcc g++ ninja-build
       - name: Populate dependencie (zlib)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y zlib1g-dev:${{ env.HOST_ARCH }}
-      - name: Populate dependencie (gui, exclude some arches)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            apt-get install -y zlib1g-dev:${{ matrix.arch }}
+      - name: Populate dependencie (qt6)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'qt6' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get -o DPkg::Options::="--force-confnew" install -y libglib2.0-dev:${{ env.HOST_ARCH }} libgtk-3-dev:${{ env.HOST_ARCH }}
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            apt-get -o DPkg::Options::="--force-confnew" install -y qt6-base-dev:${{ matrix.arch }}
+      - name: Populate dependencie (gtk4)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'gtk4' }}
+        run: |
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            apt-get -o DPkg::Options::="--force-confnew" install -y libglib2.0-dev:${{ matrix.arch }} libgtk-4-dev:${{ matrix.arch }}
+      - name: Populate dependencie (gtk3)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'gtk3' }}
+        run: |
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            apt-get -o DPkg::Options::="--force-confnew" install -y libglib2.0-dev:${{ matrix.arch }} libgtk-3-dev:${{ matrix.arch }}
       - name: Populate dependencie (curl, for test purpose, exclude some arches)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'armel' && matrix.arch != 'mipsel' && matrix.arch != 'mips64el' && matrix.arch != 'riscv64' }}
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y libcurl4-openssl-dev:${{ env.HOST_ARCH }}
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            apt-get install -y libcurl4-openssl-dev:${{ matrix.arch }}
       - name: Populate dependencie (list upgradable packages)
         run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt list --upgradeable || true
       - name: Build deb
         run: |
@@ -298,14 +315,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.deb
+          gh release upload --clobber ${{ github.event.release.tag_name }} yass*.deb
       - name: Shutdown schroot sessions
         run: |
           sudo schroot --end-session --all-sessions
       - name: Fix schroot dev nodes permissions
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo rm -rf /var/lib/schroot/chroots/${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}/dev
+          sudo rm -rf /var/lib/schroot/chroots/${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}/dev
       - name: Fix schroot permissions (restore store permissions)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
