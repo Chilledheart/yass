@@ -31,16 +31,16 @@ Post Quantum Kyber Support (not enabled by default) is added on all of supported
 See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-android-release-arm64-1.11.0.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-android-release-arm-1.11.0.apk)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-android-release-arm64-1.11.1.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-android-release-arm-1.11.1.apk)
 - iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09)
-- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-win7-release-x86_64-1.11.0-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-winxp-release-i686-1.11.0-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-mingw-release-aarch64-1.11.0-system-installer.exe)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-x64-1.11.0.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-macos-release-arm64-1.11.0.dmg)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-mingw-win7-release-x86_64-1.11.1-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-mingw-winxp-release-i686-1.11.1-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-mingw-release-aarch64-1.11.1-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-macos-release-x64-1.11.1.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-macos-release-arm64-1.11.1.dmg)
 > via homebrew: `brew install --cask yass`
-- Linux/GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass.el7.x86_64.1.11.0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.0/yass-ubuntu-16.04-xenial_amd64.1.11.0.deb) (require glibc >= 2.16)
-- Linux/GTK4 download rpm or download deb (require glibc >= 2.34)
-- Linux/Qt6 download rpm or download deb (require glibc >= 2.36)
+- Linux/GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-gtk3.el7.x86_64.1.11.1.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-gtk3-ubuntu-16.04-xenial_amd64.1.11.1.deb) (require glibc >= 2.16)
+- Linux/GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-gtk4.el9.x86_64.1.11.1.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-gtk4-ubuntu-22.04-jammy_amd64.1.11.1.deb) (require glibc >= 2.34)
+- Linux/Qt6 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-qt6.fc39.x86_64.1.11.1.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass-qt6-debian-12-bookworm_amd64.1.11.1.deb) (require glibc >= 2.36)
 
-View more at [Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.0)
+View more at [Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.1)
 
 ### NaïveProxy-Compatible Protocol Support
 Cipher http2 and https are NaïveProxy-compatible.
