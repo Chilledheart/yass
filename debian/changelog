@@ -1,7 +1,13 @@
+yass (1.11.1-1) UNRELEASED; urgency=medium
+
+  * miscellaneous fixes
+  * add gtk3/gtk4/qt6 build profile (deb)
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 13 Jun 2024 16:31:11 +0800
 yass (1.11.0-1) UNRELEASED; urgency=medium
 
   * bump to chromium 127 dependents
-  * add gtk3/gtk4/qt6 build profile
+  * add gtk3/gtk4/qt6 build profile (source)
 
  -- Chilledheart <keeyou-cn@outlook.com>  Tue, 11 Jun 2024 11:02:21 +0800
 yass (1.10.5-1) UNRELEASED; urgency=medium
