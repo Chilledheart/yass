@@ -60,11 +60,25 @@ Generate Packages under parent directory
 DEB_BUILD_PROFILES=qt6 ./scripts/build-deb.sh
 ```
 
-## Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux/Gtk3/Gtk4 Packaging
+## Fedora/RHEL/CentOS/AlmaLinux/Rocky Gtk3 Packaging
 
 Generate Packages under current directory
 ```
 ./scripts/build-rpm.sh
+```
+
+## Fedora/RHEL/CentOS/AlmaLinux/Rocky Gtk4 Packaging
+
+Generate Packages under current directory
+```
+USE_GTK4=1 ./scripts/build-rpm.sh
+```
+
+## Fedora/RHEL/CentOS/AlmaLinux/Rocky Qt6 Packaging
+
+Generate Packages under current directory
+```
+USE_QT6=1 ./scripts/build-rpm.sh
 ```
 
 ## FreeBSD/Packaging

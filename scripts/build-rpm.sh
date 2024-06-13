@@ -46,8 +46,10 @@ mkdir -p $HOME/rpmbuild/SPECS
 mv -fv yass.spec $HOME/rpmbuild/SPECS
 
 [ "a$DISABLE_LLD" != "a" ] && rpm_options="--with=disable_lld"
-
-rpm_options="--with=toolchain_clang $rpm_options"
+[ "a$USE_QT6" != "a" ] && rpm_options="--with=use_qt6"
+[ "a$USE_GTK4" != "a" ] && rpm_options="--with=use_gtk4"
+[ "a$USE_LIBCXX" != "a" ] && rpm_options="--with=use_libcxx $rpm_options"
+[ "a$USE_CLANG" != "a" ] && rpm_options="--with=toolchain_clang $rpm_options"
 rpm_options="--with=tests_dns $rpm_options"
 
 # from rpm --querytags
@@ -71,6 +73,14 @@ elif [ ${ID} = "opensuse-leap" ]; then
   REAL_SUFFIX=.lp${VERSION_ID}
 fi
 
+if [ ! -z "$USE_QT6" ]; then
+  GUI_SUFFIX=-qt6
+elif [ ! -z "$USE_GTK4" ]; then
+  GUI_SUFFIX=-gtk4
+else
+  GUI_SUFFIX=-gtk3
+fi
+
 pushd $HOME/rpmbuild/SPECS/
 rpmbuild --define "_topdir $HOME/rpmbuild" -v $rpm_options -bs yass.spec
 rpmlint "$HOME/rpmbuild/SRPMS/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.src.rpm"
@@ -81,8 +91,8 @@ popd
 
 # under centos 7, some commands might fail because it doesn't separate debuginfo
 # for sub package: https://fedoraproject.org/wiki/Changes/SubpackageAndSourceDebuginfo
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}${RPM_SUBVERSION_SUFFIX}.rpm"
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}${RPM_SUBVERSION_SUFFIX}.rpm" || true
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass${GUI_SUFFIX}${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}${RPM_SUBVERSION_SUFFIX}.rpm"
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass${GUI_SUFFIX}-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}${RPM_SUBVERSION_SUFFIX}.rpm" || true
 cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-server${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}${RPM_SUBVERSION_SUFFIX}.rpm"
 cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-server-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}${RPM_SUBVERSION_SUFFIX}.rpm" || true
 cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-client${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}${RPM_SUBVERSION_SUFFIX}.rpm"
