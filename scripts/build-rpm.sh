@@ -45,9 +45,10 @@ sed -i "s|__SUBVERSION__|${SUBTAG}|g" yass.spec
 mkdir -p $HOME/rpmbuild/SPECS
 mv -fv yass.spec $HOME/rpmbuild/SPECS
 
-[ "a$DISABLE_LLD" != "a" ] && rpm_options="--with=disable_lld"
-[ "a$USE_QT6" != "a" ] && rpm_options="--with=use_qt6"
-[ "a$USE_GTK4" != "a" ] && rpm_options="--with=use_gtk4"
+[ "a$DISABLE_LLD" != "a" ] && rpm_options="--with=disable_lld $rpm_options"
+[ "a$USE_QT6" != "a" ] && rpm_options="--with=use_qt6 $rpm_options"
+[ "a$USE_QT5" != "a" ] && rpm_options="--with=use_qt5 $rpm_options"
+[ "a$USE_GTK4" != "a" ] && rpm_options="--with=use_gtk4 $rpm_options"
 [ "a$USE_LIBCXX" != "a" ] && rpm_options="--with=use_libcxx $rpm_options"
 [ "a$USE_CLANG" != "a" ] && rpm_options="--with=toolchain_clang $rpm_options"
 rpm_options="--with=tests_dns $rpm_options"
@@ -75,6 +76,8 @@ fi
 
 if [ ! -z "$USE_QT6" ]; then
   GUI_SUFFIX=-qt6
+elif [ ! -z "$USE_QT5" ]; then
+  GUI_SUFFIX=-qt5
 elif [ ! -z "$USE_GTK4" ]; then
   GUI_SUFFIX=-gtk4
 else

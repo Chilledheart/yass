@@ -46,7 +46,7 @@ jobs:
       matrix:
         distro: [xenial]
         arch: [amd64, i386]
-        gui_variant: [gtk3]
+        gui_variant: [gtk3, qt5]
         include:
           - distro: bionic
             arch: arm64
@@ -288,6 +288,34 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get -o DPkg::Options::="--force-confnew" install -y qt6-base-dev:${{ matrix.arch }}
+      - name: Populate dependencie (qt5)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'qt5' }}
+        run: |
+          export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ matrix.arch }} -q DEB_HOST_GNU_TYPE)
+          # DEB_HOST_GNU_TYPE produces i686-linux-gnu which is wrong
+          [ "${{ matrix.arch }}" = "i386" ] && export HOST_GNU_TYPE=i386-linux-gnu
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            apt-get -o DPkg::Options::="--force-confnew" install -y qtbase5-dev:${{ matrix.arch }}
+          # for qt 5.5 or before
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            sed -i 's#Q_DECL_CONSTEXPR inline QFlags(Zero = 0) Q_DECL_NOTHROW : i(0) {}#Q_DECL_CONSTEXPR inline QFlags() Q_DECL_NOTHROW : i(0) {}\n    Q_DECL_CONSTEXPR inline QFlags(Zero) Q_DECL_NOTHROW : i(0) {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtCore/qflags.h
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            bash -c "sed -i 's#Qt::WindowFlags f = 0#Qt::WindowFlags f = {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtWidgets/*.h"
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            bash -c "sed -i 's#Qt::Alignment = 0#Qt::Alignment = {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtWidgets/*.h"
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            bash -c "sed -i 's#Qt::Alignment alignment = 0#Qt::Alignment alignment = {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtWidgets/*.h"
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            bash -c "sed -i 's#Qt::WindowFlags f=0#Qt::WindowFlags f = {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtWidgets/*.h"
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            bash -c "sed -i 's#Qt::WindowFlags flags = 0#Qt::WindowFlags flags = {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtWidgets/*.h"
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            bash -c "sed -i 's#Qt::WindowFlags flags=0#Qt::WindowFlags flags = {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtWidgets/*.h"
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            bash -c "sed -i 's#Qt::ItemFlags(0)#Qt::ItemFlags()#g' /usr/include/$HOST_GNU_TYPE/qt5/QtCore/*.h"
+          # for qt 5.6 or before
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            sed -i 's#Q_DECL_CONSTEXPR inline QFlags(Zero = Q_NULLPTR) Q_DECL_NOTHROW : i(0) {}#Q_DECL_CONSTEXPR inline QFlags() Q_DECL_NOTHROW : i(0) {}\n    Q_DECL_CONSTEXPR inline QFlags(Zero) Q_DECL_NOTHROW : i(0) {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtCore/qflags.h
       - name: Populate dependencie (gtk4)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'gtk4' }}
         run: |

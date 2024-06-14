@@ -22,11 +22,13 @@ CMAKE_OPTIONS += -DCMAKE_VERBOSE_MAKEFILE=OFF
 endif
 
 ifneq ($(filter qt6,$(DEB_BUILD_PROFILES)),)
-	CMAKE_OPTIONS += -DGUI=on -DUSE_QT6=on -DUSE_GTK4=off
+	CMAKE_OPTIONS += -DGUI=on -DUSE_QT6=on
+else ifneq ($(filter qt5,$(DEB_BUILD_PROFILES)),)
+	CMAKE_OPTIONS += -DGUI=on -DUSE_QT6=off -DUSE_QT5=on
 else ifneq ($(filter gtk4,$(DEB_BUILD_PROFILES)),)
-	CMAKE_OPTIONS += -DGUI=on -DUSE_GTK4=on
+	CMAKE_OPTIONS += -DGUI=on -DUSE_QT6=off -DUSE_QT5=off -DUSE_GTK4=on
 else ifneq ($(filter gtk3,$(DEB_BUILD_PROFILES)),)
-	CMAKE_OPTIONS += -DGUI=on -DUSE_GTK4=off
+	CMAKE_OPTIONS += -DGUI=on -DUSE_QT6=off -DUSE_QT5=off -DUSE_GTK4=off
 else
 	CMAKE_OPTIONS += -DGUI=off
 endif
@@ -82,6 +84,8 @@ override_dh_shlibdeps:
 
 override_dh_strip:
 ifneq ($(filter qt6,$(DEB_BUILD_PROFILES)),)
+	dh_strip -pyass --dbg-package=yass-dbg
+else ifneq ($(filter qt5,$(DEB_BUILD_PROFILES)),)
 	dh_strip -pyass --dbg-package=yass-dbg
 else ifneq ($(filter gtk4,$(DEB_BUILD_PROFILES)),)
 	dh_strip -pyass --dbg-package=yass-dbg
