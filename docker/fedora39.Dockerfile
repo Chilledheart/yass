@@ -9,7 +9,7 @@ RUN yum clean all && \
     git make python3 bash coreutils gh systemd \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \
-    gtk3-devel gtk4-devel qt6-qtbase-devel \
+    gtk3-devel gtk4-devel qt5-qtbase-devel qt6-qtbase-devel \
     zlib-devel c-ares-devel libnghttp2-devel curl-devel \
     json-devel mbedtls-devel gperftools-devel && \
   yum clean all && \

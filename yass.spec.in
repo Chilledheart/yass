@@ -79,15 +79,23 @@
 
 # use_qt6
 %bcond_with use_qt6
-%if %{with use_qt6} && !%{with use_libcxx}
+%if %{with use_qt6}
 %global enable_use_qt6_opt on
 %else
 %global enable_use_qt6_opt off
 %endif
 
+# use_qt5
+%bcond_with use_qt5
+%if %{with use_qt5}
+%global enable_use_qt5_opt on
+%else
+%global enable_use_qt5_opt off
+%endif
+
 # use_gtk4
 %bcond_with use_gtk4
-%if !%{with use_qt6} && %{with use_gtk4}
+%if !%{with use_qt6} && !%{with use_qt5} &&%{with use_gtk4}
 %global enable_use_gtk4_opt on
 %else
 %global enable_use_gtk4_opt off
@@ -116,16 +124,22 @@ License: GPLv2
 %endif
 URL: https://github.com/Chilledheart/%{name}
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
-%if %{with use_qt6} && !%{with use_libcxx}
+%if %{with use_qt6}
 BuildRequires: qt6-qtbase-devel
 %endif
-%if !%{with use_qt6} && %{with use_gtk4}
+%if !%{with use_qt6} && %{with use_qt5} && !0%{?sle_version}
+BuildRequires: qt5-qtbase-devel
+%endif
+%if !%{with use_qt6} && %{with use_qt5} && 0%{?sle_version}
+BuildRequires: libqt5-qtbase-devel
+%endif
+%if !%{with use_qt6} && !%{with use_qt5} && %{with use_gtk4}
 BuildRequires: gtk4-devel
 %endif
-%if !%{with use_qt6} && !%{with use_gtk4}
+%if !%{with use_qt6} && !%{with use_qt5} && !%{with use_gtk4}
 BuildRequires: gtk3-devel
 %endif
-%if !%{with use_qt6}
+%if !%{with use_qt6} && !%{with use_qt5}
 BuildRequires: glib2-devel
 %endif
 %if 0%{?rhel} < 9 || 0%{?fedora} || 0%{?sle_version}
@@ -183,7 +197,8 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on \
-   -DUSE_QT6="%enable_use_qt6_opt" -DUSE_GTK4="%enable_use_gtk4_opt" -DGUI=on \
+   -DUSE_QT6="%enable_use_qt6_opt" -DUSE_QT5="%enable_use_qt5_opt" \
+   -DUSE_GTK4="%enable_use_gtk4_opt" -DGUI=on \
    -DCLI=on -DSERVER=on \
    -DUSE_OLD_SYSTEMD_SERVICE="%use_old_systemd_service" \
    -DUSE_TCMALLOC=on -DUSE_SYSTEM_TCMALLOC="%enable_system_gperftools_opt" \

@@ -25,7 +25,7 @@ RUN ulimit -n 1024 && yum clean all && \
     git make python3 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake3 ninja-build pkgconfig perl golang \
-    gtk3-devel zlib-devel curl-devel && \
+    gtk3-devel qt5-qtbase-devel zlib-devel curl-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
 
@@ -35,3 +35,5 @@ RUN curl -L https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.2
   ln -sf cmake /usr/local/bin/cmake3 && \
   cmake --version && \
   cmake3 --version
+
+RUN sed -i 's#Q_DECL_CONSTEXPR inline QFlags(Zero = Q_NULLPTR) Q_DECL_NOTHROW : i(0) {}#Q_DECL_CONSTEXPR inline QFlags() Q_DECL_NOTHROW : i(0) {}\n    Q_DECL_CONSTEXPR inline QFlags(Zero) Q_DECL_NOTHROW : i(0) {}#g' /usr/include/qt5/QtCore/qflags.h

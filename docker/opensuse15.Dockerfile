@@ -10,7 +10,7 @@ RUN zypper cc -a && \
     git make python3 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja pkg-config perl golang \
-    gtk3-devel gtk4-devel \
+    gtk3-devel gtk4-devel libqt5-qtbase-devel \
     zlib-devel c-ares-devel libnghttp2-devel curl-devel \
     http-parser-devel mbedtls-devel && \
   zypper cc -a

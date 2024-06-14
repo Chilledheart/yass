@@ -101,7 +101,9 @@ YASSApp::YASSApp(int& argc, char** argv) : QApplication(argc, argv) {
 bool YASSApp::Init() {
   setApplicationVersion(YASS_APP_TAG);
   setWindowIcon(QIcon::fromTheme("yass", QIcon(":/res/images/yass.png")));
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
   setDesktopFileName("it.gui.yass");
+#endif
 
   QObject::connect(this, &QCoreApplication::aboutToQuit, this, &YASSApp::OnQuit);
 
@@ -113,7 +115,11 @@ bool YASSApp::Init() {
 #if defined(_WIN32)
   (void)qt_translator_->load("qt_" + locale.name());
 #else
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
   (void)qt_translator_->load("qt_" + locale.name(), QLibraryInfo::path(QLibraryInfo::TranslationsPath));
+#else
+  (void)qt_translator_->load("qt_" + locale.name(), QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+#endif
 #endif
 
   if (!my_translator_->load(QString(":/lang/yass_%1.qm").arg(locale.name()))) {

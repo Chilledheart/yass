@@ -504,9 +504,13 @@ cmake_dependent_option(USE_QT6
   "Build with Qt6 (GUI)" OFF
   "GUI AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
+cmake_dependent_option(USE_QT5
+  "Build with qt5 (GUI)" OFF
+  "GUI AND NOT USE_QT6 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
+
 cmake_dependent_option(USE_GTK4
   "Build with gtk4 (GUI)" OFF
-  "GUI AND NOT USE_QT6 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
+  "GUI AND NOT USE_QT6 AND NOT USE_QT5 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html
@@ -2149,8 +2153,21 @@ elseif (GUI)
     set(GUI_DEFINITIONS "")
     set(GUI_C_CXX_FLAGS "")
     set(GUI_LIBRARY_DIRS "")
-    set(GUI_LIBRARIES Qt::Widgets Qt::Gui)
+    set(GUI_LIBRARIES Qt6::Widgets Qt6::Gui)
     set(GUI_FLAVOUR "qt6")
+  elseif(USE_QT5)
+    find_package(Qt5 REQUIRED Core Widgets Gui)
+    set(GUI_USE_FILE "")
+    set(GUI_INCLUDE_DIRS "")
+    set(GUI_DEFINITIONS "")
+    set(GUI_C_CXX_FLAGS "")
+    set(GUI_LIBRARY_DIRS "")
+    set(GUI_LIBRARIES Qt5::Core Qt5::Widgets Qt5::Gui)
+    set(GUI_FLAVOUR "qt5")
+    # suppress some warnings on old qt5 < 5.9
+    if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+      set(GUI_C_CXX_FLAGS ${GUI_C_CXX_FLAGS} -Wno-error=enum-constexpr-conversion)
+    endif()
   else()
     pkg_check_modules(FONTCONFIG fontconfig)
     if (NOT FONTCONFIG_FOUND)
@@ -4635,6 +4652,23 @@ if (GUI)
           src/freedesktop/utils.cpp
           ${CMAKE_CURRENT_BINARY_DIR}/yass.qrc
         )
+    elseif(GUI_FLAVOUR STREQUAL "qt5")
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/yass.qrc
+          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.png
+          DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
+        list(APPEND SRC_FILES
+          src/qt6/yass_window.hpp
+          src/qt6/yass_window.cpp
+          src/qt6/yass.hpp
+          src/qt6/yass.cpp
+          src/qt6/option_dialog.hpp
+          src/qt6/option_dialog.cpp
+          src/qt6/tray_icon.hpp
+          src/qt6/tray_icon.cpp
+          src/freedesktop/utils.cpp
+          ${CMAKE_CURRENT_BINARY_DIR}/yass.qrc
+        )
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
@@ -4695,7 +4729,7 @@ if (GUI)
       target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
       set_target_properties(${APP_NAME} PROPERTIES
         LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/harmony/export.lds -u RegisterEntryModule")
-    elseif(GUI_FLAVOUR STREQUAL "qt6")
+    elseif(GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5")
       add_executable(${APP_NAME}
         ${SRC_FILES}
         ${GUI_USE_FILE}
@@ -4706,14 +4740,14 @@ if (GUI)
         # Depends on Qt's LinguistTools
         get_target_property(QT_LUPDATE_EXECUTABLE Qt::lupdate IMPORTED_LOCATION)
         add_custom_target(update-ts
-                            COMMAND ${QT_LUPDATE_EXECUTABLE} -extensions cc,cpp,hpp
-                                                             -locations none
-                                                             -I "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                                                             "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
-                                                             -ts ${TS_FILES}
-                            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
-                            VERBATIM
-                            COMMAND_EXPAND_LISTS)
+                          COMMAND ${QT_LUPDATE_EXECUTABLE} -extensions cc,cpp,hpp
+                                                            -locations none
+                                                            -I "${CMAKE_CURRENT_SOURCE_DIR}/src"
+                                                            "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
+                                                            -ts ${TS_FILES}
+                          WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6"
+                          VERBATIM
+                          COMMAND_EXPAND_LISTS)
         # Based on https://gist.github.com/giraldeau/546ba5512a74dfe9d8ea0862d66db412
         set_source_files_properties(${TS_FILES} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/lang")
         qt_add_translation(QM_FILES ${TS_FILES} OPTIONS -removeidentical -silent)
@@ -4761,7 +4795,7 @@ if (GUI)
     elseif(GUI_FLAVOUR STREQUAL "ios")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/ios)
-    elseif(GUI_FLAVOUR STREQUAL "qt6")
+    elseif(GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6)
       set_target_properties(
@@ -5085,7 +5119,7 @@ if (GUI)
         install(TARGETS ${APP_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
       endif()
 
-      if (GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
+      if (GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5" OR GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
         install(FILES
           ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/it.gui.yass.desktop
           DESTINATION share/applications)
