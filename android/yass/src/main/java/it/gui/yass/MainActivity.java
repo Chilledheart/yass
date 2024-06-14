@@ -39,21 +39,44 @@ import java.util.TimerTask;
 import it.gui.yass.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
+    private static final String YASS_TAG = "yass";
+    private static final String TUN2PROXY_TAG = "tun2proxy";
+    public static MainActivity self;
+
     static {
         // Load native library
         System.loadLibrary("yass");
     }
 
-    private static final String TAG = "MainActivity";
-    private static final String YASS_TAG = "yass";
-    private static final String TUN2PROXY_TAG = "tun2proxy";
-
+    private final YassVpnService vpnService = new YassVpnService();
+    private final int VPN_REQUEST_CODE = 10000;
+    private final int SETTINGS_REQUEST_CODE = 10001;
+    private final Handler handler = new Handler();
     private NativeMachineState state = NativeMachineState.STOPPED;
     private Timer mRefreshTimer;
+    private int nativeLocalPort = 0;
+    private long tun2proxyPtr = 0;
+    private Thread tun2proxyThread;
+
+    private static String humanReadableByteCountBin(long bytes) {
+        if (bytes < 1024) {
+            return String.format("%d B/s", bytes);
+        }
+        long value = bytes;
+        String ci = "KMGTPE";
+        int cPos = 0;
+        for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccL >> i; i -= 10) {
+            value >>= 10;
+            ++cPos;
+        }
+        return String.format("%5.2f %c/s", value / 1024.0, ci.charAt(cPos));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        self = this;
         it.gui.yass.databinding.ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -75,12 +98,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        stopRefreshPoll();
         if (state == NativeMachineState.STARTED || state == NativeMachineState.STARTING) {
             onStopVpn();
         }
         onNativeDestroy();
         super.onDestroy();
+        self = null;
         Log.i(TAG, "onDestroy done");
     }
 
@@ -170,9 +193,6 @@ public class MainActivity extends AppCompatActivity {
                 timeoutEditText.getText().toString());
     }
 
-    private final YassVpnService vpnService = new YassVpnService();
-
-
     public void onStartClicked(View view) {
         if (state == NativeMachineState.STOPPED) {
             String error_msg = saveSettingsIntoNative();
@@ -222,8 +242,6 @@ public class MainActivity extends AppCompatActivity {
                 .create();
         alertDialog.show();
     }
-
-    private int nativeLocalPort = 0;
 
     @SuppressWarnings("unused")
     private void onNativeStarted(String error_msg, int local_port) {
@@ -277,12 +295,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private final int VPN_REQUEST_CODE = 10000;
-    private final int SETTINGS_REQUEST_CODE = 10001;
-    private long tun2proxyPtr = 0;
-    private Thread tun2proxyThread;
-
-    private void onStartVpn() {
+    public void onStartVpn() {
         ParcelFileDescriptor tunFd = vpnService.connect(getString(R.string.app_name), getApplicationContext(), nativeLocalPort);
         if (tunFd == null) {
             Log.e(TAG, "Unable to run create tunFd");
@@ -304,9 +317,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String proxyUrl = String.format(Locale.getDefault(), "socks5://127.0.0.1:%d", nativeLocalPort);
-        tun2proxyPtr = tun2ProxyInit(proxyUrl, tunFd.getFd(), vpnService.DEFAULT_MTU, log_level, true);
+        tun2proxyPtr = tun2ProxyInit(proxyUrl, tunFd.getFd(), YassVpnService.DEFAULT_MTU, log_level, true);
         if (tun2proxyPtr == 0) {
-            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyInit"));
+            Log.e(TUN2PROXY_TAG, "Unable to run tun2ProxyInit");
+            vpnService.stopSelf();
             try {
                 tunFd.close();
             } catch (IOException e) {
@@ -315,7 +329,6 @@ public class MainActivity extends AppCompatActivity {
             onNativeStartFailedOnUIThread(String.format(getString(R.string.status_started_with_error_msg), "Unable to run tun2ProxyInit"), true);
             return;
         }
-
         Log.v(TUN2PROXY_TAG, String.format("Init with proxy url: %s", proxyUrl));
         tun2proxyThread = new Thread() {
             public void run() {
@@ -348,7 +361,9 @@ public class MainActivity extends AppCompatActivity {
         startRefreshPoll();
     }
 
-    private void onStopVpn() {
+    public void onStopVpn() {
+        stopRefreshPoll();
+        vpnService.stopSelf();
         int ret = tun2ProxyShutdown(tun2proxyPtr);
         if (ret != 0) {
             Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyShutdown: %d", ret));
@@ -377,7 +392,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void onStopClicked(View view) {
         if (state == NativeMachineState.STARTED) {
-            stopRefreshPoll();
             onStopVpn();
         }
     }
@@ -396,25 +410,11 @@ public class MainActivity extends AppCompatActivity {
 
     private native void tun2ProxyDestroy(long context);
 
+
+    //
     // first connection number, then rx rate, then tx rate
-
+    //
     private native long[] getRealtimeTransferRate();
-
-    private static String humanReadableByteCountBin(long bytes) {
-        if (bytes < 1024) {
-            return String.format("%d B/s", bytes);
-        }
-        long value = bytes;
-        String ci = "KMGTPE";
-        int cPos = 0;
-        for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccL >> i; i -= 10) {
-            value >>= 10;
-            ++cPos;
-        }
-        return String.format("%5.2f %c/s", value / 1024.0, ci.charAt(cPos));
-    }
-
-    private final Handler handler = new Handler();
 
     private void startRefreshPoll() {
         mRefreshTimer = new Timer();
@@ -425,6 +425,9 @@ public class MainActivity extends AppCompatActivity {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
+                        if (state != NativeMachineState.STARTED) {
+                            return;
+                        }
                         long[] result = getRealtimeTransferRate();
                         TextView statusTextView = findViewById(R.id.statusTextView);
                         statusTextView.setText(String.format(getString(R.string.status_started_with_rate),
