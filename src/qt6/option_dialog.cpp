@@ -78,11 +78,13 @@ void OptionDialog::OnCancelButtonClicked() {
 void OptionDialog::LoadChanges() {
   tcp_keep_alive_->setChecked(absl::GetFlag(FLAGS_tcp_keep_alive));
   auto tcp_keep_alive_cnt_str = std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_cnt));
-  tcp_keep_alive_cnt_->setText(QString::fromUtf8(tcp_keep_alive_cnt_str));
+  tcp_keep_alive_cnt_->setText(QString::fromUtf8(tcp_keep_alive_cnt_str.c_str(), tcp_keep_alive_cnt_str.size()));
   auto tcp_keep_alive_idle_timeout_str = std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout));
-  tcp_keep_alive_idle_timeout_->setText(QString::fromUtf8(tcp_keep_alive_idle_timeout_str));
+  tcp_keep_alive_idle_timeout_->setText(
+      QString::fromUtf8(tcp_keep_alive_idle_timeout_str.c_str(), tcp_keep_alive_idle_timeout_str.size()));
   auto tcp_keep_alive_interval_str = std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_interval));
-  tcp_keep_alive_interval_->setText(QString::fromUtf8(tcp_keep_alive_interval_str));
+  tcp_keep_alive_interval_->setText(
+      QString::fromUtf8(tcp_keep_alive_interval_str.c_str(), tcp_keep_alive_interval_str.size()));
 
   enable_post_quantum_kyber_->setChecked(absl::GetFlag(FLAGS_enable_post_quantum_kyber));
 }

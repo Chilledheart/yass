@@ -19,6 +19,7 @@
 #include <QScreen>
 #include <QStatusBar>
 #include <QVBoxLayout>
+#include <QWindow>
 
 #include "cli/cli_connection_stats.hpp"
 #include "config/config.hpp"
@@ -183,8 +184,13 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   LoadChanges();
 }
 
+// see https://github.com/qt/qtbase/commit/b455a863a1df61337f36f2e8b43101ca21514697
 void YASSWindow::moveToCenter() {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
   move(screen()->geometry().center() - frameGeometry().center());
+#else
+  move(windowHandle()->screen()->geometry().center() - frameGeometry().center());
+#endif
 }
 
 void YASSWindow::showWindow() {

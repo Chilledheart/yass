@@ -54,6 +54,12 @@ Generate Packages under parent directory
 DEB_BUILD_PROFILES=gtk4 ./scripts/build-deb.sh
 ```
 
+## Debian/Qt5/Packaging
+Generate Packages under parent directory
+```
+DEB_BUILD_PROFILES=qt5 ./scripts/build-deb.sh
+```
+
 ## Debian/Qt6/Packaging
 Generate Packages under parent directory
 ```
@@ -72,6 +78,13 @@ Generate Packages under current directory
 Generate Packages under current directory
 ```
 USE_GTK4=1 ./scripts/build-rpm.sh
+```
+
+## Fedora/RHEL/CentOS/AlmaLinux/Rocky Qt5 Packaging
+
+Generate Packages under current directory
+```
+USE_QT5=1 ./scripts/build-rpm.sh
 ```
 
 ## Fedora/RHEL/CentOS/AlmaLinux/Rocky Qt6 Packaging

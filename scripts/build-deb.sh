@@ -98,11 +98,14 @@ ARCH=${HOST_ARCH:-$BUILD_ARCH}
 DISTRO=$(scripts/get-debian-name.py $HOST_DISTRO)
 
 USE_QT6=$(echo $DEB_BUILD_PROFILES | grep qt6 || :)
+USE_QT5=$(echo $DEB_BUILD_PROFILES | grep qt5 || :)
 USE_GTK4=$(echo $DEB_BUILD_PROFILES | grep gtk4 || :)
 USE_GTK3=$(echo $DEB_BUILD_PROFILES | grep gtk3 || :)
 
 if [ ! -z "$USE_QT6" ]; then
   GUI_SUFFIX=-qt6
+elif [ ! -z "$USE_QT5" ]; then
+  GUI_SUFFIX=-qt5
 elif [ ! -z "$USE_GTK4" ]; then
   GUI_SUFFIX=-gtk4
 elif [ ! -z "$USE_GTK3" ]; then

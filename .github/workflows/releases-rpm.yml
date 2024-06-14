@@ -86,10 +86,8 @@ jobs:
         include:
           - container: 'centos7'
             gui_variant: gtk3
-          - container: 'centos8'
-            gui_variant: gtk3
-          - container: 'centos9'
-            gui_variant: gtk3
+          - container: 'centos7'
+            gui_variant: qt5
           - container: 'centos9'
             gui_variant: gtk4
           # qt6 sits on epel repo, disabling
@@ -97,6 +95,8 @@ jobs:
           #   gui_variant: qt6
           - container: 'opensuse15'
             gui_variant: gtk3
+          - container: 'opensuse15'
+            gui_variant: qt5
           # - container: 'opensuse15'
           #   gui_variant: gtk4
           # - container: 'fedora39'
@@ -174,6 +174,10 @@ jobs:
         if: ${{ matrix.gui_variant == 'qt6' }}
         run: |
           echo "USE_QT6=1" >> $GITHUB_ENV
+      - name: Set QT5 environment
+        if: ${{ matrix.gui_variant == 'qt5' }}
+        run: |
+          echo "USE_QT5=1" >> $GITHUB_ENV
       - name: Set GTK4 environment
         if: ${{ matrix.gui_variant == 'gtk4' }}
         run: |
