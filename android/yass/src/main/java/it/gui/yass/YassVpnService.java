@@ -12,11 +12,11 @@ import android.util.Log;
 
 public class YassVpnService extends VpnService {
     private static final String TAG = "YassVpnService";
-    public int DEFAULT_MTU = 1500;
-    private String PRIVATE_VLAN4_CLIENT = "172.19.0.1";
-    private String PRIVATE_VLAN4_GATEWAY = "172.19.0.2";
-    private String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
-    private String PRIVATE_VLAN6_GATEWAY = "fdfe:dcba:9876::2";
+    public static int DEFAULT_MTU = 1500;
+    private static String PRIVATE_VLAN4_CLIENT = "172.19.0.1";
+    private static String PRIVATE_VLAN4_GATEWAY = "172.19.0.2";
+    private static String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
+    private static String PRIVATE_VLAN6_GATEWAY = "fdfe:dcba:9876::2";
 
     public ParcelFileDescriptor connect(String session_name, Context context, int local_port) {
         Builder builder = new Builder();
@@ -43,7 +43,25 @@ public class YassVpnService extends VpnService {
             Log.e(TAG, "Cannot add self to disallowed package list");
             // nop
         }
+        ParcelFileDescriptor tunFd = null;
+        try {
+            tunFd = builder.establish();
+        } catch (Exception c) {
+            // nop
+        }
+        return tunFd;
+    }
 
-        return builder.establish();
+    // might not be invoked in main thread
+    @Override
+    public void onRevoke() {
+        Log.e(TAG, "onRevoke");
+        MainActivity.self.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MainActivity.self.onStopVpn();
+            }
+        });
+        // super.onRevoke() is invoked in onStopVpn
     }
 }
