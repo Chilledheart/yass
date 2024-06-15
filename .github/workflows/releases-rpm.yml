@@ -161,7 +161,6 @@ jobs:
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
           echo "USE_CLANG=1" >> $GITHUB_ENV
       - name: Set c++ standard library environment
-        if: ${{ matrix.container == 'centos7' || matrix.container == 'centos8' || matrix.container == 'opensuse15' }}
         run: |
           # use custom libc++
           echo "USE_LIBCXX=1" >> $GITHUB_ENV
