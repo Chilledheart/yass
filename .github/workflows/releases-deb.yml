@@ -54,7 +54,7 @@ jobs:
           - distro: jammy
             arch: amd64
             gui_variant: gtk4
-          - distro: bookworm
+          - distro: jammy
             arch: amd64
             gui_variant: qt6
           - distro: sid
@@ -178,7 +178,7 @@ jobs:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
-          key: ${{ runner.os }}-22.04-schroot-${{ matrix.distro }}-${{ matrix.arch }}-${{ matrix.gui_variant }}-v0
+          key: ${{ runner.os }}-22.04-schroot-${{ matrix.distro }}-${{ matrix.arch }}-mix-v0
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
@@ -283,13 +283,13 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y zlib1g-dev:${{ matrix.arch }}
-      - name: Populate dependencie (qt6)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'qt6' }}
+      - name: Populate dependencie (qt6, x86 only, jammy only)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (matrix.arch == 'i386' || matrix.arch == 'amd64') && matrix.distro == 'jammy' }}
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get -o DPkg::Options::="--force-confnew" install -y qt6-base-dev:${{ matrix.arch }}
-      - name: Populate dependencie (qt5)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'qt5' }}
+      - name: Populate dependencie (qt5, x86 only)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (matrix.arch == 'i386' || matrix.arch == 'amd64') }}
         run: |
           export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ matrix.arch }} -q DEB_HOST_GNU_TYPE)
           # DEB_HOST_GNU_TYPE produces i686-linux-gnu which is wrong
@@ -316,13 +316,13 @@ jobs:
           # for qt 5.6 or before
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             sed -i 's#Q_DECL_CONSTEXPR inline QFlags(Zero = Q_NULLPTR) Q_DECL_NOTHROW : i(0) {}#Q_DECL_CONSTEXPR inline QFlags() Q_DECL_NOTHROW : i(0) {}\n    Q_DECL_CONSTEXPR inline QFlags(Zero) Q_DECL_NOTHROW : i(0) {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtCore/qflags.h
-      - name: Populate dependencie (gtk4)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'gtk4' }}
+      - name: Populate dependencie (gtk4, jammy only)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'armel' && matrix.arch != 'mipsel' && matrix.arch != 'mips64el' && matrix.arch != 'riscv64' && matrix.distro == 'jammy' }}
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get -o DPkg::Options::="--force-confnew" install -y libglib2.0-dev:${{ matrix.arch }} libgtk-4-dev:${{ matrix.arch }}
-      - name: Populate dependencie (gtk3)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.gui_variant == 'gtk3' }}
+      - name: Populate dependencie (gtk3, none of armel/mipsel/mips64el and riscv64)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'armel' && matrix.arch != 'mipsel' && matrix.arch != 'mips64el' && matrix.arch != 'riscv64' }}
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get -o DPkg::Options::="--force-confnew" install -y libglib2.0-dev:${{ matrix.arch }} libgtk-3-dev:${{ matrix.arch }}
