@@ -124,8 +124,11 @@ License: GPLv2
 %endif
 URL: https://github.com/Chilledheart/%{name}
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
-%if %{with use_qt6}
+%if %{with use_qt6} && !0%{?sle_version}
 BuildRequires: qt6-qtbase-devel
+%endif
+%if %{with use_qt6} && 0%{?sle_version}
+BuildRequires: qt6-base-devel
 %endif
 %if !%{with use_qt6} && %{with use_qt5} && !0%{?sle_version}
 BuildRequires: qt5-qtbase-devel

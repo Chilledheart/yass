@@ -106,6 +106,8 @@ jobs:
           #   gui_variant: qt5
           # - container: 'opensuse15'
           #   gui_variant: gtk4
+          # - container: 'opensuse15'
+          #   gui_variant: qt6
     runs-on: ubuntu-22.04
     needs: docker_publish
     container:
