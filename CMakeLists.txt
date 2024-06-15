@@ -4635,28 +4635,11 @@ if (GUI)
           src/ios/utils.mm
           src/ios/utils.cpp
           src/ios/main.mm)
-    elseif(GUI_FLAVOUR STREQUAL "qt6")
+    elseif(GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5")
         file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/yass.qrc
-          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+             DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
         file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.png
-          DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
-        list(APPEND SRC_FILES
-          src/qt6/yass_window.hpp
-          src/qt6/yass_window.cpp
-          src/qt6/yass.hpp
-          src/qt6/yass.cpp
-          src/qt6/option_dialog.hpp
-          src/qt6/option_dialog.cpp
-          src/qt6/tray_icon.hpp
-          src/qt6/tray_icon.cpp
-          src/freedesktop/utils.cpp
-          ${CMAKE_CURRENT_BINARY_DIR}/yass.qrc
-        )
-    elseif(GUI_FLAVOUR STREQUAL "qt5")
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/yass.qrc
-          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.png
-          DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
+             DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
         list(APPEND SRC_FILES
           src/qt6/yass_window.hpp
           src/qt6/yass_window.cpp
