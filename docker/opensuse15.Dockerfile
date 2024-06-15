@@ -1,4 +1,4 @@
-FROM opensuse/leap:15
+FROM opensuse/leap:15.5
 
 # get from content of https://cli.github.com/packages/rpm/gh-cli.repo
 RUN rpm --import 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x23F3D4EA75716059'
