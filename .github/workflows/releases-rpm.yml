@@ -93,18 +93,19 @@ jobs:
           # qt6 sits on epel repo, disabling
           # - container: 'centos9'
           #   gui_variant: qt6
-          - container: 'opensuse15'
-            gui_variant: gtk3
-          - container: 'opensuse15'
-            gui_variant: qt5
-          # - container: 'opensuse15'
-          #   gui_variant: gtk4
           # - container: 'fedora39'
           #   gui_variant: gtk3
           # - container: 'fedora39'
           #   gui_variant: gtk4
           - container: 'fedora39'
             gui_variant: qt6
+          # for opensuse users, you can use centos7's rpm packages
+          # - container: 'opensuse15'
+          #   gui_variant: gtk3
+          # - container: 'opensuse15'
+          #   gui_variant: qt5
+          # - container: 'opensuse15'
+          #   gui_variant: gtk4
     runs-on: ubuntu-22.04
     needs: docker_publish
     container:
