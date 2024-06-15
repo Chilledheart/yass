@@ -303,6 +303,8 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Sat Jun 15 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.2-1
+  - add qt5 build profile
 * Thu Jun 13 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.1-1
   - miscellaneous fixes
   - add gtk3/gtk4/qt6 build profile (rpm)

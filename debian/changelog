@@ -1,3 +1,8 @@
+yass (1.11.2-1) UNRELEASED; urgency=medium
+
+  * add qt5 build profile
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sat, 15 Jun 2024 10:34:25 +0800
 yass (1.11.1-1) UNRELEASED; urgency=medium
 
   * miscellaneous fixes
