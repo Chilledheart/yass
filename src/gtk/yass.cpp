@@ -176,6 +176,8 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
     LOG(WARNING) << "app exited with code " << ret;
   }
 
+  delete main_window_;
+
   LOG(WARNING) << "Application exiting";
 
   // Memory leak clean up path
