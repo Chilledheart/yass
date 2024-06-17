@@ -245,10 +245,11 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
 #ifdef HAVE_APP_INDICATOR
   if (app_indicator_init() == 0) {
+    LOG(INFO) << "libappindicator3 initialized";
     CreateAppIndicator();
     return;
   } else {
-    PLOG(WARNING) << "libappindicator3 not initialized";
+    LOG(WARNING) << "libappindicator3 not initialized";
   }
 #endif
   CreateStatusIcon();
