@@ -15,6 +15,11 @@ if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
+# Honor link flags in try_compile() source-file signature.
+if (POLICY CMP0056)
+  cmake_policy(SET CMP0056 NEW)
+endif (POLICY CMP0056)
+
 # Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 set(CMAKE_POLICY_DEFAULT_CMP0075 NEW)
 if (POLICY CMP0075)
@@ -511,6 +516,10 @@ cmake_dependent_option(USE_QT5
 cmake_dependent_option(USE_GTK4
   "Build with gtk4 (GUI)" OFF
   "GUI AND NOT USE_QT6 AND NOT USE_QT5 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
+
+cmake_dependent_option(USE_GTK3_APP_INDICATOR
+  "Build with libappindicator3 (gtk3 only)" ON
+  "GUI AND NOT USE_QT6 AND NOT USE_QT5 AND NOT USE_GTK4 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html
@@ -1946,6 +1955,7 @@ endif()
 if (NOT WIN32 AND NOT APPLE)
   check_library_exists(c pipe2 "" HAVE_PIPE2)
   check_library_exists(c dup3 "" HAVE_DUP3)
+  check_library_exists(dl dlopen "" HAVE_DL)
   # for android mallinfo2 is alias to mallinfo
   check_symbol_exists(mallinfo malloc.h HAVE_MALLINFO)
   check_symbol_exists(mallinfo2 malloc.h HAVE_MALLINFO2)
@@ -2220,6 +2230,7 @@ elseif (GUI)
         message(WARNING "Gtk+ not found in pkg-config, disabling GUI build")
         set(GUI off)
       endif()
+
       if (GUI)
         set(GUI_USE_FILE "")
         set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
@@ -2228,6 +2239,16 @@ elseif (GUI)
           ${FONTCONFIG_CFLAGS} ${GUI_OTHER_FLAGS})
         set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
         set(GUI_LIBRARIES ${GTK_LIBRARIES} ${FONTCONFIG_LIBRARIES})
+
+        if (USE_GTK3_APP_INDICATOR)
+          message(STATUS "Compiling with appindicator3 (dynload)")
+          add_library(appindicator3_override STATIC src/gtk/app-indicator-override.c)
+          set(GUI_DEFINITIONS ${GUI_DEFINITIONS} -DHAVE_APP_INDICATOR)
+          set(GUI_LIBRARIES ${GUI_LIBRARIES} appindicator3_override)
+          if (HAVE_DL)
+            set(GUI_LIBRARIES ${GUI_LIBRARIES} dl)
+          endif()
+        endif()
       endif()
     endif()
   endif()
