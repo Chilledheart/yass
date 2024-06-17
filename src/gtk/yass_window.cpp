@@ -17,6 +17,11 @@
 #include "gtk/yass.hpp"
 #include "version.h"
 
+#ifdef HAVE_APP_INDICATOR
+extern "C" int app_indicator_init();
+#include "third_party/libappindicator/app-indicator.h"
+#endif
+
 YASSWindow* YASSWindow::window = nullptr;
 
 YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
@@ -238,11 +243,21 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   gtk_widget_show_all(GTK_WIDGET(impl_));
 
+#ifdef HAVE_APP_INDICATOR
+  if (app_indicator_init() == 0) {
+    CreateAppIndicator();
+    return;
+  } else {
+    PLOG(WARNING) << "libappindicator3 not initialized";
+  }
+#endif
   CreateStatusIcon();
 }
 
 YASSWindow::~YASSWindow() {
-  g_object_unref(G_OBJECT(tray_icon_));
+  if (tray_icon_) {
+    g_object_unref(G_OBJECT(tray_icon_));
+  }
 }
 
 void YASSWindow::CreateStatusIcon() {
@@ -256,15 +271,15 @@ void YASSWindow::CreateStatusIcon() {
   GtkWidget* option_menu_item;
   GtkWidget* exit_menu_item;
 
-  tray_menu_ = gtk_menu_new();
+  GtkWidget* tray_menu = gtk_menu_new();
   option_menu_item = gtk_menu_item_new_with_label(_("Option..."));
   exit_menu_item = gtk_menu_item_new_with_label(_("Exit"));
 
   sep = gtk_separator_menu_item_new();
 
-  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu_), option_menu_item);
-  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu_), sep);
-  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu_), exit_menu_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), option_menu_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), sep);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), exit_menu_item);
 
   auto option_callback = []() { window->OnOption(); };
   g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
@@ -272,7 +287,7 @@ void YASSWindow::CreateStatusIcon() {
   auto exit_callback = []() { window->close(); };
   g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
 
-  gtk_widget_show_all(tray_menu_);
+  gtk_widget_show_all(tray_menu);
 
   // set tooltip
   G_GNUC_BEGIN_IGNORE_DEPRECATIONS
@@ -290,10 +305,53 @@ void YASSWindow::CreateStatusIcon() {
     gtk_menu_popup(GTK_MENU(popup_menu), nullptr, nullptr, gtk_status_icon_position_menu, self, button, activate_time);
     G_GNUC_END_IGNORE_DEPRECATIONS
   };
-  g_signal_connect(G_OBJECT(tray_icon_), "popup-menu", G_CALLBACK(*popup_callback), tray_menu_);
+  g_signal_connect(G_OBJECT(tray_icon_), "popup-menu", G_CALLBACK(*popup_callback), tray_menu);
 
-  gtk_menu_attach_to_widget(GTK_MENU(tray_menu_), GTK_WIDGET(impl_), nullptr);
+  gtk_menu_attach_to_widget(GTK_MENU(tray_menu), GTK_WIDGET(impl_), nullptr);
 }
+
+#ifdef HAVE_APP_INDICATOR
+void YASSWindow::CreateAppIndicator() {
+  // set try icon file
+  tray_indicator_ = G_OBJECT(app_indicator_new("it.gui.yass", "yass", APP_INDICATOR_CATEGORY_APPLICATION_STATUS));
+  app_indicator_set_status(APP_INDICATOR(tray_indicator_), APP_INDICATOR_STATUS_ACTIVE);
+
+  // set popup menu for tray icon
+  GtkWidget* show_menu_item;
+  GtkWidget* sep;
+  GtkWidget* option_menu_item;
+  GtkWidget* exit_menu_item;
+
+  GtkWidget* tray_menu = gtk_menu_new();
+  show_menu_item = gtk_menu_item_new_with_label(_("Show"));
+  option_menu_item = gtk_menu_item_new_with_label(_("Option..."));
+  exit_menu_item = gtk_menu_item_new_with_label(_("Exit"));
+
+  sep = gtk_separator_menu_item_new();
+
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), show_menu_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), option_menu_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), sep);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), exit_menu_item);
+
+  auto show_callback = []() {
+    window->show();
+    window->present();
+  };
+  g_signal_connect(G_OBJECT(show_menu_item), "activate", G_CALLBACK(show_callback), nullptr);
+
+  auto option_callback = []() { window->OnOption(); };
+  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
+
+  auto exit_callback = []() { window->close(); };
+  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
+
+  gtk_widget_show_all(tray_menu);
+
+  app_indicator_set_secondary_activate_target(APP_INDICATOR(tray_indicator_), GTK_WIDGET(show_menu_item));
+  app_indicator_set_menu(APP_INDICATOR(tray_indicator_), GTK_MENU(tray_menu));
+}
+#endif  // HAVE_APP_INDICATOR
 
 void YASSWindow::show() {
   gtk_widget_show(GTK_WIDGET(impl_));
