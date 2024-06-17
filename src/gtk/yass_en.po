@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-14 11:18+0800\n"
+"POT-Creation-Date: 2024-06-17 11:59+0800\n"
 "PO-Revision-Date: 2023-09-15 11:18+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -45,51 +45,51 @@ msgstr "Okay"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: yass.cpp:202
+#: yass.cpp:210
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
 
-#: yass.cpp:204
+#: yass.cpp:212
 msgid "Connecting"
 msgstr "Connecting"
 
-#: yass.cpp:206
+#: yass.cpp:214
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
 
-#: yass.cpp:208
+#: yass.cpp:216
 msgid "Disconnecting"
 msgstr "Disconnecting"
 
-#: yass.cpp:210
+#: yass.cpp:218
 msgid "Disconnected with "
 msgstr "Disconnected with "
 
-#: yass_window.cpp:59
+#: yass_window.cpp:60
 msgid "File"
 msgstr "File"
 
-#: yass_window.cpp:60
+#: yass_window.cpp:61 yass_window.cpp:260
 msgid "Option..."
 msgstr "Option..."
 
-#: yass_window.cpp:61
+#: yass_window.cpp:62 yass_window.cpp:261
 msgid "Exit"
 msgstr "Exit"
 
-#: yass_window.cpp:78
+#: yass_window.cpp:79
 msgid "Help"
 msgstr "Help"
 
-#: yass_window.cpp:79
+#: yass_window.cpp:80
 msgid "About..."
 msgstr "About..."
 
-#: yass_window.cpp:91
+#: yass_window.cpp:92
 msgid "Start"
 msgstr "Start"
 
-#: yass_window.cpp:99
+#: yass_window.cpp:98
 msgid "Stop"
 msgstr "Stop"
 
@@ -145,30 +145,34 @@ msgstr "Auto Start"
 msgid "System Proxy"
 msgstr "System Proxy"
 
-#: yass_window.cpp:218
+#: yass_window.cpp:231
 msgid "READY"
 msgstr "READY"
 
-#: yass_window.cpp:341
+#: yass_window.cpp:279
+msgid "Show"
+msgstr "Show"
+
+#: yass_window.cpp:411
 msgid " tx rate: "
 msgstr " tx rate: "
 
-#: yass_window.cpp:344
+#: yass_window.cpp:414
 msgid " rx rate: "
 msgstr " rx rate: "
 
-#: yass_window.cpp:451
+#: yass_window.cpp:521
 msgid "YASS Option"
 msgstr "YASS Option"
 
-#: yass_window.cpp:462
+#: yass_window.cpp:532
 msgid "Last Change: "
 msgstr "Last Change: "
 
-#: yass_window.cpp:465
+#: yass_window.cpp:535
 msgid "Enabled Feature: "
 msgstr "Enabled Feature: "
 
-#: yass_window.cpp:474
+#: yass_window.cpp:544
 msgid "official-site"
 msgstr "official-site"
