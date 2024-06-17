@@ -1,5 +1,3 @@
-set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-
 set(CMAKE_SYSTEM_NAME "Linux")
 set(CMAKE_SYSTEM_PROCESSOR "${GCC_SYSTEM_PROCESSOR}" CACHE STRING "")
 set(CMAKE_C_COMPILER_TARGET "${GCC_TARGET}" CACHE STRING "")
@@ -12,6 +10,35 @@ set(CMAKE_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib" CACHE FILEPATH "")
 set(CMAKE_CXX_COMPILER_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib" CACHE FILEPATH "")
 
 set(CMAKE_SYSROOT "${GCC_SYSROOT}" CACHE STRING "")
+
+if (ENABLE_LLD)
+  file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/lib/gcc/*/*.*.*")
+  # fix up for loongarch sysroot
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
+    file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../../lib/gcc/*/*.*.*")
+    # required by loongarch64 sdk https://github.com/loongson/build-tools/releases
+    if (NOT _GCC_SYSROOT)
+      file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
+    endif()
+  endif()
+  # fix up for riscv64 and riscv32 sysroot
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv32")
+    file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
+  endif()
+  # fix up for raw sysroot from docker
+  if (NOT _GCC_SYSROOT)
+    file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/usr/lib/gcc/*/*.*.*")
+  endif()
+  if (_GCC_SYSROOT)
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
+    set(CMAKE_REQUIRED_LINK_OPTIONS ${CMAKE_REQUIRED_LINK_OPTIONS} --gcc-install-dir=${_GCC_SYSROOT})
+  endif()
+
+  set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+  set(CMAKE_REQUIRED_LINK_OPTIONS ${CMAKE_REQUIRED_LINK_OPTIONS} -fuse-ld=lld)
+endif()
 
 set(COMPILE_FLAGS)
 
