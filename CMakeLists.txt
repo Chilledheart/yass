@@ -15,6 +15,11 @@ if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
+# Honor link flags in try_compile() source-file signature.
+if (POLICY CMP0056)
+  cmake_policy(SET CMP0056 NEW)
+endif (POLICY CMP0056)
+
 # Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 set(CMAKE_POLICY_DEFAULT_CMP0075 NEW)
 if (POLICY CMP0075)
