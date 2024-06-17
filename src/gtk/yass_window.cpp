@@ -72,7 +72,7 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   auto option_callback = []() { window->OnOption(); };
   g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
 
-  auto exit_callback = []() { gtk_window_close(window->impl_); };
+  auto exit_callback = []() { window->close(); };
   g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
 
   help_menu = gtk_menu_new();
@@ -237,9 +237,63 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   LoadChanges();
 
   gtk_widget_show_all(GTK_WIDGET(impl_));
+
+  CreateStatusIcon();
 }
 
-YASSWindow::~YASSWindow() = default;
+YASSWindow::~YASSWindow() {
+  g_object_unref(G_OBJECT(tray_icon_));
+}
+
+void YASSWindow::CreateStatusIcon() {
+  // set try icon file
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  tray_icon_ = gtk_status_icon_new_from_icon_name("yass");
+  G_GNUC_END_IGNORE_DEPRECATIONS
+
+  // set popup menu for tray icon
+  GtkWidget* sep;
+  GtkWidget* option_menu_item;
+  GtkWidget* exit_menu_item;
+
+  tray_menu_ = gtk_menu_new();
+  option_menu_item = gtk_menu_item_new_with_label(_("Option..."));
+  exit_menu_item = gtk_menu_item_new_with_label(_("Exit"));
+
+  sep = gtk_separator_menu_item_new();
+
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu_), option_menu_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu_), sep);
+  gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu_), exit_menu_item);
+
+  auto option_callback = []() { window->OnOption(); };
+  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
+
+  auto exit_callback = []() { window->close(); };
+  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
+
+  gtk_widget_show_all(tray_menu_);
+
+  // set tooltip
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  gtk_status_icon_set_tooltip_text(tray_icon_, _("Show"));
+  G_GNUC_END_IGNORE_DEPRECATIONS
+
+  auto show_callback = []() {
+    window->show();
+    window->present();
+  };
+  g_signal_connect(G_OBJECT(tray_icon_), "activate", G_CALLBACK(show_callback), nullptr);
+
+  auto popup_callback = [](GtkStatusIcon* self, guint button, guint activate_time, gpointer popup_menu) {
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    gtk_menu_popup(GTK_MENU(popup_menu), nullptr, nullptr, gtk_status_icon_position_menu, self, button, activate_time);
+    G_GNUC_END_IGNORE_DEPRECATIONS
+  };
+  g_signal_connect(G_OBJECT(tray_icon_), "popup-menu", G_CALLBACK(*popup_callback), tray_menu_);
+
+  gtk_menu_attach_to_widget(GTK_MENU(tray_menu_), GTK_WIDGET(impl_), nullptr);
+}
 
 void YASSWindow::show() {
   gtk_widget_show(GTK_WIDGET(impl_));
@@ -250,6 +304,9 @@ void YASSWindow::present() {
 }
 
 void YASSWindow::close() {
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  gtk_status_icon_set_visible(tray_icon_, FALSE);
+  G_GNUC_END_IGNORE_DEPRECATIONS
   gtk_window_close(GTK_WINDOW(impl_));
 }
 
