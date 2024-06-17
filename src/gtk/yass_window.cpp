@@ -91,17 +91,13 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   start_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(start_button_, _("Start"));
 
-#if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_top(GTK_WIDGET(start_button_), 30);
   gtk_widget_set_margin_bottom(GTK_WIDGET(start_button_), 30);
-#endif
 
   stop_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(stop_button_, _("Stop"));
-#if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_top(GTK_WIDGET(stop_button_), 30);
   gtk_widget_set_margin_bottom(GTK_WIDGET(stop_button_), 30);
-#endif
 
   auto start_callback = []() { window->OnStartButtonClicked(); };
 
@@ -118,7 +114,10 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(left_box), 15);
-  gtk_widget_set_margin_end(GTK_WIDGET(left_box), 15);
+  gtk_widget_set_margin_end(GTK_WIDGET(left_box), 5);
+#else
+  gtk_widget_set_margin_left(GTK_WIDGET(left_box), 15);
+  gtk_widget_set_margin_right(GTK_WIDGET(left_box), 5);
 #endif
 
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
@@ -206,8 +205,21 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 12, 1, 1);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
-  gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
-  gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 20);
+  gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 5);
+  gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 5);
+#else
+  gtk_widget_set_margin_left(GTK_WIDGET(right_panel_grid), 5);
+  gtk_widget_set_margin_right(GTK_WIDGET(right_panel_grid), 5);
+#endif
+
+  gtk_widget_set_margin_top(GTK_WIDGET(hbox), 15);
+  gtk_widget_set_margin_bottom(GTK_WIDGET(hbox), 10);
+#if GTK_CHECK_VERSION(3, 12, 0)
+  gtk_widget_set_margin_start(GTK_WIDGET(hbox), 20);
+  gtk_widget_set_margin_end(GTK_WIDGET(hbox), 20);
+#else
+  gtk_widget_set_margin_left(GTK_WIDGET(hbox), 20);
+  gtk_widget_set_margin_right(GTK_WIDGET(hbox), 20);
 #endif
 
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(right_panel_grid));
