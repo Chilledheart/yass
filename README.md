@@ -19,10 +19,10 @@ More details are at [Latest Release Page](https://github.com/Chilledheart/yass/r
 - GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk4.el9.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk4-ubuntu-22.04-jammy_amd64.1.11.2.deb) (require glibc >= 2.34)
 - Qt6 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt6.fc39.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt6-ubuntu-22.04-jammy_amd64.1.11.2.deb) (require glibc >= 2.36)
 
-[![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
 [![aur yass-proxy-gtk3](https://img.shields.io/aur/version/yass-proxy-gtk3)](https://aur.archlinux.org/packages/yass-proxy-gtk3)
+[![aur yass-proxy-qt5](https://img.shields.io/aur/version/yass-proxy-qt5)](https://aur.archlinux.org/packages/yass-proxy-qt5)
+[![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
 [![aur yass-proxy-qt6](https://img.shields.io/aur/version/yass-proxy-qt6)](https://aur.archlinux.org/packages/yass-proxy-qt6)
-[![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
 See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store) for more.
 
@@ -31,6 +31,8 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 - CLI [download tgz for riscv64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv64-1.11.1.tgz) (require glibc >= 2.36) [download tgz for riscv32](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv32-1.11.1.tgz) (require glibc >= 2.36)
 - CLI(openwrt) [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-x86_64-1.11.1.tgz) [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-i486-1.11.1.tgz) [download tgz for aarch64 generic](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-aarch64-1.11.1.tgz) (require openwrt >= 23.05.3)
 - CLI(musl) download tgz for amd64 download tgz for i386 (require musl >= 1.2.5)
+
+[![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
 ### Prebuilt binaries (Other platforms)
 - Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm64-1.11.2.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm-1.11.2.apk)
