@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 extern int app_indicator_init(void);
+extern void app_indicator_uninit(void);
 
 extern int app_indicator_get_type(void);
 extern void* app_indicator_new(const char*, const char*, int);
@@ -27,7 +28,10 @@ int app_indicator_init(void) {
   if (app_indicator_lib != NULL) {
     return 0;
   }
-  app_indicator_lib = dlopen("libappindicator3.so.1", RTLD_LAZY);
+  app_indicator_lib = dlopen("libayatana-appindicator3.so.1", RTLD_LAZY);
+  if (app_indicator_lib == NULL) {
+    app_indicator_lib = dlopen("libappindicator3.so.1", RTLD_LAZY);
+  }
   if (app_indicator_lib != NULL) {
     o_app_indicator_get_type = dlsym(app_indicator_lib, "app_indicator_get_type");
     o_app_indicator_new = dlsym(app_indicator_lib, "app_indicator_new");
@@ -39,17 +43,23 @@ int app_indicator_init(void) {
     if (o_app_indicator_get_type == NULL || o_app_indicator_new == NULL || o_app_indicator_new_with_path == NULL ||
         o_app_indicator_set_status == NULL || o_app_indicator_set_menu == NULL ||
         o_app_indicator_set_secondary_activate_target == NULL) {
-      o_app_indicator_get_type = NULL;
-      o_app_indicator_new = NULL;
-      o_app_indicator_new_with_path = NULL;
-      o_app_indicator_set_status = NULL;
-      o_app_indicator_set_menu = NULL;
-      o_app_indicator_set_secondary_activate_target = NULL;
-      dlclose(app_indicator_lib);
-      app_indicator_lib = NULL;
+      app_indicator_uninit();
     }
   }
   return app_indicator_lib == NULL ? -1 : 0;
+}
+
+void app_indicator_uninit(void) {
+  if (app_indicator_lib != NULL) {
+    o_app_indicator_get_type = NULL;
+    o_app_indicator_new = NULL;
+    o_app_indicator_new_with_path = NULL;
+    o_app_indicator_set_status = NULL;
+    o_app_indicator_set_menu = NULL;
+    o_app_indicator_set_secondary_activate_target = NULL;
+    dlclose(app_indicator_lib);
+    app_indicator_lib = NULL;
+  }
 }
 
 int app_indicator_get_type(void) {

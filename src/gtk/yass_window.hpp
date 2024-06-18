@@ -62,7 +62,7 @@ class YASSWindow {
   G_GNUC_END_IGNORE_DEPRECATIONS
 
 #ifdef HAVE_APP_INDICATOR
-  GObject* tray_indicator_;
+  GObject* tray_indicator_ = nullptr;
 #endif
 
  public:

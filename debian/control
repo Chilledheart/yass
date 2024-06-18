@@ -29,7 +29,9 @@ Package: yass
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Build-Profiles: <gtk3> <gtk4> <qt5> <qt6>
-Recommends: libappindicator3-1 <gtk3>
+Recommends:
+ libappindicator3-1 <gtk3>,
+ libayatana-appindicator3-1 <gtk3>
 Depends:
  lsb-base (>= 3.0-6),
  ca-certificates,
