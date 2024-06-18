@@ -7,10 +7,9 @@ yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/
 
 ## Releases
 
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
 [![Language: C++](https://img.shields.io/github/languages/top/Chilledheart/yass.svg)](https://github.com/Chilledheart/yass/search?l=cpp)
 [![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/Chilledheart/yass/latest/total)](https://github.com/Chilledheart/yass/releases/latest)
-
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
 
 More details are at [Latest Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.2)
 
