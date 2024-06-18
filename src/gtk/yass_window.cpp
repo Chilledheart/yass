@@ -19,6 +19,7 @@
 
 #ifdef HAVE_APP_INDICATOR
 extern "C" int app_indicator_init();
+extern "C" void app_indicator_uninit();
 #include "third_party/libappindicator/app-indicator.h"
 #endif
 
@@ -259,6 +260,12 @@ YASSWindow::~YASSWindow() {
   if (tray_icon_) {
     g_object_unref(G_OBJECT(tray_icon_));
   }
+#ifdef HAVE_APP_INDICATOR
+  if (tray_indicator_) {
+    g_object_unref(G_OBJECT(tray_indicator_));
+  }
+  app_indicator_uninit();
+#endif
 }
 
 void YASSWindow::CreateStatusIcon() {
