@@ -2357,6 +2357,8 @@ endif()
 set(ABSL_PROPAGATE_CXX_STD "ON" CACHE STRING "")
 # override abseil-cpp options
 include_directories(third_party/abseil-cpp-override)
+# override system's abseil-cpp
+include_directories(third_party/abseil-cpp)
 # force win32 thread model for libc++ usage
 if (MINGW AND USE_LIBCXX)
   # force non-inline emulated-tls
