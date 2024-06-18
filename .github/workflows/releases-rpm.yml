@@ -269,9 +269,9 @@ jobs:
           rm -f *.tar.gz
       - name: Build TGZ packages
         run: |
-          ./tools/build --arch ${{ matrix.arch }} --system linux --subsystem musl \
-            --sysroot "${{ env.SDK_ROOT }}" \
-            -build-test --cmake-build-type MinSizeRel
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -nc
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -nc
       - name: Run tests
         run: |
           bwrap --die-with-parent --bind "${{ env.SDK_ROOT }}" / \
