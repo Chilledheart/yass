@@ -11,9 +11,9 @@ Build-Depends:
  golang:native,
  ninja-build:native,
  debhelper (>= 9),
- ca-certificates,
  pkg-config,
  zlib1g-dev,
+ libcurl4-openssl-dev <!nocheck>,
  libglib2.0-dev <gtk3>,
  libgtk-3-dev <gtk3>,
  libglib2.0-dev <gtk4>,
@@ -29,9 +29,10 @@ Package: yass
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Build-Profiles: <gtk3> <gtk4> <qt5> <qt6>
-Recommends: ca-certificates
+Recommends: libappindicator3-1 <gtk3>
 Depends:
  lsb-base (>= 3.0-6),
+ ca-certificates,
  ${misc:Depends},
  ${shlibs:Depends}
 Description: lightweight and secure http/socks4/socks5 proxy
@@ -53,6 +54,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends:
  lsb-base (>= 3.0-6),
+ ca-certificates,
  ${misc:Depends},
  ${shlibs:Depends}
 Recommends: ca-certificates
@@ -74,6 +76,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends:
  lsb-base (>= 3.0-6),
+ ca-certificates,
  ${misc:Depends},
  ${shlibs:Depends}
 Recommends: ca-certificates
