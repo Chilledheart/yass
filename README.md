@@ -17,7 +17,7 @@ More details are at [Latest Release Page](https://github.com/Chilledheart/yass/r
 - GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk3.el7.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk3-ubuntu-16.04-xenial_amd64.1.11.2.deb) (require glibc >= 2.16)
 - Qt5 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt5.el7.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt5-ubuntu-16.04-xenial_amd64.1.11.2.deb) (require glibc >= 2.16)
 - GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk4.el9.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk4-ubuntu-22.04-jammy_amd64.1.11.2.deb) (require glibc >= 2.34)
-- Qt6 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt6.fc39.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt6-ubuntu-22.04-jammy_amd64.1.11.2.deb) (require glibc >= 2.36)
+- Qt6 download rpm or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt6-ubuntu-22.04-jammy_amd64.1.11.2.deb) (require glibc >= 2.36)
 
 [![aur yass-proxy-gtk3](https://img.shields.io/aur/version/yass-proxy-gtk3)](https://aur.archlinux.org/packages/yass-proxy-gtk3)
 [![aur yass-proxy-qt5](https://img.shields.io/aur/version/yass-proxy-qt5)](https://aur.archlinux.org/packages/yass-proxy-qt5)
@@ -26,11 +26,11 @@ More details are at [Latest Release Page](https://github.com/Chilledheart/yass/r
 
 See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store) for more.
 
-- CLI [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) [download tgz for arm64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-arm64-1.11.1.tgz) (require glibc >= 2.25)
+- CLI [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) or [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) or [download tgz for arm64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-arm64-1.11.1.tgz) (require glibc >= 2.25)
 - CLI [download tgz for loongarch64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-loongarch64-1.11.1.tgz) (require glibc >= 2.38, require new world)
-- CLI [download tgz for riscv64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv64-1.11.1.tgz) (require glibc >= 2.36) [download tgz for riscv32](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv32-1.11.1.tgz) (require glibc >= 2.36)
-- CLI(openwrt) [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-x86_64-1.11.1.tgz) [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-i486-1.11.1.tgz) [download tgz for aarch64 generic](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-aarch64-1.11.1.tgz) (require openwrt >= 23.05.3)
-- CLI(musl) download tgz for amd64 download tgz for i386 (require musl >= 1.2.5)
+- CLI [download tgz for riscv64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv64-1.11.1.tgz) (require glibc >= 2.36) or [download tgz for riscv32](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv32-1.11.1.tgz) (require glibc >= 2.36)
+- CLI(openwrt) [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-x86_64-1.11.1.tgz) or [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-i486-1.11.1.tgz) or [download tgz for aarch64 generic](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-aarch64-1.11.1.tgz) (require openwrt >= 23.05.3)
+- CLI(musl) download tgz for amd64 or download tgz for i386 (require musl >= 1.2.5)
 
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
