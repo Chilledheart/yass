@@ -26,9 +26,15 @@ More details are at [Latest Release Page](https://github.com/Chilledheart/yass/r
 
 See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store) for more.
 
+- CLI [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) [download tgz for arm64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-arm64-1.11.1.tgz) (require glibc >= 2.25)
+- CLI [download tgz for loongarch64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-loongarch64-1.11.1.tgz) (require glibc >= 2.38, require new world)
+- CLI [download tgz for riscv64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv64-1.11.1.tgz) (require glibc >= 2.36) [download tgz for riscv32](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv32-1.11.1.tgz) (require glibc >= 2.36)
+- CLI(openwrt) [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-x86_64-1.11.1.tgz) [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-i486-1.11.1.tgz) [download tgz for aarch64 generic](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-aarch64-1.11.1.tgz) (require openwrt >= 23.05.3)
+- CLI(musl) download tgz for amd64 download tgz for i386 (require musl >= 1.2.5)
+
 ### Prebuilt binaries (Other platforms)
 - Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm64-1.11.2.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm-1.11.2.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09)
+- iOS [Join via TestFlight](https://testflight.apple.com/join/6AkiEq09)
 - Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-win7-release-x86_64-1.11.2-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-winxp-release-i686-1.11.2-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-release-aarch64-1.11.2-system-installer.exe)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-macos-release-x64-1.11.2.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-macos-release-arm64-1.11.2.dmg)
 > via homebrew: `brew install --cask yass`
