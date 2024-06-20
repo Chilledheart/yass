@@ -106,7 +106,7 @@ jobs:
         with:
           path: |
             qemu-user-static*.deb
-          key: ${{ runner.os }}-qemu-8.2.2-ds-2
+          key: ${{ runner.os }}-qemu-8.2.5-ds-1
       - name: Cache sysroot
         id: sysroot-cache
         uses: actions/cache@v4
@@ -134,7 +134,7 @@ jobs:
       - name: "Install dependency: qemu user cache"
         if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
-          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.2.2+ds-2_amd64.deb
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.2.5+ds-1_amd64.deb
       - name: "Install dependency: sysroot"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'loongarch64' && matrix.arch != 'riscv64' && matrix.arch != 'riscv32' }}
         run: |
