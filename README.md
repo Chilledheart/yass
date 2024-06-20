@@ -36,7 +36,7 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 ### Prebuilt binaries (Other platforms)
 - Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm64-1.11.2.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm-1.11.2.apk)
-- iOS [Continue to TestFlight Invitation](https://testflight.apple.com/join/6AkiEq09)
+- iOS [Continue to accept TestFlight invitation](https://testflight.apple.com/join/6AkiEq09)
 - Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-win7-release-x86_64-1.11.2-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-winxp-release-i686-1.11.2-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-release-aarch64-1.11.2-system-installer.exe)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-macos-release-x64-1.11.2.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-macos-release-arm64-1.11.2.dmg)
 > via homebrew: `brew install --cask yass`
