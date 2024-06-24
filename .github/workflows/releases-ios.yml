@@ -100,4 +100,4 @@ jobs:
       - name: Build (non-arm64)
         if: ${{ matrix.arch != 'arm64' }}
         run: |
-          ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -build-test
+          ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -build-test -build-benchmark

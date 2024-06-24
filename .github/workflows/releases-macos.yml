@@ -143,7 +143,7 @@ jobs:
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
       - name: Build
         run: |
-          ./tools/build --arch ${{ matrix.arch }} -build-test
+          ./tools/build --arch ${{ matrix.arch }} -build-test -build-benchmark
       - name: Clean up keychain and provisioning profile
         if: ${{ always() }}
         run: |
@@ -157,8 +157,8 @@ jobs:
       - name: Run tests
         run: |
           ./build-darwin-${{ matrix.arch }}/yass_test
-          # buggy with yass_benchmark building stage
-          #./build-darwin-${{ matrix.arch }}/yass_benchmark
+          # slow on m1 bots
+          # ./build-darwin-${{ matrix.arch }}/yass_benchmark
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
