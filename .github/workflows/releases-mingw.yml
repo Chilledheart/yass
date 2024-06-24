@@ -121,6 +121,16 @@ jobs:
           cd build-mingw
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_MSVCRT100=on -DMINGW_WORKAROUND=on .. ${{ env.CMAKE_OPTIONS }} -DCMAKE_C_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_ASM_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_SYSROOT="%CD%\..\third_party\${{ matrix.mingw_dir }}\${{ matrix.arch }}-w64-mingw32" -DUSE_TCMALLOC=on -DUSE_LIBCXX=on -DENABLE_LLD=on
           ninja yass yass_benchmark yass_test
+      - name: Populate depedencies (libgcc-i686)
+        if: ${{ matrix.arch == 'i686' }}
+        run: |
+          REM copy libgcc runtime
+          xcopy /F third_party\${{ matrix.mingw_dir }}\libexec\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\libgcc_s_dw2-1.dll build-mingw
+      - name: Populate depedencies (libgcc-x86_64)
+        if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          REM copy libgcc runtime
+          xcopy /F third_party\${{ matrix.mingw_dir }}\libexec\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\libgcc_s_seh-1.dll build-mingw
       - name: Packaging
         shell: bash
         run: |
@@ -150,7 +160,7 @@ jobs:
         if: ${{ matrix.arch == 'i686' }}
         run: |
           xcopy /F third_party\curl-8.4.0_7-win32-mingw\bin\libcurl.dll build-mingw
-          # Install vcredist2010
+          REM Install vcredist2010
           curl -L -O https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
           vcredist_x86.exe /install /quiet /norestart
           del vcredist_x86.exe
@@ -158,7 +168,7 @@ jobs:
         if: ${{ matrix.arch == 'x86_64' }}
         run: |
           xcopy /F third_party\curl-8.4.0_7-win64-mingw\bin\libcurl-x64.dll build-mingw
-          # Install vcredist2010
+          REM Install vcredist2010
           curl -L -O https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
           vcredist_x64.exe /install /quiet /norestart
           del vcredist_x64.exe
