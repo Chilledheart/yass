@@ -956,7 +956,6 @@ func buildStageGenerateBuildScript() {
 			if targetAbi == "i686" {
 				cmakeArgs = append(cmakeArgs, "-DMINGW_MSVCRT100=ON")
 			}
-			cmakeArgs = append(cmakeArgs, "-DMINGW_WORKAROUND=ON")
 			llvm_version := getLLVMVersion()
 			clang_rt_suffix := targetAbi
 			if targetAbi == "i686" {
