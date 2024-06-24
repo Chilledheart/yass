@@ -1014,6 +1014,7 @@ func buildStageGenerateBuildScript() {
 		}
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DPLATFORM=%s", platform))
+		cmakeArgs = append(cmakeArgs, "-DENABLE_STRICT_TRY_COMPILE=on")
 	}
 
 	if systemNameFlag == "android" {
