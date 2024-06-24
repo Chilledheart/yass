@@ -285,7 +285,7 @@ if (WIN32)
     trunk/src/support/win32/thread_win32.cpp
   )
   # hacks, override posix thread model tls implementation
-  if (MINGW)
+  if (MINGW AND MINGW_WORKAROUND)
     set(libcxx_SOURCES
       ${libcxx_SOURCES}
       emutls.cpp
