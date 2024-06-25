@@ -28,9 +28,9 @@ int app_indicator_init(void) {
   if (app_indicator_lib != NULL) {
     return 0;
   }
-  app_indicator_lib = dlopen("libayatana-appindicator3.so.1", RTLD_LAZY);
+  app_indicator_lib = dlopen("libayatana-appindicator3.so.1", RTLD_LAZY | RTLD_LOCAL);
   if (app_indicator_lib == NULL) {
-    app_indicator_lib = dlopen("libappindicator3.so.1", RTLD_LAZY);
+    app_indicator_lib = dlopen("libappindicator3.so.1", RTLD_LAZY | RTLD_LOCAL);
   }
   if (app_indicator_lib != NULL) {
     o_app_indicator_get_type = dlsym(app_indicator_lib, "app_indicator_get_type");
