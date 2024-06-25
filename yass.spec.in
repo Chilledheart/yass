@@ -306,6 +306,9 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Tue Jun 25 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.7-1
+  - add qt5 build profile
+  - gtk3: add libappindicator3 and legacy tray icon support
 * Tue Jun 11 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.6-1
   - add gtk3/gtk4/qt6 build profile (source)
 * Mon Jun 3 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.5-1
