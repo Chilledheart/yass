@@ -96,7 +96,7 @@ jobs:
           :SetNewVCToolsVersion
           set VCToolsVersion=
   mac-clang-tidy:
-    runs-on: macos-11
+    runs-on: macos-14
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
@@ -117,7 +117,10 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-arm64-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.19.0'
       - name: Cache golang
         uses: actions/cache@v4
         with:
