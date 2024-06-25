@@ -11,13 +11,13 @@ yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/
 [![Language: C++](https://img.shields.io/github/languages/top/Chilledheart/yass.svg)](https://github.com/Chilledheart/yass/search?l=cpp)
 [![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/Chilledheart/yass/latest/total)](https://github.com/Chilledheart/yass/releases/latest)
 
-More details are at [Latest Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.2)
+More details are at [Latest Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.3)
 
 ### Prebuilt binaries (Linux)
-- GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk3.el7.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk3-ubuntu-16.04-xenial_amd64.1.11.2.deb) (require glibc >= 2.16)
-- Qt5 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt5.el7.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt5-ubuntu-16.04-xenial_amd64.1.11.2.deb) (require glibc >= 2.16)
-- GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk4.el9.x86_64.1.11.2.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-gtk4-ubuntu-22.04-jammy_amd64.1.11.2.deb) (require glibc >= 2.34)
-- Qt6 download rpm or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-qt6-ubuntu-22.04-jammy_amd64.1.11.2.deb) (require glibc >= 2.36)
+- GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk3.el7.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk3-ubuntu-16.04-xenial_amd64.1.11.3.deb) (require glibc >= 2.16)
+- Qt5 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt5.el7.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt5-ubuntu-16.04-xenial_amd64.1.11.3.deb) (require glibc >= 2.16)
+- GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk4.el9.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk4-ubuntu-22.04-jammy_amd64.1.11.3.deb) (require glibc >= 2.34)
+- Qt6 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt6.lp155.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt6-ubuntu-22.04-jammy_amd64.1.11.3.deb) (require glibc >= 2.36)
 
 [![aur yass-proxy-gtk3](https://img.shields.io/aur/version/yass-proxy-gtk3)](https://aur.archlinux.org/packages/yass-proxy-gtk3)
 [![aur yass-proxy-qt5](https://img.shields.io/aur/version/yass-proxy-qt5)](https://aur.archlinux.org/packages/yass-proxy-qt5)
@@ -26,19 +26,19 @@ More details are at [Latest Release Page](https://github.com/Chilledheart/yass/r
 
 See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store) for more.
 
-- CLI [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) or [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-amd64-1.11.1.tgz) or [download tgz for arm64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-arm64-1.11.1.tgz) (require glibc >= 2.25)
-- CLI [download tgz for loongarch64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-loongarch64-1.11.1.tgz) (require glibc >= 2.38, require new world)
-- CLI [download tgz for riscv64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv64-1.11.1.tgz) or [download tgz for riscv32](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-release-riscv32-1.11.1.tgz) (require glibc >= 2.36)
-- CLI(openwrt) [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-x86_64-1.11.1.tgz) or [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-i486-1.11.1.tgz) or [download tgz for aarch64 generic](https://github.com/Chilledheart/yass/releases/download/1.11.1/yass_cli-linux-openwrt-release-aarch64-1.11.1.tgz) (require openwrt >= 23.05.3)
-- CLI(musl) download tgz for amd64 or download tgz for i386 (require musl >= 1.2.5)
+- CLI [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-release-amd64-1.11.3.tgz) or [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-release-amd64-1.11.3.tgz) or [download tgz for arm64](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-release-arm64-1.11.3.tgz) (require glibc >= 2.25)
+- CLI [download tgz for loongarch64](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-release-loongarch64-1.11.3.tgz) (require glibc >= 2.38, require new world)
+- CLI [download tgz for riscv64](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-release-riscv64-1.11.3.tgz) or [download tgz for riscv32](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-release-riscv32-1.11.3.tgz) (require glibc >= 2.36)
+- CLI(openwrt) [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-openwrt-release-x86_64-1.11.3.tgz) or [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-openwrt-release-i486-1.11.3.tgz) or [download tgz for aarch64 generic](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-openwrt-release-aarch64-1.11.3.tgz) (require openwrt >= 23.05.3)
+- CLI(musl) [download tgz for amd64](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-musl-release-amd64-1.11.3.tgz) or [download tgz for i386](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass_cli-linux-musl-release-i386-1.11.3.tgz) (require musl >= 1.2.5)
 
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
 ### Prebuilt binaries (Other platforms)
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm64-1.11.2.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-android-release-arm-1.11.2.apk)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-android-release-arm64-1.11.3.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-android-release-arm-1.11.3.apk)
 - iOS [Continue to accept TestFlight invitation](https://testflight.apple.com/join/6AkiEq09)
-- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-win7-release-x86_64-1.11.2-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-winxp-release-i686-1.11.2-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-mingw-release-aarch64-1.11.2-system-installer.exe)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-macos-release-x64-1.11.2.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.2/yass-macos-release-arm64-1.11.2.dmg)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-mingw-win7-release-x86_64-1.11.3-system-installer.exe) [(require KB2999226 below windows 10)][KB2999226] or [download 32-bit installer](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-mingw-winxp-release-i686-1.11.3-system-installer.exe) [(require vc 2010 runtime)][vs2010_x86] or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-mingw-release-aarch64-1.11.3-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-macos-release-x64-1.11.3.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-macos-release-arm64-1.11.3.dmg)
 > via homebrew: `brew install --cask yass`
 
 [![homebrew cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
