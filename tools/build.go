@@ -58,7 +58,6 @@ var enableLtoFlag bool
 var useMoldFlag bool
 
 var clangTidyModeFlag bool
-var clangTidyExecutablePathFlag string
 
 var macosxVersionMinFlag string
 var macosxUniversalBuildFlag bool
@@ -171,11 +170,6 @@ func InitFlag() {
 	flag.BoolVar(&useMoldFlag, "use-mold", false, "Use Mold Linker")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
-	builtClangTidyPath := filepath.Join(builtClangPath, "bin", "clang-tidy")
-	if runtime.GOOS == "windows" {
-		builtClangTidyPath = filepath.Join(builtClangPath, "bin", "clang-tidy.exe")
-	}
-	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", builtClangTidyPath), "Path to clang-tidy, only used by Clang Tidy Build")
 
 	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.14"), "Set Mac OS X deployment target, such as 10.15")
 	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", false), "Enable Mac OS X Universal Build")
@@ -832,10 +826,17 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, "-DUSE_MOLD=off")
 	}
 	if clangTidyModeFlag {
-		if _, err := os.Stat(clangTidyExecutablePathFlag); errors.Is(err, os.ErrNotExist) {
-			glog.Fatalf("clang-tidy executable %s does not exist", clangTidyExecutablePathFlag)
+		if clangPath == "" {
+			glog.Fatalf("clangPath is required by clang-tidy mode but not specified")
 		}
-		cmakeArgs = append(cmakeArgs, "-DENABLE_CLANG_TIDY=on", fmt.Sprintf("-DCLANG_TIDY_EXECUTABLE=%s", clangTidyExecutablePathFlag))
+		clangTidyPath := filepath.Join(clangPath, "bin", "clang-tidy")
+		if runtime.GOOS == "windows" {
+			clangTidyPath = filepath.Join(clangPath, "bin", "clang-tidy.exe")
+		}
+		if _, err := os.Stat(clangTidyPath); errors.Is(err, os.ErrNotExist) {
+			glog.Fatalf("clang-tidy executable %s does not exist", clangTidyPath)
+		}
+		cmakeArgs = append(cmakeArgs, "-DENABLE_CLANG_TIDY=on", fmt.Sprintf("-DCLANG_TIDY_EXECUTABLE=%s", clangTidyPath))
 	}
 	if systemNameFlag == "windows" {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=%s\\Native.cmake", buildDir))
