@@ -259,10 +259,12 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 YASSWindow::~YASSWindow() {
   if (tray_icon_) {
     g_object_unref(G_OBJECT(tray_icon_));
+    tray_icon_ = nullptr;
   }
 #ifdef HAVE_APP_INDICATOR
   if (tray_indicator_) {
     g_object_unref(G_OBJECT(tray_indicator_));
+    tray_indicator_ = nullptr;
   }
   app_indicator_uninit();
 #endif
@@ -371,8 +373,15 @@ void YASSWindow::present() {
 
 void YASSWindow::close() {
   G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-  gtk_status_icon_set_visible(tray_icon_, FALSE);
+  if (tray_icon_) {
+    gtk_status_icon_set_visible(tray_icon_, FALSE);
+  }
   G_GNUC_END_IGNORE_DEPRECATIONS
+#ifdef HAVE_APP_INDICATOR
+  if (tray_indicator_) {
+    app_indicator_set_status(APP_INDICATOR(tray_indicator_), APP_INDICATOR_STATUS_PASSIVE);
+  }
+#endif
   gtk_window_close(GTK_WINDOW(impl_));
 }
 
