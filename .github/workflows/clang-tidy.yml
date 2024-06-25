@@ -95,13 +95,20 @@ jobs:
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
-  mac-clang-tidy:
-    runs-on: macos-14
+  mingw64-clang-tidy:
+    runs-on: ubuntu-20.04
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
         build_type: [Release]
+        include:
+          - arch: i686
+            variant: msvcrt
+          - arch: x86_64
+            variant: ucrt
+          - arch: aarch64
+            variant: ucrt
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -117,15 +124,19 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-arm64-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - uses: actions/setup-go@v5
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache mingw64 llvm
+        id: mingw-cache
+        uses: actions/cache@v4
         with:
-          go-version: '>=1.19.0'
+          path: |
+            third_party/llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64
+          key: ${{ runner.os }}-mingw64-third_party-llvm-20240518-${{ matrix.variant }}
       - name: Cache golang
         uses: actions/cache@v4
         with:
           path: |
-            ~/Library/Caches/go-build
+            ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
@@ -134,16 +145,55 @@ jobs:
         run: |
           cd tools
           go build
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: "Download dependency: llvm-mingw"
+        if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
+        run: |
+          pushd third_party
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240518/llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
+          rm -vf llvm-mingw-*.xz
+          popd
       - name: Populate depedencies
-        run: brew install ninja cmake p7zip
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build nasm zip nsis locales-all
+      - name: Populate dependencie (cmake, overwrite)
+        run: |
+          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
+          sudo tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
+          cmake --version
+          rm -f *.tar.gz
+      - name: Patch libcxx for windows xp
+        if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
+        run: |
+          pushd third_party/libc++/trunk
+          patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/libc++abi/trunk
+          patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/benchmark
+          patch -p1 < ../benchmark-winxp-fix.patch
+          popd
+          echo "BUILD_OPTIONS=-mingw-allow-xp -enable-lto=false" >> $GITHUB_ENV
       - name: Build
         run: |
-          ./tools/build -clang-tidy-mode -build-test -build-benchmark -no-packaging
+          # fix cpack error on C.UTF-8 locale
+          # see https://github.com/lightspark/lightspark/discussions/604#discussioncomment-1034262
+          export LC_ALL=en_US.UTF-8
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw \
+            -build-test -build-benchmark -clang-tidy-mode \
+            -mingw-dir $PWD/third_party/llvm-mingw-20240518-${{ matrix.variant }}-ubuntu-20.04-x86_64 \
+            ${{ env.BUILD_OPTIONS }}
   linux-clang-tidy:
     runs-on: ubuntu-20.04
     if: ${{ github.event_name != 'release' }}
@@ -199,6 +249,55 @@ jobs:
           rm -f *.tar.gz
       - name: Populate depedencies (test purposes)
         run: sudo apt-get update -qq && sudo apt-get install -y libcurl4-openssl-dev
+      - name: Build
+        run: |
+          ./tools/build -clang-tidy-mode -build-test -build-benchmark -no-packaging
+  mac-clang-tidy:
+    runs-on: macos-14
+    if: ${{ github.event_name != 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache clang
+        id: clang-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-toolchain-arm64-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.19.0'
+      - name: Cache golang
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: Populate depedencies
+        run: brew install ninja cmake p7zip
       - name: Build
         run: |
           ./tools/build -clang-tidy-mode -build-test -build-benchmark -no-packaging
