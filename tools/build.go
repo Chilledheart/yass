@@ -171,7 +171,11 @@ func InitFlag() {
 	flag.BoolVar(&useMoldFlag, "use-mold", false, "Use Mold Linker")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
-	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
+	builtClangTidyPath := filepath.Join(builtClangPath, "bin", "clang-tidy")
+	if runtime.GOOS == "windows" {
+		builtClangTidyPath = filepath.Join(builtClangPath, "bin", "clang-tidy.exe")
+	}
+	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", builtClangTidyPath), "Path to clang-tidy, only used by Clang Tidy Build")
 
 	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.14"), "Set Mac OS X deployment target, such as 10.15")
 	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", false), "Enable Mac OS X Universal Build")
@@ -828,6 +832,9 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, "-DUSE_MOLD=off")
 	}
 	if clangTidyModeFlag {
+		if _, err := os.Stat(clangTidyExecutablePathFlag); errors.Is(err, os.ErrNotExist) {
+			glog.Fatalf("clang-tidy executable %s does not exist", clangTidyExecutablePathFlag)
+		}
 		cmakeArgs = append(cmakeArgs, "-DENABLE_CLANG_TIDY=on", fmt.Sprintf("-DCLANG_TIDY_EXECUTABLE=%s", clangTidyExecutablePathFlag))
 	}
 	if systemNameFlag == "windows" {
