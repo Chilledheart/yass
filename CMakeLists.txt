@@ -1868,6 +1868,15 @@ if (USE_LIBCXX)
   if (MINGW_WORKAROUND)
     list(APPEND YASS_APP_FEATURES "mingw atexit workaround")
   endif()
+elseif(NOT MSVC)
+  # Enable assertions on safety checks, also in libstdc++
+  #
+  # In case the C++ standard library implementation used is libstdc++, then
+  # enable its own hardening checks.
+  #
+  # Enable libstdc++ hardening lightweight assertions. Those have a low
+  # performance penalty but are considered a bare minimum for security.
+  add_definitions(-D_GLIBCXX_ASSERTIONS=1)
 endif()
 
 # *****************************************************************************************
