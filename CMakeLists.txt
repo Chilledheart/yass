@@ -1381,8 +1381,7 @@ endif()
 # .comment section or debug info taking up binary size, and makes comparing
 # .o files built with different compiler versions harder.
 if (NOT MSVC AND COMPILER_CLANG)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-ident")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-ident")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fno-ident>)
 endif()
 
 # In general, Windows is totally different, but all the other builds share
@@ -1541,6 +1540,18 @@ if (COMPILER_CLANG)
   # (https://crbug.com/829795).
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fmerge-all-constants")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmerge-all-constants")
+
+  # TODO(crbug.com/345541122): investigate the fuchsia binary size increase.
+  # Temporarily disable sized deallocation due to binary size increase.
+  # Clang now enables sized deallocation by default
+  # (see https://github.com/llvm/llvm-project/pull/90373)
+  if (MSVC)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
+  else()
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-sized-deallocation")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sized-deallocation")
+  endif()
 endif()
 
 if (USE_LLD)
@@ -1565,8 +1576,8 @@ endif()
 if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
   # TODO(hans): Remove this once Clang generates better optimized debug info
   # by default. https://crbug.com/765793
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-mllvm>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-instcombine-lower-dbg-declare=0>)
   if (USE_LLD)
     if (MSVC)
       add_link_options(-mllvm:-instcombine-lower-dbg-declare=0)
