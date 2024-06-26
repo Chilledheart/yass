@@ -499,11 +499,9 @@ option(ENABLE_FORTIFY "Enable build with Fortify Source (linux only)" OFF)
 option(ENABLE_LTO "Enable build with LTO" OFF)
 
 option(ENABLE_LLD "Enable build with LLD" OFF)
-option(ENABLE_GOLD "Enable build with GOLD" OFF)
 
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
-option(USE_GOLD "Build with gold linker" OFF)
 
 cmake_dependent_option(USE_QT6
   "Build with Qt6 (GUI)" OFF
@@ -530,13 +528,11 @@ endif()
 if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD) AND NOT COMPILER_APPLE_CLANG)
   # skipping apple clang
   set(USE_LLD ON)
-  set(USE_GOLD OFF)
-elseif (ENABLE_GOLD AND COMPILER_GCC AND NOT WIN32)
+elseif (COMPILER_GCC)
   set(USE_LLD OFF)
-  set(USE_GOLD ON)
 endif()
 
-if (USE_MOLD OR USE_LLD OR USE_GOLD)
+if (USE_MOLD OR USE_LLD)
   set(USE_ICF ON)
 else()
   if (ENABLE_LTO)
@@ -562,7 +558,6 @@ endif()
 
 if (USE_MOLD)
   set(USE_LLD OFF)
-  set(USE_GOLD OFF)
 endif()
 
 if (CMAKE_BUILD_TYPE)
@@ -607,11 +602,6 @@ if (ENABLE_LTO AND IS_RELEASE_BUILD)
       set(LTO ON)
       set(LTO_FLAVOUR "thin")
     endif()
-
-    if (USE_GOLD)
-      set(LTO ON)
-      set(LTO_FLAVOUR "thin")
-    endif()
   endif()
 
   if (LTO)
@@ -643,9 +633,6 @@ if (NOT MSVC)
   elseif (USE_LLD)
     add_link_options(-fuse-ld=lld)
     list(APPEND YASS_APP_FEATURES "linker lld")
-  elseif (USE_GOLD)
-    add_link_options(-fuse-ld=gold)
-    list(APPEND YASS_APP_FEATURES "linker gold")
   endif()
 endif()
 
@@ -1298,39 +1285,6 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
   endif()
 endif()
 
-## adopt Thin LTO
-if (LTO AND COMPILER_CLANG AND USE_GOLD)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-flto=thin>)
-
-  # Limit the size of the ThinLTO cache to the lesser of 10% of
-  # available disk space, 40GB and 100000 files.
-  set(cache_policy "cache_size=10%:cache_size_bytes=40g:cache_size_files=100000")
-
-  # TODO(gbiv): We ideally shouldn't need to specify this; ThinLTO
-  # should be able to better manage binary size increases on its own.
-  set(import_instr_limit 5)
-
-  add_link_options(-flto=thin)
-  # In ThinLTO builds, we run at most one link process at a time,
-  # and let it use all cores.
-  # TODO(thakis): Check if '=0' (that is, number of cores, instead
-  # of "all" which means number of hardware threads) is faster.
-  add_link_options(-Wl,-plugin-opt,jobs=all)
-
-  add_link_options(-Wl,-plugin-opt,cache-dir=thinlto-cache)
-
-  add_link_options(-Wl,-plugin-opt,cache-policy=${cache_policy})
-
-  add_link_options(-Wl,-mllvm,-import-instr-limit=${import_instr_limit})
-
-  if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fwhole-program-vtables>)
-    if (NOT MSVC)
-      add_link_options(-fwhole-program-vtables)
-    endif()
-  endif()
-endif()
-
 ## adopt Full LTO
 ## old gcc has regression on c++17 mode
 ## https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81004
@@ -1479,27 +1433,6 @@ if ((UNIX AND NOT APPLE) AND USE_LLD)
     # segments to be mapped adjacently, which breakpad relies on.
     add_link_options(-Wl,-z,max-page-size=4096)
   endif()
-elseif (USE_GOLD)
-  if (NOT ANDROID AND NOT OHOS)
-    # On Android, this isn't needed.  gcc in the NDK knows to look next to
-    # it with -fuse-ld=gold, and clang gets a --gcc-toolchain flag passed
-    # above.
-
-    # Experimentation found that using four linking threads
-    # saved ~20% of link time.
-    # https://groups.google.com/a/chromium.org/group/chromium-dev/browse_thread/thread/281527606915bb36
-    # Only apply this to the target linker, since the host
-    # linker might not be gold, but isn't used much anyway.
-    # FIXME crashing on aarch64 build machine
-    if (FALSE)
-      add_link_options(-Wl,--threads -Wl,--thread-count=4)
-    endif()
-  endif()
-
-  # TODO(thestig): Make this flag work with GN.
-  #if (NOT ASAN AND NOT TSAN AND NOT MSAN AND NOT LSAN) {
-  #    "-Wl,--detect-odr-violations",
-  #}
 endif()
 
 if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG) AND NOT MSVC)
