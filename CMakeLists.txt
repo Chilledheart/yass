@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "In source-tree build not support")
@@ -645,19 +645,18 @@ include(config-ix)
 # see "Announcement: ARC is default for Objective-C code"
 # https://groups.google.com/a/chromium.org/g/embedder-dev/c/13hNC6w2gGA?pli=1
 if (APPLE)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fobjc-arc -fno-objc-arc-exceptions")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fobjc-arc -fno-objc-arc-exceptions")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fobjc-arc>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fno-objc-arc-exceptions>)
+  add_link_options(-fobjc-arc)
 endif()
 
 # set default _MSC_VER
 if (MSVC AND COMPILER_CLANG)
   if (ALLOW_XP)
     # look back to vs2017, fix issue of linkage of ___dyn_tls_on_demand_init and ___tls_guard defined in msvcrt/libcmt
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fmsc-version=1916")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmsc-version=1916")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fmsc-version=1916>)
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fmsc-version=1934")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmsc-version=1934")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fmsc-version=1934>)
   endif()
 endif()
 
@@ -810,16 +809,13 @@ if(MSAN)
     # experimental
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
     if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=memory")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=memory")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fsanitize=memory>)
       add_link_options(/fsanitize=memory)
     else()
       message(FATAL_ERROR "Cannot enable MSAN unless using Clang or Vistual Studio 2019 version 16.9")
     endif()
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+    add_compile_options(-fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer)
     add_link_options(-fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer)
   endif()
   add_definitions(-DMEMORY_SANITIZER)
@@ -831,15 +827,13 @@ if(ASAN)
     # Current support is limited to x86 and x64 on Windows 10
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
     if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fsanitize=address>)
       add_link_options(/fsanitize=address)
     else()
       message(FATAL_ERROR "Cannot enable ASAN unless using Clang or Vistual Studio 2019 version 16.9")
     endif()
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+    add_compile_options(-fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer)
     add_link_options(-fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer)
   endif()
   add_definitions(-DADDRESS_SANITIZER)
@@ -851,8 +845,8 @@ if(CFI)
     message(FATAL_ERROR "Cannot enable CFI unless using Clang")
   endif()
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin")
+  add_compile_options(-fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin)
+  add_link_options(-fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin)
   # We use Chromium's copy of clang, which requires -fuse-ld=lld if building
   # with -flto. That, in turn, can't handle -ggdb.
   string(REPLACE "-ggdb" "-g" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
@@ -865,15 +859,13 @@ if(TSAN)
     # experimental
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
     if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=thread")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=thread")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fsanitize=thread>)
       add_link_options(/fsanitize=thread)
     else()
       message(FATAL_ERROR "Cannot enable TSAN unless using Clang or Vistual Studio 2019 version 16.9")
     endif()
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+    add_compile_options(-fsanitize=thread)
     add_link_options(-fsanitize=thread)
   endif()
   add_definitions(-DTHREAD_SANITIZER)
@@ -885,14 +877,13 @@ if(UBSAN)
     # experimental
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
     if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=undefined")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=undefined")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fsanitize=undefined>)
+      add_link_options(/fsanitize=undefined)
     else()
       message(FATAL_ERROR "Cannot enable UBSAN unless using Clang or Vistual Studio 2019 version 16.9")
     endif()
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+    add_compile_options(-fsanitize=undefined)
     add_link_options(-fsanitize=undefined)
   endif()
   add_definitions(-DUNDEFINED_SANITIZER)
@@ -902,19 +893,18 @@ endif()
 # apply sanitizer blacklist
 if (MSAN OR ASAN OR TSAN OR UBSAN)
   if (COMPILER_CLANG)
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+    add_compile_options(-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt)
+    add_link_options(-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt)
   endif()
 endif()
 
 if(GCOV)
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+    add_compile_options(-fprofile-arcs -ftest-coverage)
+    add_link_options(-fprofile-arcs -ftest-coverage)
   endif()
   list(APPEND YASS_APP_FEATURES "coverage")
 endif()
@@ -936,20 +926,22 @@ if (NOT MSVC)
   endif()
 
   ## optimization flags
-  set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG")
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
+  add_compile_options(
+    "$<$<CONFIG:RELEASE>:-DNDEBUG>"
+    "$<$<CONFIG:MINSIZEREL>:-DNDEBUG>"
+  )
 
   ## can gc eliminate any unused functions and data items
   if (NOT APPLE)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fdata-sections>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-ffunction-sections>)
+    add_link_options(-fdata-sections -ffunction-sections)
   endif()
 
   ## standard C++ library
   if(APPLE AND NOT USE_LIBCXX AND COMPILER_CLANG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
+    add_link_options(-stdlib=libc++)
   endif()
 
   if (APPLE)
@@ -968,8 +960,7 @@ if (NOT MSVC)
     # could not handle a 4GB dSYM file. But dsymutil from Xcodes prior to
     # version 7 also produces debug data that is incompatible with Breakpad
     # dump_syms, so this is still required (https://crbug.com/622406).
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-standalone-debug")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-standalone-debug")
+    add_compile_options(-fno-standalone-debug)
   endif()
 
   # gcc lto doesn't like coff/macho with debuginfo
@@ -980,24 +971,20 @@ if (NOT MSVC)
   if (NOT (COMPILER_GCC AND LTO_FLAVOUR AND (APPLE OR WIN32 OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)))
     # clang defaults to DWARF2 on macOS unless mac_deployment_target is
     # at least 10.11.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-gdwarf-4>)
 
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-g2>)
 
     # generate a complete set of debugging symbols for your code.
     # The linker uses this extra debugging information to dead strip the executable.
     if (APPLE)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-gfull>)
     endif()
 
     # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
     # to be manually enabled
     if (COMPILER_CLANG)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-gdwarf-aranges>)
     endif()
   endif()
 
@@ -1005,30 +992,32 @@ if (NOT MSVC)
     if (APPLE)
       # TODO(https://crbug.com/1050118): Investigate missing debug info on mac.
       # Make sure we don't use constructor homing on mac.
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -debug-info-kind=limited")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -debug-info-kind=limited")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Xclang>)
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-debug-info-kind=limited>)
     else()
       # Use constructor homing for debug info. This option reduces debug info
       # by emitting class type info only when constructors are emitted
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fuse-ctor-homing")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fuse-ctor-homing")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Xclang>)
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fuse-ctor-homing>)
     endif()
   endif()
 
   # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
   # and -fcoverage-compilation-dir=.
   if (COMPILER_CLANG AND NOT COMPILER_APPLE_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,-fdebug-compilation-dir,.>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Xclang>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fdebug-compilation-dir>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Xclang>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:.>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-ffile-compilation-dir=.>)
   endif()
 
   # Tells the compiler not to use absolute paths when passing the default
   # paths to the tools it invokes. We don't want this because we don't
   # really need it and it can mess up the goma cache entries.
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -no-canonical-prefixes")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-canonical-prefixes")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-no-canonical-prefixes>)
 
     # Same for links: Let the compiler driver invoke the linker
     # with a relative path and pass relative paths to built-in
@@ -1040,53 +1029,44 @@ if (NOT MSVC)
   endif()
 else()
   # Enable function-level linking.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gy>)
 
   # Preserve previous PDB behavior.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FS>)
 
   # Some of our files are bigger than the regular limits.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/bigobj>)
 
   ## Set Source and Excutable character sets to UTF-8
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/utf-8>)
 
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:twoPhase")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:twoPhase")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:twoPhase>)
   endif()
 
   # Consistently use backslash as the path separator when expanding the
   # __FILE__ macro when targeting Windows regardless of the build
   # environment.
   if (COMPILER_CLANG AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffile-reproducible")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffile-reproducible")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-ffile-reproducible>)
   endif()
 
   # Work around crbug.com/526851, bug in VS 2015 RTM compiler.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:sizedDealloc->)
 
   # Do not export inline member functions. This makes component builds
   # faster. This is similar to -fvisibility-inlines-hidden.
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:dllexportInlines-")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:dllexportInlines-")
+    add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:/Zc:dllexportInlines->)
   endif()
 
   ## Optimization flags
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+  add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:/Zc:inline>)
+  add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:/DNDEBUG>)
 
   ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
   if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /GL")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GL")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>)
     add_link_options(/LTCG)
   endif()
 
@@ -1096,24 +1076,21 @@ else()
   endif()
 
   ## not omit stack frame pointer
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
+  add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:/Oy->)
 
   ## supress some warnings
   if (COMPILER_CLANG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-microsoft-exception-spec>)
   endif()
 
   ## Generate debug info, Debug information in the .obj files for clang.
   ## Produce PDB file for msvc, no edit and continue.
   if (COMPILER_CLANG AND NOT ENABLE_CLANG_TIDY)
     # Debug information in the .obj files.
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Z7")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Z7")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Z7>)
     # Disable putting the compiler command line into the debug info to
     # prevent some types of non-determinism.
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -gno-codeview-command-line")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gno-codeview-command-line")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-gno-codeview-command-line>)
     ## To generate PDB files for debugging with MSVC, you can use the /Z7 option.
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
       string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -1132,13 +1109,11 @@ else()
     # Turn this on to use ghash feature of lld for faster debug link on Windows.
     # http://blog.llvm.org/2018/01/improving-link-time-on-windows-with.html
     if (USE_LLD)
-      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -gcodeview-ghash")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gcodeview-ghash")
+      add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-gcodeview-ghash>)
       add_link_options(/DEBUG:GHASH)
     endif()
   else()
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+    add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:/Zi>)
   endif()
 
   # Tell linker to include symbol data
@@ -1156,8 +1131,8 @@ else()
   # Use constructor homing for debug info. This option reduces debug info
   # by emitting class type info only when constructors are emitted
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fuse-ctor-homing")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fuse-ctor-homing")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Xclang>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fuse-ctor-homing>)
   endif()
 
   if (USE_LLD)
@@ -1181,8 +1156,7 @@ else()
   # paths to the tools it invokes. We don't want this because we don't
   # really need it and it can mess up the goma cache entries.
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -no-canonical-prefixes")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-canonical-prefixes")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-no-canonical-prefixes>)
   endif()
 endif()
 
@@ -1327,8 +1301,7 @@ endif()
 # so only enable it if using_clang. See: https://gcc.gnu.org/PR97913
 # TODO(mpdenton): remove is_clang once GCC bug is fixed.
 if (NOT UBSAN AND COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-delete-null-pointer-checks")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-delete-null-pointer-checks")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fno-delete-null-pointer-checks>)
 endif()
 
 # Don't emit the GCC version ident directives, they just end up in the
@@ -1344,30 +1317,23 @@ if (NOT MSVC)
   # Common POSIX compiler flags setup.
   # --------------------------------
   # See http://crbug.com/32204
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fno-strict-aliasing>)
 
   # Stack protection.
   if (APPLE AND COMPILER_CLANG)
     # The strong variant of the stack protector significantly increases
     # binary size, so only enable it in debug mode.
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fstack-protector-strong")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-strong")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fstack-protector")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fstack-protector")
-    set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -fstack-protector")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -fstack-protector")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fstack-protector")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fstack-protector")
+    add_compile_options($<$<AND:$<CONFIG:DEBUG>,$<COMPILE_LANGUAGE:C,CXX>>:-fstack-protector-strong>)
+    add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:-fstack-protector>)
+    add_compile_options($<$<AND:$<CONFIG:MINSIZEREL>,$<COMPILE_LANGUAGE:C,CXX>>:-fstack-protector>)
+    add_compile_options($<$<AND:$<CONFIG:RELWITHDEBINFO>,$<COMPILE_LANGUAGE:C,CXX>>:-fstack-protector>)
   elseif (UNIX AND NOT APPLE)
     # TODO(phajdan.jr): Use -fstack-protector-strong when our gcc supports it.
     # See also https://crbug.com/533294
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param=ssp-buffer-size=4")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param=ssp-buffer-size=4")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:--param=ssp-buffer-size=4>)
 
     # FIXME The ANDROID x86 toolchain currently has problems with stack-protector.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fstack-protector>)
   endif()
 
   # Linker warnings.
@@ -1402,8 +1368,7 @@ if (UNIX AND NOT APPLE)
   endif()
 
   # unwind-tables
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -funwind-tables")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funwind-tables")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-funwind-tables>)
 endif()
 
 # Linux/Android/Fuchsia common flags setup.
@@ -1416,8 +1381,7 @@ if ((UNIX AND NOT APPLE) OR ANDROID OR OHOS)
   # Use pipes for communicating between sub-processes. Faster.
   # (This flag doesn't do anything with Clang.)
   if (NOT COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pipe")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-pipe>)
   endif()
 
   add_link_options(-Wl,-z,noexecstack -Wl,-z,relro)
@@ -1447,8 +1411,8 @@ if (UNIX AND NOT APPLE)
   # Do not use the -pthread ldflag here since it becomes a no-op
   # when using -nodefaultlibs, which would cause an unused argument
   # error.  "-lpthread" is added in //build/config:default_libs.
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -pthread")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-pthread>)
+  add_link_options(-pthread)
 endif()
 
 # similar workaround exists inside libc++ directory
@@ -1459,11 +1423,9 @@ endif()
 # Clang-specific compiler flags setup.
 # ------------------------------------
 if (COMPILER_CLANG)
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fcolor-diagnostics")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fcolor-diagnostics>)
   if (MSVC AND ${CMAKE_GENERATOR} MATCHES "Ninja")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fansi-escape-codes")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fansi-escape-codes")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fansi-escape-codes>)
   endif()
   # Enable -fmerge-all-constants. This used to be the default in clang
   # for over a decade. It makes clang non-conforming, but is fairly safe
@@ -1471,19 +1433,16 @@ if (COMPILER_CLANG)
   # disabling this (https://bugs.llvm.org/show_bug.cgi?id=18538#c13),
   # but for now it looks like our build might rely on it
   # (https://crbug.com/829795).
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fmerge-all-constants")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmerge-all-constants")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fmerge-all-constants>)
 
   # TODO(crbug.com/345541122): investigate the fuchsia binary size increase.
   # Temporarily disable sized deallocation due to binary size increase.
   # Clang now enables sized deallocation by default
   # (see https://github.com/llvm/llvm-project/pull/90373)
   if (MSVC)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:sizedDealloc->)
   else()
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-sized-deallocation")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sized-deallocation")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fno-sized-deallocation>)
   endif()
 endif()
 
@@ -1521,19 +1480,16 @@ if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
 
   # TODO(crbug.com/1235145): Investigate why/if this should be needed.
   if (MSVC)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /clang:-ffp-contract=off")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /clang:-ffp-contract=off")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/clang:-ffp-contract=off>)
   else()
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -ffp-contract=off")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffp-contract=off")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-ffp-contract=off>)
   endif()
 endif()
 
 # GCC-specific compiler flags setup.
 # ------------------------------------
 if (COMPILER_GCC)
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fdiagnostics-color=always>)
 endif()
 
 # C11/C++17 compiler flags setup.
@@ -1560,7 +1516,7 @@ endif()
 if (COMPILER_CLANG)
   # C++17 removes trigraph support, but clang still warns that it ignores
   # them when seeing them.  Don't.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-trigraphs")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-trigraphs>)
 endif()
 
 # Pass flag to LLD so Android builds can allow debuggerd to properly symbolize
@@ -1604,11 +1560,11 @@ if (COMPILER_CLANG AND SHOW_INCLUDES)
   if (MSVC)
     # TODO(crbug.com/1223741): Goma mixes the -H and /showIncludes output.
     # assert(!use_goma, "show_includes on Windows is not reliable with goma")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /clang:-H /clang:-fshow-skipped-includes")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /clang:-H /clang:-fshow-skipped-includes")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/clang:-H>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/clang:-fshow-skipped-includes>)
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -H -fshow-skipped-includes")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -H -fshow-skipped-includes")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-H>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fshow-skipped-includes>)
   endif()
 endif()
 
@@ -1616,8 +1572,7 @@ endif()
 # prevent us from running into problems in the Microsoft C++ ABI (see
 # https://crbug.com/847724).
 if (COMPILER_CLANG AND (MSVC OR USE_LIBCXX) AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcomplete-member-pointers")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcomplete-member-pointers")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fcomplete-member-pointers>)
 endif()
 
 # Use DWARF simple template names, with the following exceptions:
@@ -1628,7 +1583,7 @@ endif()
 # TODO(crbug.com/1379070): Remove if the upstream default ever changes.
 #  Using simple template names results in considerable decrease in size in debug builds.
 if (COMPILER_CLANG AND NOT MSVC AND NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gsimple-template-names")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-gsimple-template-names>)
 endif()
 
 if (WIN32)
@@ -1726,8 +1681,7 @@ if (WIN32)
   endif()
 
   if (MSVC AND ALLOW_XP)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:threadSafeInit-")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:threadSafeInit-")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:threadSafeInit->)
   endif()
 
   # set linker for subsystem
@@ -1773,16 +1727,14 @@ if (WIN32)
   # it needs to exclude arm64 build correctly.
   if ((MINGW AND NOT OS_AARCH64) OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
     message(STATUS "Built with sse3 support")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -msse3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-msse3>)
     list(APPEND YASS_APP_FEATURES "sse3")
   endif()
 endif()
 
 # comes from build/config/android/BUILD.gn
 if (ANDROID)
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-short-enums")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-short-enums")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fno-short-enums>)
 
   add_definitions(-DANDROID)
 
@@ -1822,32 +1774,28 @@ if (ANDROID)
   # Almost all ARMv7-based Android devices support Neon, including all devices that
   # shipped with API level 21 or later. The NDK enables Neon by default.
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^armeabi.*")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -march=armv7-a -mfloat-abi=softfp -mthumb -mfpu=neon")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mfloat-abi=softfp -mthumb -mfpu=neon")
+    add_compile_options(-march=armv7-a -mfloat-abi=softfp -mthumb -mfpu=neon)
   endif()
 
   # for arm64-v8a
   # You can use Neon intrinsics in C and C++ code to take advantage of the Advanced SIMD extension.
   # following https://developer.android.com/ndk/guides/abis#arm64-v8a
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm64.*")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -march=armv8-a+simd+fp")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a+simd+fp")
+    add_compile_options(-march=armv8-a+simd+fp)
   endif()
 
   # for x64 arch
   # following https://developer.android.com/ndk/guides/abis#x64
   # Android's ABI includes the base instruction set plus MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, and the POPCNT instruction.
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x64$")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -msse3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+    add_compile_options(-msse3)
   endif()
 
   # for x86 arch
   # following https://developer.android.com/ndk/guides/abis#x86
   # Android's ABI includes the base instruction set plus the MMX, SSE, SSE2, SSE3, and SSSE3 extensions.
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86$")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -mfpmath=sse -msse3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=sse -msse3")
+    add_compile_options(-mfpmath=sse -msse3)
   endif()
 endif()
 
@@ -1994,8 +1942,7 @@ if (WIN32)
 
   # disable precompiled head files for clang
   if (MSVC AND COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Y->)
   endif()
 else()
   if (CMAKE_FIND_ROOT_PATH)
@@ -2218,8 +2165,8 @@ endif()
 
 # symbol hiddens
 if (NOT MSVC)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fvisibility=hidden>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fvisibility-inlines-hidden>)
 endif()
 
 if (NOT MSVC)
@@ -2228,18 +2175,15 @@ if (NOT MSVC)
   add_definitions(-D__STDC_FORMAT_MACROS)
 
   ## disable rtti
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
 
   ## disable exceptions
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
 
   ## not omit stack frame pointer for release
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -fno-omit-frame-pointer")
-  set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
+  add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:-fno-omit-frame-pointer>)
+  add_compile_options($<$<AND:$<CONFIG:MINSIZEREL>,$<COMPILE_LANGUAGE:C,CXX>>:-fno-omit-frame-pointer>)
+  add_compile_options($<$<AND:$<CONFIG:RELWITHDEBINFO>,$<COMPILE_LANGUAGE:C,CXX>>:-fno-omit-frame-pointer>)
 
   ## fortify source code. Also, fortified build may fail when optimizations are
   ## disabled, so only do that for Release build.
@@ -2248,12 +2192,10 @@ if (NOT MSVC)
   if (ENABLE_FORTIFY AND NOT WIN32 AND NOT APPLE AND NOT HAS_FORTIFY_MACRO)
     # some gcc builds (depends on the distro) set _FORTIFY_SOURCE internally
     # echo | gcc -O2 -E -dM -|grep _FORTIFY_SOURCE
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
-    set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-U_FORTIFY_SOURCE>)
+    add_compile_options($<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:C,CXX>>:-D_FORTIFY_SOURCE=3>)
+    add_compile_options($<$<AND:$<CONFIG:MINSIZEREL>,$<COMPILE_LANGUAGE:C,CXX>>:-D_FORTIFY_SOURCE=2>)
+    add_compile_options($<$<AND:$<CONFIG:RELWITHDEBINFO>,$<COMPILE_LANGUAGE:C,CXX>>:-D_FORTIFY_SOURCE=2>)
   endif()
 
   ## set rpath origin
@@ -2282,7 +2224,7 @@ else()
   endforeach()
 
   ## Disable RTTI
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/GR->)
 
   # Disables exceptions in the STL.
   # libc++ uses the __has_feature macro to control whether to use exceptions,
@@ -2297,7 +2239,7 @@ else()
   ## C4530, The code uses C++ exception handling,
   ## but /EHsc wasn't included in the compiler options
   ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
 endif()
 
 # *****************************************************************************************
@@ -3619,49 +3561,53 @@ endif()
 if (COMPILER_GCC OR COMPILER_CLANG)
   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
   # primarily on our normal Clang one.
-  set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wno-shadow")
+  add_compile_options(-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wno-shadow)
   if (COMPILER_APPLE_CLANG)
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-error=shorten-64-to-32")
+    add_compile_options(-Wno-error=shorten-64-to-32)
   endif()
+
+  # clang-cl warning
+  add_compile_options(-Wno-unused-parameter -Wno-error=unused-parameter)
 
   if (MSVC)
     # clang-cl sets different default warnings than clang. It also treats -Wall
     # as -Weverything, to match MSVC. Instead -W3 is the alias for -Wall.
     # See http://llvm.org/viewvc/llvm-project?view=revision&revision=319116
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -W3 -Wno-unused-parameter")
+    add_compile_options(-W3)
   elseif (ENABLE_CLANG_TIDY)
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -fno-common")
+    add_compile_options(-fno-common)
   else()
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wall -fno-common")
+    add_compile_options(-Wall -fno-common)
   endif()
 
   # honor it. Suppress it here to compensate. See https://crbug.com/772117.
   if (COMPILER_GCC AND USE_LIBCXX)
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-deprecated-declarations")
+    add_compile_options(-Wno-deprecated-declarations)
   endif()
 
   if(COMPILER_CLANG)
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wnewline-eof -fcolor-diagnostics")
+    add_compile_options(-Wnewline-eof)
   else()
     # GCC (at least 4.8.4) has a bug where it'll find unreachable free() calls
     # and declare that the code is trying to free a stack pointer.
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-free-nonheap-object")
+    add_compile_options(-Wno-free-nonheap-object)
   endif()
 
   if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "7.0.0")
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wimplicit-fallthrough")
+    add_compile_options(-Wimplicit-fallthrough)
   endif()
 
   if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "16.0.0")
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wextra-semi")
+    add_compile_options(-Wextra-semi)
   endif()
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_CXX_FLAGS} -Wmissing-prototypes -Wold-style-definition -Wstrict-prototypes")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_CXX_FLAGS} -Wmissing-declarations")
+  add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wmissing-prototypes>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wold-style-definition>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wmissing-declarations>)
 
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-warning-option")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-warning-option")
+    add_compile_options(-Wno-unknown-warning-option)
   endif()
 
   # In GCC, -Wmissing-declarations is the C++ spelling of -Wmissing-prototypes
@@ -3672,72 +3618,61 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # https://clang.llvm.org/docs/DiagnosticsReference.html#wmissing-prototypes
   # https://clang.llvm.org/docs/DiagnosticsReference.html#wmissing-declarations
   if (COMPILER_CLANG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmissing-prototypes")
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wmissing-prototypes>)
   endif()
 
   ## extra warnings
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wextra")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
+  add_compile_options(-Wextra)
 
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wno-unused-parameter")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-inconsistent-missing-override")
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>)
   endif()
 
   # required by asio
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
+    add_compile_options(-Wno-inconsistent-missing-override -Wno-unused-private-field)
   endif()
 
   # ignore unknown prgramas, works for both of gcc and clang
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+  add_compile_options(-Wno-unknown-pragmas)
 
   # ignore complains from clang-cl and mfc/afx
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-local-typedef")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
+    add_compile_options(-Wno-unused-local-typedef)
   endif()
 
   # Lots of third-party libraries have unused variables. Instead of
   # suppressing them individually, we just blanket suppress them here.
   if (COMPILER_CLANG OR COMPILER_GCC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
+    add_compile_options(-Wno-unused-variable)
   endif()
 
   # Similarly, we're not going to fix all the C++11 narrowing issues in
   # third-party libraries.
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-c++11-narrowing")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing")
+    add_compile_options(-Wno-c++11-narrowing)
   endif()
 
   # Disabled for similar reasons as -Wunused-variable
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+    add_compile_options(-Wno-unused-but-set-variable)
   endif()
 
   # See comment for -Wno-c++11-narrowing.
   if (COMPILER_GCC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
+    add_compile_options(-Wno-narrowing)
   endif()
 
   # -Wunused-local-typedefs is broken in gcc,
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63872
   if (COMPILER_GCC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-local-typedefs")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
+    add_compile_options(-Wno-unused-local-typedefs)
   endif()
 
   # Don't warn about "maybe" uninitialized. Clang doesn't include this
   # in -Wall but gcc does, and it gives false positives.
   if (COMPILER_GCC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+    add_compile_options(-Wno-maybe-uninitialized)
   endif()
 
   # -Wcomment gives too many false positives in the case a
@@ -3745,35 +3680,30 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # comments
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61638
   if (COMPILER_GCC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-comments")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-comments")
+    add_compile_options(-Wno-comments)
   endif()
 
   # "struct foo f = {0};"
   # Unused function parameters.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-missing-field-initializers -Wno-unused-parameter")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers -Wno-unused-parameter")
+  add_compile_options(-Wno-missing-field-initializers)
 
   # TODO(thakis): This used to be implied by -Wno-unused-function,
   # which we no longer use. Check if it makes sense to remove
   # this as well. http://crbug.com/316352
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unneeded-internal-declaration")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration")
+    add_compile_options(-Wno-unneeded-internal-declaration)
   endif()
 
   # Thread safety analysis. See base/thread_annotations.h and
   # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
   if (COMPILER_CLANG AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wthread-safety")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wthread-safety")
+    add_compile_options(-Wthread-safety)
   endif()
 
   ## When compiling Objective-C, warns if a method is used whose
   ## availability is newer than the deployment target.
   if (APPLE AND COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
+    add_compile_options(-Wunguarded-availability)
   endif()
 
   # this may happens
@@ -3782,134 +3712,20 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   endif()
 
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-alloc-size-larger-than")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-alloc-size-larger-than")
+    add_compile_options(-Wno-alloc-size-larger-than)
   endif()
 
   if (APPLE AND COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=deprecated-declarations")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=deprecated-declarations")
+    add_compile_options(-Wno-error=deprecated-declarations)
   endif()
 
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds")
+    add_compile_options(-Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds)
   endif()
 
   # silence some mingw compiler warnings
   if (WIN32 AND NOT MSVC AND COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-  endif()
-elseif (MSVC)
-  set(MSVC_DISABLED_WARNINGS_LIST
-      "C4061" # enumerator 'identifier' in switch of enum 'enumeration' is not
-              # explicitly handled by a case label
-              # Disable this because it flags even when there is a default.
-      "C4100" # 'exarg' : unreferenced formal parameter
-      "C4127" # conditional expression is constant
-      "C4200" # nonstandard extension used : zero-sized array in
-              # struct/union.
-      "C4204" # nonstandard extension used: non-constant aggregate initializer
-      "C4221" # nonstandard extension used : 'identifier' : cannot be
-              # initialized using address of automatic variable
-      "C4242" # 'function' : conversion from 'int' to 'uint8_t',
-              # possible loss of data
-      "C4244" # 'function' : conversion from 'int' to 'uint8_t',
-              # possible loss of data
-      "C4267" # conversion from 'size_t' to 'int', possible loss of data
-      "C4371" # layout of class may have changed from a previous version of the
-              # compiler due to better packing of member '...'
-      "C4388" # signed/unsigned mismatch
-      "C4296" # '>=' : expression is always true
-      "C4350" # behavior change: 'std::_Wrap_alloc...'
-      "C4365" # '=' : conversion from 'size_t' to 'int',
-              # signed/unsigned mismatch
-      "C4389" # '!=' : signed/unsigned mismatch
-      "C4464" # relative include path contains '..'
-      "C4510" # 'argument' : default constructor could not be generated
-      "C4512" # 'argument' : assignment operator could not be generated
-      "C4514" # 'function': unreferenced inline function has been removed
-      "C4548" # expression before comma has no effect; expected expression with
-              # side-effect" caused by FD_* macros.
-      "C4610" # struct 'argument' can never be instantiated - user defined
-              # constructor required.
-      "C4623" # default constructor was implicitly defined as deleted
-      "C4625" # copy constructor could not be generated because a base class
-              # copy constructor is inaccessible or deleted
-      "C4626" # assignment operator could not be generated because a base class
-              # assignment operator is inaccessible or deleted
-      "C4628" # digraphs not supported with -Ze
-      "C4668" # 'symbol' is not defined as a preprocessor macro, replacing with
-              # '0' for 'directives'
-              # Disable this because GTest uses it everywhere.
-      "C4706" # assignment within conditional expression
-      "C4710" # 'function': function not inlined
-      "C4711" # function 'function' selected for inline expansion
-      "C4746" # volatile access of '<expression>' is subject to /volatile:[iso|ms] setting;
-              # consider using __iso_volatile_load/store intrinsic functions.
-      "C4800" # 'int' : forcing value to bool 'true' or 'false'
-              # (performance warning)
-      "C4820" # 'bytes' bytes padding added after construct 'member_name'
-      "C5026" # move constructor was implicitly defined as deleted
-      "C5027" # move assignment operator was implicitly defined as deleted
-      "C5045" # Compiler will insert Spectre mitigation for memory load if
-              # /Qspectre switch specified
-      "C4099" # PDB 'filename' was not found with 'object/library' or at 'path';
-              # linking object as if no debug info
-      "C4505" # 'function' : unreferenced local function has been removed
-      "C4838" # conversion from 'type_1' to 'type_2' requires a narrowing conversion
-      "C4996" # uses a function, class member, variable, or typedef that's marked deprecated.
-      "C4324" # 'struct_name' : structure was padded due to __declspec(align())
-      "C4619" # #pragma warning : there is no warning number 'number'
-      "C4068" # The compiler ignored an unrecognized pragma.
-      "C4355" # STL suppression starts here
-      "C5220"
-      "C5204"
-      "C4355"
-      "C4774"
-      "C4987"
-      "C4582"
-      "C4583" # STL suppression ends here
-      "C5039" # abseil-cpp suppresion starts here
-      "C4946"
-      "C4995"
-      "C4868" # abseil-cpp suppresion ends here
-      "C5246" # VC2019/2022 specific: 'member': the initialization of a subobject should be wrapped in braces
-      "C4596" # VC2017 specific: illegal qualified name in member declaration
-      "C4571" # VC2017 specific: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught"
-      "C4986" # VC2015 specific: exception specification does not match previous declaration"
-      "C4814" # VC2015 specific: in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
-      "C4702" # VC2015 specific: unreachable code
-      "C4917" # VC2015,xp specific: a GUID can only be associated with a class, interface or namespace
-      "C4457" # VS2019 specific: declaration of 'message' hides function parameter
-      "C5039" # VS2019 specific: pointer or reference to potentially throwing function passed to extern C function under -EHc
-      "C5262" # VS2022 specific: Use [[fallthrough]] when a break statement is intentionally omitted between cases
-      "C5264" # VS2022 specific: 'const' variable is not used
-      "C4310" # VS2019 specific: cast truncates constant value
-      )
-  set(MSVC_LEVEL4_WARNINGS_LIST
-      # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header
-      "C4265" # class has virtual functions, but destructor is not virtual
-      )
-  string(REPLACE "C" " -wd" MSVC_DISABLED_WARNINGS_STR
-                            ${MSVC_DISABLED_WARNINGS_LIST})
-  string(REPLACE "C" " -w4" MSVC_LEVEL4_WARNINGS_STR
-                            ${MSVC_LEVEL4_WARNINGS_LIST})
-
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
-
-  # Currently, STL is not cleanly compiled with /Wall
-  # VS 2017 and higher supports STL-only warning suppressions.
-  # https://github.com/microsoft/STL/blob/main/stl/inc/yvals_core.h#L479
-  # https://devblogs.microsoft.com/cppblog/stl-fixes-in-vs-2017-rtm/
-  add_definitions(-D_STL_EXTRA_DISABLED_WARNINGS=5220\ 5204\ 4355\ 4774\ 4987\ 4582\ 4583)
-
-  ## doesn't enable clang-tidy's -Wall and -Wx which is annoying
-  if (NOT ENABLE_CLANG_TIDY)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -WX")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -WX")
+    add_compile_options(-Wno-unknown-pragmas)
   endif()
 endif()
 
