@@ -60,6 +60,35 @@ static void yass_window_init(YASSGtkWindow* win) {
   g_object_unref(builder);
 }
 
+static void yass_window_dispose(GObject* object) {
+  YASSGtkWindow* window = YASS_WINDOW(object);
+#if GTK_CHECK_VERSION(4, 8, 0)
+  gtk_widget_dispose_template(GTK_WIDGET(window), yass_window_get_type());
+#else
+  gtk_widget_unparent(window->gears);
+
+  gtk_widget_unparent(window->status_bar);
+
+  gtk_widget_unparent(window->start_button);
+  gtk_widget_unparent(window->stop_button);
+
+  gtk_widget_unparent(window->server_host);
+  gtk_widget_unparent(window->server_sni);
+  gtk_widget_unparent(window->server_port);
+  gtk_widget_unparent(window->username);
+  gtk_widget_unparent(window->password);
+  gtk_widget_unparent(window->method);
+  gtk_widget_unparent(window->local_host);
+  gtk_widget_unparent(window->local_port);
+  gtk_widget_unparent(window->doh_url);
+  gtk_widget_unparent(window->dot_host);
+  gtk_widget_unparent(window->timeout);
+  gtk_widget_unparent(window->autostart);
+  gtk_widget_unparent(window->systemproxy);
+#endif
+  G_OBJECT_CLASS(yass_window_parent_class)->dispose(object);
+}
+
 static void yass_window_class_init(YASSGtkWindowClass* cls) {
   gtk_widget_class_set_template_from_resource(GTK_WIDGET_CLASS(cls), "/it/gui/yass/yass_window.ui");
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, gears);
@@ -82,22 +111,22 @@ static void yass_window_class_init(YASSGtkWindowClass* cls) {
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, timeout);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, autostart);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, systemproxy);
+
+  G_OBJECT_CLASS(cls)->dispose = yass_window_dispose;
 }
 
 YASSGtkWindow* yass_window_new(YASSGtkApp* app) {
-  return YASSGtk_WINDOW(g_object_new(yass_window_get_type(), "application", app, NULL));
+  auto window = YASSGtk_WINDOW(g_object_new(yass_window_get_type(), "application", app, nullptr));
+  gtk_window_set_resizable(GTK_WINDOW(window), false);
+  gtk_window_set_icon_name(GTK_WINDOW(window), "yass");
+  return window;
 }
 
 }  // extern "C"
 
-YASSWindow::YASSWindow(GApplication* app) : impl_(yass_window_new(YASSGtk_APP(app))) {
-#if 0
-  gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
-#endif
-  gtk_window_set_resizable(GTK_WINDOW(impl_), false);
-  gtk_window_set_icon_name(GTK_WINDOW(impl_), "yass");
-
-  static YASSWindow* window = this;
+YASSWindow::YASSWindow(GApplication* app) : app_(app), impl_(yass_window_new(YASSGtk_APP(app))) {
+  static YASSWindow* window;
+  window = this;
 
   // forward to hide event
   gtk_window_set_hide_on_close(GTK_WINDOW(impl_), TRUE);
@@ -148,7 +177,9 @@ YASSWindow::YASSWindow(GApplication* app) : impl_(yass_window_new(YASSGtk_APP(ap
   LoadChanges();
 }
 
-YASSWindow::~YASSWindow() = default;
+YASSWindow::~YASSWindow() {
+  gtk_window_destroy(GTK_WINDOW(impl_));
+}
 
 void YASSWindow::show() {
   gtk_widget_set_visible(GTK_WIDGET(impl_), true);
@@ -156,6 +187,10 @@ void YASSWindow::show() {
 
 void YASSWindow::present() {
   gtk_window_present(GTK_WINDOW(impl_));
+}
+
+void YASSWindow::close() {
+  gtk_application_remove_window(GTK_APPLICATION(app_), GTK_WINDOW(impl_));
 }
 
 void YASSWindow::OnStartButtonClicked() {
@@ -378,6 +413,6 @@ void YASSWindow::UpdateStatusBar() {
 }
 
 void YASSWindow::OnClose() {
-  LOG(WARNING) << "Frame is closing ";
+  LOG(WARNING) << "Frame is closing";
   mApp->Exit();
 }

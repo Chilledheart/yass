@@ -12,6 +12,7 @@
 
 extern "C" {
 #define YASS_WINDOW_TYPE (yass_window_get_type())
+#define YASS_WINDOW(window) (G_TYPE_CHECK_INSTANCE_CAST((window), YASS_WINDOW_TYPE, YASSGtkWindow))
 G_DECLARE_FINAL_TYPE(YASSGtkWindow, yass_window, YASSGtk, WINDOW, GtkApplicationWindow)
 
 YASSGtkWindow* yass_window_new(YASSGtkApp* app);
@@ -25,12 +26,14 @@ class YASSWindow {
   YASSGtkWindow* impl() { return impl_; }
 
  private:
+  GApplication* app_;
   YASSGtkWindow* impl_;
   std::string last_status_msg_;
 
  public:
   void show();
   void present();
+  void close();
 
   void OnStartButtonClicked();
   void OnStopButtonClicked();

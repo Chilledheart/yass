@@ -176,9 +176,11 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
     LOG(WARNING) << "app exited with code " << ret;
   }
 
-  delete main_window_;
-
   LOG(WARNING) << "Application exiting";
+
+  delete main_window_;
+  g_object_unref(impl_);
+  impl_ = nullptr;
 
   // Memory leak clean up path
   pango_cairo_font_map_set_default(nullptr);
