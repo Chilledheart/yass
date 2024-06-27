@@ -3598,11 +3598,9 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     add_compile_options(-Wno-free-nonheap-object)
   endif()
 
-  if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "7.0.0")
-    add_compile_options(-Wimplicit-fallthrough)
-  endif()
+  add_compile_options(-Wimplicit-fallthrough)
 
-  if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "16.0.0")
+  if (COMPILER_CLANG AND CMAKE_C_COMPILER_VERSION VERSION_GREATER 16.0)
     add_compile_options(-Wextra-semi)
   endif()
 
