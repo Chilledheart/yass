@@ -3582,7 +3582,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   # apple clang warnings
   if (COMPILER_APPLE_CLANG)
-    add_compile_options(-Wno-error=shorten-64-to-32)
+    add_compile_options(-Wno-shorten-64-to-32)
   endif()
 
   # honor it. Suppress it here to compensate. See https://crbug.com/772117.
