@@ -34,6 +34,24 @@ static void option_dialog_init(OptionGtkDialog* win) {
   gtk_widget_init_template(GTK_WIDGET(win));
 }
 
+static void option_dialog_dispose(GObject* object) {
+  OptionGtkDialog* dialog = OPTION_DIALOG(object);
+#if GTK_CHECK_VERSION(4, 8, 0)
+  gtk_widget_dispose_template(GTK_WIDGET(dialog), option_dialog_get_type());
+#else
+  gtk_widget_unparent(dialog->tcp_keep_alive_check);
+  gtk_widget_unparent(dialog->tcp_keep_alive_cnt);
+  gtk_widget_unparent(dialog->tcp_keep_alive_idle_timeout);
+  gtk_widget_unparent(dialog->tcp_keep_alive_interval);
+  gtk_widget_unparent(dialog->enable_post_quantum_kyber);
+
+  gtk_widget_unparent(dialog->okay_button);
+  gtk_widget_unparent(dialog->cancel_button);
+#endif
+
+  G_OBJECT_CLASS(option_dialog_parent_class)->dispose(object);
+}
+
 static void option_dialog_class_init(OptionGtkDialogClass* cls) {
   gtk_widget_class_set_template_from_resource(GTK_WIDGET_CLASS(cls), "/it/gui/yass/option_dialog.ui");
 
@@ -45,6 +63,8 @@ static void option_dialog_class_init(OptionGtkDialogClass* cls) {
 
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, okay_button);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, cancel_button);
+
+  G_OBJECT_CLASS(cls)->dispose = option_dialog_dispose;
 }
 
 OptionGtkDialog* option_dialog_new(const gchar* title, GtkWindow* parent, GtkDialogFlags flags) {
