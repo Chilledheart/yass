@@ -2951,6 +2951,10 @@ elseif (USE_MBEDTLS)
     ${SUPPORT_DEFINITIONS}
   )
   set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
+
+  if (COMPILER_CLANG)
+    target_compile_options(mbedcrypto PRIVATE -Wno-switch-default)
+  endif()
 endif()
 
 # *****************************************************************************************
