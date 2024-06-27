@@ -3559,16 +3559,10 @@ endif()
 # *****************************************************************************************
 
 if (COMPILER_GCC OR COMPILER_CLANG)
-  # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
-  # primarily on our normal Clang one.
-  add_compile_options(-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wno-shadow)
-  if (COMPILER_APPLE_CLANG)
-    add_compile_options(-Wno-error=shorten-64-to-32)
-  endif()
+  # Werror warning
+  add_compile_options(-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla)
 
-  # clang-cl warning
-  add_compile_options(-Wno-unused-parameter -Wno-error=unused-parameter)
-
+  # all warnings
   if (MSVC)
     # clang-cl sets different default warnings than clang. It also treats -Wall
     # as -Weverything, to match MSVC. Instead -W3 is the alias for -Wall.
@@ -3578,6 +3572,17 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     add_compile_options(-fno-common)
   else()
     add_compile_options(-Wall -fno-common)
+  endif()
+
+  # extra warnings
+  add_compile_options(-Wextra)
+
+  # gcc and clang warning
+  add_compile_options(-Wno-unused-parameter -Wno-shadow)
+
+  # apple clang warnings
+  if (COMPILER_APPLE_CLANG)
+    add_compile_options(-Wno-error=shorten-64-to-32)
   endif()
 
   # honor it. Suppress it here to compensate. See https://crbug.com/772117.
@@ -3620,9 +3625,6 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   if (COMPILER_CLANG)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wmissing-prototypes>)
   endif()
-
-  ## extra warnings
-  add_compile_options(-Wextra)
 
   if (COMPILER_CLANG)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>)
