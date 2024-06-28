@@ -18,7 +18,6 @@ class YASSWindow {
 #ifdef HAVE_APP_INDICATOR
   void CreateAppIndicator();
 #endif
-  static YASSWindow* window;
 
  private:
   GtkWindow* impl_;

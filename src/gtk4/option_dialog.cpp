@@ -88,27 +88,28 @@ OptionGtkDialog* option_dialog_new(const gchar* title, GtkWindow* parent, GtkDia
 
 OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool modal)
     : impl_(option_dialog_new(title.c_str(), parent, modal ? GTK_DIALOG_MODAL : GTK_DIALOG_DESTROY_WITH_PARENT)) {
-#if 0
-  gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
-#endif
+  auto okay_callback = [](GtkButton* self, gpointer pointer) {
+    OptionDialog* window = (OptionDialog*)pointer;
+    window->OnOkayButtonClicked();
+  };
+
+  g_signal_connect(G_OBJECT(impl_->okay_button), "clicked", G_CALLBACK(*okay_callback), this);
+
+  auto cancel_callback = [](GtkButton* self, gpointer pointer) {
+    OptionDialog* window = (OptionDialog*)pointer;
+    window->OnCancelButtonClicked();
+  };
+
+  g_signal_connect(G_OBJECT(impl_->cancel_button), "clicked", G_CALLBACK(*cancel_callback), this);
+
+  auto response_callback = [](GtkDialog* self, gint response_id, gpointer pointer) {
+    OptionDialog* window = (OptionDialog*)pointer;
+    delete window;
+  };
+
+  g_signal_connect(impl_, "response", G_CALLBACK(*response_callback), this);
 
   LoadChanges();
-
-  static OptionDialog* window;
-
-  window = this;
-
-  auto okay_callback = []() { window->OnOkayButtonClicked(); };
-
-  g_signal_connect(G_OBJECT(impl_->okay_button), "clicked", G_CALLBACK(okay_callback), nullptr);
-
-  auto cancel_callback = []() { window->OnCancelButtonClicked(); };
-
-  g_signal_connect(G_OBJECT(impl_->cancel_button), "clicked", G_CALLBACK(cancel_callback), nullptr);
-
-  auto response_callback = []() { delete window; };
-
-  g_signal_connect(impl_, "response", G_CALLBACK(response_callback), nullptr);
 
   gtk_widget_set_visible(GTK_WIDGET(impl_), true);
 }
