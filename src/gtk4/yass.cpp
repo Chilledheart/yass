@@ -149,6 +149,12 @@ int main(int argc, const char** argv) {
 
   SetUpGLibLogHandler();
 
+  // buggy opengl accelerator for gtk4 see #1027
+  // disable opengl accelerator for now
+  if (getenv("GDK_DEBUG") == nullptr && getenv("GSK_RENDERER") == nullptr) {
+    setenv("GSK_RENDERER", "cairo", 1);
+  }
+
   auto app = YASSApp::create();
 
   mApp = app.get();
