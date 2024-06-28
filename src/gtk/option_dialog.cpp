@@ -20,9 +20,6 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
   gtk_window_set_default_size(GTK_WINDOW(impl_), 400, 200);
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
 
-  static OptionDialog* window;
-  window = this;
-
   GtkGrid* grid = GTK_GRID(gtk_grid_new());
   gtk_grid_set_row_homogeneous(grid, true);
   gtk_grid_set_column_homogeneous(grid, true);
@@ -58,13 +55,19 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
   cancel_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(cancel_button_, _("Cancel"));
 
-  auto okay_callback = []() { window->OnOkayButtonClicked(); };
+  auto okay_callback = [](GtkButton* self, gpointer pointer) {
+    OptionDialog* window = (OptionDialog*)pointer;
+    window->OnOkayButtonClicked();
+  };
 
-  g_signal_connect(G_OBJECT(okay_button_), "clicked", G_CALLBACK(okay_callback), nullptr);
+  g_signal_connect(G_OBJECT(okay_button_), "clicked", G_CALLBACK(*okay_callback), this);
 
-  auto cancel_callback = []() { window->OnCancelButtonClicked(); };
+  auto cancel_callback = [](GtkButton* self, gpointer pointer) {
+    OptionDialog* window = (OptionDialog*)pointer;
+    window->OnCancelButtonClicked();
+  };
 
-  g_signal_connect(G_OBJECT(cancel_button_), "clicked", G_CALLBACK(cancel_callback), nullptr);
+  g_signal_connect(G_OBJECT(cancel_button_), "clicked", G_CALLBACK(*cancel_callback), this);
 
   gtk_grid_attach(grid, GTK_WIDGET(okay_button_), 0, 5, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(cancel_button_), 1, 5, 1, 1);

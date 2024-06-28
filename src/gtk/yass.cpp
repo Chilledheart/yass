@@ -106,8 +106,11 @@ YASSApp::YASSApp()
   gdk_init(nullptr, nullptr);
   gtk_init(nullptr, nullptr);
 
-  auto activate = []() { mApp->OnActivate(); };
-  g_signal_connect(impl_, "activate", G_CALLBACK(activate), NULL);
+  auto activate = [](GApplication* self, gpointer pointer) {
+    auto app = (YASSApp*)pointer;
+    app->OnActivate();
+  };
+  g_signal_connect(impl_, "activate", G_CALLBACK(*activate), this);
 
   auto idle_handler = [](gpointer user_data) -> gboolean {
     if (!mApp) {

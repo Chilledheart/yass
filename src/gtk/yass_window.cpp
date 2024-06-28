@@ -23,8 +23,6 @@ extern "C" void app_indicator_uninit();
 #include "third_party/libappindicator/app-indicator.h"
 #endif
 
-YASSWindow* YASSWindow::window = nullptr;
-
 YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
   gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
   gtk_window_set_default_size(GTK_WINDOW(impl_), 450, 420);
@@ -32,16 +30,18 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_window_set_resizable(GTK_WINDOW(impl_), false);
   gtk_window_set_icon_name(GTK_WINDOW(impl_), "yass");
 
-  window = this;
-
-  auto show_callback = []() {
+  auto show_callback = [](GtkWidget* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
     gdk_window_set_functions(gtk_widget_get_window(GTK_WIDGET(window->impl_)),
                              static_cast<GdkWMFunction>(GDK_FUNC_MOVE | GDK_FUNC_MINIMIZE | GDK_FUNC_CLOSE));
   };
-  g_signal_connect(G_OBJECT(impl_), "show", G_CALLBACK(show_callback), this);
+  g_signal_connect(G_OBJECT(impl_), "show", G_CALLBACK(*show_callback), this);
 
-  auto hide_callback = []() { window->OnClose(); };
-  g_signal_connect(G_OBJECT(impl_), "hide", G_CALLBACK(hide_callback), this);
+  auto hide_callback = [](GtkWidget* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnClose();
+  };
+  g_signal_connect(G_OBJECT(impl_), "hide", G_CALLBACK(*hide_callback), this);
 
   // vbox, hbox
   GtkBox* vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
@@ -75,11 +75,17 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), exit_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_menu_item);
 
-  auto option_callback = []() { window->OnOption(); };
-  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
+  auto option_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnOption();
+  };
+  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(*option_callback), this);
 
-  auto exit_callback = []() { window->close(); };
-  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
+  auto exit_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->close();
+  };
+  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(*exit_callback), this);
 
   help_menu = gtk_menu_new();
   help_menu_item = gtk_menu_item_new_with_label(_("Help"));
@@ -89,8 +95,11 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_menu_item);
 
-  auto about_callback = []() { window->OnAbout(); };
-  g_signal_connect(G_OBJECT(about_menu_item), "activate", G_CALLBACK(about_callback), this);
+  auto about_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnAbout();
+  };
+  g_signal_connect(G_OBJECT(about_menu_item), "activate", G_CALLBACK(*about_callback), this);
 
   gtk_box_pack_start(vbox, menubar, FALSE, FALSE, 0);
 
@@ -105,13 +114,19 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_widget_set_margin_top(GTK_WIDGET(stop_button_), 30);
   gtk_widget_set_margin_bottom(GTK_WIDGET(stop_button_), 30);
 
-  auto start_callback = []() { window->OnStartButtonClicked(); };
+  auto start_callback = [](GtkButton* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnStartButtonClicked();
+  };
 
-  g_signal_connect(G_OBJECT(start_button_), "clicked", G_CALLBACK(start_callback), nullptr);
+  g_signal_connect(G_OBJECT(start_button_), "clicked", G_CALLBACK(*start_callback), this);
 
-  auto stop_callback = []() { window->OnStopButtonClicked(); };
+  auto stop_callback = [](GtkButton* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnStopButtonClicked();
+  };
 
-  g_signal_connect(G_OBJECT(stop_button_), "clicked", G_CALLBACK(stop_callback), nullptr);
+  g_signal_connect(G_OBJECT(stop_button_), "clicked", G_CALLBACK(*stop_callback), this);
 
   gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), false);
 
@@ -182,17 +197,23 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(autostart_), Utils::GetAutoStart());
 
-  auto checked_auto_start_callback = []() { window->OnAutoStartClicked(); };
+  auto checked_auto_start_callback = [](GtkToggleButton* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnAutoStartClicked();
+  };
 
-  g_signal_connect(G_OBJECT(autostart_), "toggled", G_CALLBACK(checked_auto_start_callback), nullptr);
+  g_signal_connect(G_OBJECT(autostart_), "toggled", G_CALLBACK(*checked_auto_start_callback), this);
 
   systemproxy_ = GTK_CHECK_BUTTON(gtk_check_button_new());
 
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(systemproxy_), Utils::GetSystemProxy());
 
-  auto checked_system_proxy_callback = []() { window->OnSystemProxyClicked(); };
+  auto checked_system_proxy_callback = [](GtkToggleButton* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnSystemProxyClicked();
+  };
 
-  g_signal_connect(G_OBJECT(systemproxy_), "toggled", G_CALLBACK(checked_system_proxy_callback), nullptr);
+  g_signal_connect(G_OBJECT(systemproxy_), "toggled", G_CALLBACK(*checked_system_proxy_callback), this);
 
   gtk_entry_set_visibility(password_, false);
 
@@ -291,11 +312,17 @@ void YASSWindow::CreateStatusIcon() {
   gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), sep);
   gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), exit_menu_item);
 
-  auto option_callback = []() { window->OnOption(); };
-  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
+  auto option_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnOption();
+  };
+  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(*option_callback), this);
 
-  auto exit_callback = []() { window->close(); };
-  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
+  auto exit_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->close();
+  };
+  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(*exit_callback), this);
 
   gtk_widget_show_all(tray_menu);
 
@@ -304,11 +331,12 @@ void YASSWindow::CreateStatusIcon() {
   gtk_status_icon_set_tooltip_text(tray_icon_, _("Show"));
   G_GNUC_END_IGNORE_DEPRECATIONS
 
-  auto show_callback = []() {
+  auto show_callback = [](GtkStatusIcon* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
     window->show();
     window->present();
   };
-  g_signal_connect(G_OBJECT(tray_icon_), "activate", G_CALLBACK(show_callback), nullptr);
+  g_signal_connect(G_OBJECT(tray_icon_), "activate", G_CALLBACK(*show_callback), this);
 
   auto popup_callback = [](GtkStatusIcon* self, guint button, guint activate_time, gpointer popup_menu) {
     G_GNUC_BEGIN_IGNORE_DEPRECATIONS
@@ -344,17 +372,24 @@ void YASSWindow::CreateAppIndicator() {
   gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), sep);
   gtk_menu_shell_append(GTK_MENU_SHELL(tray_menu), exit_menu_item);
 
-  auto show_callback = []() {
+  auto show_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
     window->show();
     window->present();
   };
-  g_signal_connect(G_OBJECT(show_menu_item), "activate", G_CALLBACK(show_callback), nullptr);
+  g_signal_connect(G_OBJECT(show_menu_item), "activate", G_CALLBACK(*show_callback), this);
 
-  auto option_callback = []() { window->OnOption(); };
-  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
+  auto option_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->OnOption();
+  };
+  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(*option_callback), this);
 
-  auto exit_callback = []() { window->close(); };
-  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
+  auto exit_callback = [](GtkMenuItem* self, gpointer pointer) {
+    YASSWindow* window = (YASSWindow*)pointer;
+    window->close();
+  };
+  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(*exit_callback), this);
 
   gtk_widget_show_all(tray_menu);
 
