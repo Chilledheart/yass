@@ -149,9 +149,14 @@ int main(int argc, const char** argv) {
 
   SetUpGLibLogHandler();
 
-  // buggy opengl accelerator for gtk4 see #1027
-  // disable opengl accelerator for now
-  if (getenv("GDK_DEBUG") == nullptr && getenv("GSK_RENDERER") == nullptr) {
+  const int32_t gtk_version =
+      (gtk_get_major_version() * 10000) + (gtk_get_minor_version() * 100) + gtk_get_micro_version();
+  const bool no_gtk_environment_variable = getenv("GDK_DEBUG") == nullptr && getenv("GSK_RENDERER") == nullptr;
+  // after gtk4 4.13.8, llvmpipe render will be ignored and cairo is picked
+  if (gtk_version < 41308 && no_gtk_environment_variable) {
+    LOG(WARNING) << "Falling back to cairo render for old gtk (" << gtk_version << ")";
+    // buggy opengl accelerator for gtk4 see #1027
+    // disable opengl accelerator for now
     setenv("GSK_RENDERER", "cairo", 1);
   }
 
@@ -164,6 +169,8 @@ int main(int argc, const char** argv) {
 
 YASSApp::YASSApp() : impl_(G_APPLICATION(yass_app_new())), idle_source_(g_timeout_source_new(200)) {
   YASSGtk_APP(impl_)->thiz = this;
+
+  gtk_init();
 
   auto idle_handler = [](gpointer user_data) -> gboolean {
     if (!mApp) {
@@ -240,8 +247,8 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
 
   // Cleanup opengl's context prior to pango cleanup
   if (auto context = gdk_gl_context_get_current()) {
+    LOG(WARNING) << "Removing remaining OpenGL context: " << context;
     gdk_display_close(gdk_gl_context_get_display(context));
-    gdk_gl_context_clear_current();
   }
 
   // Memory leak clean up path
