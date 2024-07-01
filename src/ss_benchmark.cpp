@@ -583,6 +583,21 @@ int xc_main() {
 #else
 int main(int argc, char** argv) {
 #endif
+#ifndef _WIN32
+  // setup signal handler
+  signal(SIGPIPE, SIG_IGN);
+
+  /* Block SIGPIPE in all threads, this can happen if a thread calls write on
+     a closed pipe. */
+  sigset_t sigpipe_mask;
+  sigemptyset(&sigpipe_mask);
+  sigaddset(&sigpipe_mask, SIGPIPE);
+  sigset_t saved_mask;
+  if (pthread_sigmask(SIG_BLOCK, &sigpipe_mask, &saved_mask) == -1) {
+    perror("pthread_sigmask failed");
+    return -1;
+  }
+#endif
   SetExecutablePath(argv[0]);
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {
@@ -630,10 +645,6 @@ int main(int argc, char** argv) {
 #endif
 
   CRYPTO_library_init();
-
-#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
-  CHECK_NE(SIG_ERR, signal(SIGPIPE, SIG_IGN));
-#endif
 
   if (absl::GetFlag(FLAGS_ipv6_mode)) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
