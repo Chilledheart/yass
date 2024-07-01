@@ -9,14 +9,16 @@
 %endif
 
 # on centos, nghttp2 sits in epel repo
-%if 0%{?fedora} || 0%{?sle_version}
+# on opensuse, nghttp might be outdated
+%if 0%{?fedora}
 %global enable_system_nghttp2_opt on
 %else
 %global enable_system_nghttp2_opt off
 %endif
 
 # on centos, mbedtls sits in epel repo
-%if 0%{?fedora} || 0%{?sle_version}
+# on opensuse, mbedtls might be outdated
+%if 0%{?fedora}
 %global enable_system_mbedtls_opt on
 %else
 %global enable_system_mbedtls_opt off
@@ -157,7 +159,7 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %if 0%{?fedora}
 BuildRequires: c-ares-devel
 %endif
-%if 0%{?fedora} || 0%{?sle_version}
+%if 0%{?fedora}
 BuildRequires: mbedtls-devel
 %endif
 %if 0%{?fedora} && !%{with use_libcxx}
@@ -167,7 +169,7 @@ BuildRequires: gperftools-devel
 BuildRequires: json-devel
 %endif
 BuildRequires: zlib-devel
-%if 0%{?fedora} || 0%{?sle_version}
+%if 0%{?fedora}
 BuildRequires: libnghttp2-devel
 %endif
 BuildRequires: gcc, gcc-c++, golang >= 1.4
