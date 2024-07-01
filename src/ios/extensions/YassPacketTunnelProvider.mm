@@ -3,6 +3,8 @@
 
 #import "YassPacketTunnelProvider.h"
 
+#include <pthread.h>
+#include <signal.h>
 #include <atomic>
 #include <thread>
 
@@ -34,6 +36,22 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
 - (void)startTunnelWithOptions:(NSDictionary*)options completionHandler:(void (^)(NSError*))completionHandler {
   stopped_ = false;
+  // setup signal handler
+  signal(SIGPIPE, SIG_IGN);
+
+  /* Block SIGPIPE in all threads, this can happen if a thread calls write on
+     a closed pipe. */
+  sigset_t sigpipe_mask;
+  sigemptyset(&sigpipe_mask);
+  sigaddset(&sigpipe_mask, SIGPIPE);
+  sigset_t saved_mask;
+  if (pthread_sigmask(SIG_BLOCK, &sigpipe_mask, &saved_mask) == -1) {
+    perror("pthread_sigmask failed");
+    completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
+                                          code:200
+                                      userInfo:@{@"Error reason" : @(strerror(errno))}]);
+    return;
+  }
   SetExecutablePath("UNKNOWN.ext");
 
   NETunnelProviderProtocol* protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
