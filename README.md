@@ -16,8 +16,8 @@ More details are at [Latest Release Page](https://github.com/Chilledheart/yass/r
 ### Prebuilt binaries (Linux)
 - GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk3.el7.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk3-ubuntu-16.04-xenial_amd64.1.11.3.deb) (require glibc >= 2.16)
 - Qt5 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt5.el7.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt5-ubuntu-16.04-xenial_amd64.1.11.3.deb) (require glibc >= 2.16)
-- GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk4.el9.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk4-ubuntu-22.04-jammy_amd64.1.11.3.deb) (require glibc >= 2.34)
-- Qt6 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt6.lp155.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt6-ubuntu-22.04-jammy_amd64.1.11.3.deb) (require glibc >= 2.36)
+- GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk4.el9.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-gtk4-ubuntu-22.04-jammy_amd64.1.11.3.deb) (require glibc >= 2.35)
+- Qt6 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt6.lp155.x86_64.1.11.3.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.3/yass-qt6-ubuntu-22.04-jammy_amd64.1.11.3.deb) (require glibc >= 2.35)
 
 [![aur yass-proxy-gtk3](https://img.shields.io/aur/version/yass-proxy-gtk3)](https://aur.archlinux.org/packages/yass-proxy-gtk3)
 [![aur yass-proxy-qt5](https://img.shields.io/aur/version/yass-proxy-qt5)](https://aur.archlinux.org/packages/yass-proxy-qt5)
