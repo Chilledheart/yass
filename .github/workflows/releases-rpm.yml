@@ -107,10 +107,10 @@ jobs:
           #   gui_variant: gtk3
           # - container: 'opensuse15'
           #   gui_variant: qt5
-          # - container: 'opensuse15'
-          #   gui_variant: gtk4
-          # except for qt6 package
+          # except for gtk4 and qt6 packages
           # glibc: 2.31 for opensuse15.5
+          - container: 'opensuse15'
+            gui_variant: gtk4
           - container: 'opensuse15'
             gui_variant: qt6
     runs-on: ubuntu-22.04
