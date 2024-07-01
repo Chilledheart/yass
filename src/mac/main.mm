@@ -5,6 +5,8 @@
 
 #include <locale.h>
 #include <mach-o/dyld.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdexcept>
 #include <string>
 
@@ -37,6 +39,20 @@ __attribute__((used)) const char kGrossPaddingForCrbug1300598[68 * 1024] = {};
 #endif
 
 int main(int argc, const char** argv) {
+  // setup signal handler
+  signal(SIGPIPE, SIG_IGN);
+
+  /* Block SIGPIPE in all threads, this can happen if a thread calls write on
+     a closed pipe. */
+  sigset_t sigpipe_mask;
+  sigemptyset(&sigpipe_mask);
+  sigaddset(&sigpipe_mask, SIGPIPE);
+  sigset_t saved_mask;
+  if (pthread_sigmask(SIG_BLOCK, &sigpipe_mask, &saved_mask) == -1) {
+    perror("pthread_sigmask failed");
+    return -1;
+  }
+
   SetExecutablePath(argv[0]);
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {

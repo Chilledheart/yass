@@ -5,11 +5,13 @@
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_join.h>
-#include <signal.h>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
+#else
+#include <pthread.h>
+#include <signal.h>
 #endif
 
 #include "cli/cli_server.hpp"
@@ -40,10 +42,6 @@ Worker::Worker()
 #endif
 
   CRYPTO_library_init();
-
-#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
-  CHECK_NE(SIG_ERR, signal(SIGPIPE, SIG_IGN));
-#endif
 
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
 }
@@ -173,6 +171,22 @@ void Worker::WorkFunc() {
   }
 
   LOG(INFO) << "worker: background thread started";
+
+#ifndef _WIN32
+  /* Check if we have blocked SIGPIPE in all threads, this can happen if a thread calls write on
+     a closed pipe. */
+  sigset_t saved_mask;
+  if (pthread_sigmask(SIG_BLOCK, nullptr, &saved_mask) == 0) {
+    if (sigismember(&saved_mask, SIGPIPE)) {
+      LOG(INFO) << "worker: signal SIGPIPE is masked as BLOCKED";
+    } else {
+      PLOG(WARNING) << "worker: signal SIGPIPE is not masked as BLOCKED!";
+    }
+  } else {
+    PLOG(WARNING) << "worker: pthread_sigmask failed";
+  }
+#endif
+
   while (!in_destroy_) {
     work_guard_ =
         std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
