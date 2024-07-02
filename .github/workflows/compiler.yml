@@ -125,15 +125,15 @@ jobs:
       - name: Run tests
         run: |
           cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a --ipv6_mode
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5 --ipv6_mode
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h --ipv6_mode
-          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http --ipv6_mode
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4 || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5 || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a --ipv6_mode || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5 --ipv6_mode || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h --ipv6_mode || exit /b
+          yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http --ipv6_mode || exit /b
   mingw64-compiler-compatible-crosscompiling:
     strategy:
       fail-fast: false
@@ -252,9 +252,6 @@ jobs:
         if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
         run: |
           cd build-mingw-${{ matrix.arch }}
-          wine yass_test.exe --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
-          wine yass_test.exe --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
-
           wine yass_test.exe --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4
           wine yass_test.exe --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a
           wine yass_test.exe --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5
