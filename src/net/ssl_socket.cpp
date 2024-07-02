@@ -149,7 +149,6 @@ int SSLSocket::Connect(CompletionOnceCallback callback) {
   // https://crbug.com/499289.
   CHECK(!disconnected_);
 
-  DCHECK(stream_socket_->native_non_blocking());
   DCHECK(stream_socket_->non_blocking());
 
   SSL_set_fd(ssl_.get(), stream_socket_->native_handle());
