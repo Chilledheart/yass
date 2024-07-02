@@ -369,7 +369,6 @@ class stream : public RefCountedThreadSafe<stream> {
     setProtectFd(socket_.native_handle());
 #endif
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
-    socket_.native_non_blocking(true, ec);
     socket_.non_blocking(true, ec);
     scoped_refptr<stream> self(this);
     if (auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout)) {
