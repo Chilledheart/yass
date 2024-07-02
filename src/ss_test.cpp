@@ -271,10 +271,10 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
   }
 
   void shutdown() {
-    asio::error_code ec;
     g_in_provider_mutex.unlock();
+    asio::error_code ec;
+    LOG(INFO) << "Connection (content-provider) " << connection_id() << " shutting down";
     downlink_->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-    LOG(WARNING) << "Connection (content-provider) " << connection_id() << " Shutting down";
     if (ec) {
       LOG(WARNING) << "Connection (content-provider) " << connection_id() << " shutdown failure: " << ec;
     }
