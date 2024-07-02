@@ -391,6 +391,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     CURLcode ret;
     const uint8_t* data = g_send_buffer.data();
     IOBuf resp_buffer;
+    resp_buffer.reserve(0, g_send_buffer.length());
 
     curl = curl_easy_init();
     ASSERT_TRUE(curl) << "curl initial failure";
@@ -427,6 +428,11 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
       LOG(FATAL) << "Invalid proxy type: " << absl::GetFlag(FLAGS_proxy_type);
     }
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+#if LIBCURL_VERSION_NUM >= 0x076200
+    /* Added in 7.62.0. */
+    /* The maximum buffer size allowed to be set is 2 megabytes. */
+    curl_easy_setopt(curl, CURLOPT_UPLOAD_BUFFERSIZE, 2*1024*1024);
+#endif
     /* we want to use our own read function */
     curl_read_callback r_callback = [](char* buffer, size_t size, size_t nmemb, void* clientp) -> size_t {
       const uint8_t** data = reinterpret_cast<const uint8_t**>(clientp);
@@ -439,6 +445,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
       return copied;
     };
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, r_callback);
+    curl_easy_setopt(curl, CURLOPT_READDATA, &data);
     /* we want to use our own write function */
     curl_write_callback w_callback = [](char* data, size_t size, size_t nmemb, void* clientp) -> size_t {
       size_t copied = size * nmemb;
@@ -450,12 +457,16 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
       return copied;
     };
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, w_callback);
-    curl_easy_setopt(curl, CURLOPT_READDATA, &data);
     /* provide the size of the upload, we typecast the value to curl_off_t
        since we must be sure to use the correct data size */
     curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)g_send_buffer.length());
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_buffer);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.77.0");
+#if LIBCURL_VERSION_NUM >= 0x075300
+    /* Added in 7.10. Growing the buffer was added in 7.53.0. */
+    curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, CURL_MAX_READ_SIZE);
+#endif
+    curl_easy_setopt(curl, CURLOPT_TCP_NODELAY, 1L);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/" LIBCURL_VERSION);
     ret = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
     /* if the request did not complete correctly, show the error
