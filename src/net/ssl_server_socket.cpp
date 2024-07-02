@@ -41,7 +41,6 @@ SSLServerSocket::~SSLServerSocket() {
 int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
   CHECK(!disconnected_);
 
-  DCHECK(stream_socket_->native_non_blocking());
   DCHECK(stream_socket_->non_blocking());
 
   SSL_set_fd(ssl_.get(), stream_socket_->native_handle());

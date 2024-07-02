@@ -81,7 +81,6 @@ void DoHRequest::DoRequest(dns_message::DNStype dns_type, const std::string& hos
     OnDoneRequest(ec, nullptr);
     return;
   }
-  socket_.native_non_blocking(true, ec);
   socket_.non_blocking(true, ec);
   scoped_refptr<DoHRequest> self(this);
   socket_.async_connect(endpoint_, [this, self](asio::error_code ec) {
