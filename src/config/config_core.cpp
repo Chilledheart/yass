@@ -11,18 +11,6 @@
 
 #include "core/utils.hpp"
 
-bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err);
-
-std::string AbslUnparseFlag(const PortFlag&);
-
-bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err);
-
-std::string AbslUnparseFlag(const CipherMethodFlag&);
-
-bool AbslParseFlag(absl::string_view text, RateFlag* flag, std::string* err);
-
-std::string AbslUnparseFlag(const RateFlag&);
-
 // Within the implementation, `AbslParseFlag()` will, in turn invoke
 // `absl::ParseFlag()` on its constituent `int` and `std::string` types
 // (which have built-in Abseil flag support.
@@ -128,19 +116,11 @@ static int64_t ngx_parse_size(const char* line, size_t len) {
   return size;
 }
 
-static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
-  if (bytes < 1024) {
-    *ss << bytes;
-    return;
-  }
-  if (bytes < 1024 * 1024) {
-    *ss << bytes / 1024 << "k";
-    return;
-  }
-  *ss << bytes / 1024 / 1024 << "m";
-}
-
 bool AbslParseFlag(absl::string_view text, RateFlag* flag, std::string* err) {
+  if (text.empty()) {
+    flag->rate = 0u;
+    return true;
+  }
   int64_t size = ngx_parse_size(text.data(), text.size());
   if (size < 0) {
     *err = absl::StrCat("bad size: ", text);
@@ -153,9 +133,7 @@ bool AbslParseFlag(absl::string_view text, RateFlag* flag, std::string* err) {
 // Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
 // the constituent types.
 std::string AbslUnparseFlag(const RateFlag& flag) {
-  std::ostringstream os;
-  humanReadableByteCountBin(&os, flag.rate);
-  return os.str();
+  return flag;
 }
 
 ABSL_FLAG(std::string, server_host, "http2.github.io", "Remote server on given host");

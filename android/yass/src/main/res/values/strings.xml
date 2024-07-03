@@ -26,4 +26,5 @@
     <string name="post_quantum_kyber">Kyber post-quantum key agreement for TLS</string>
     <string name="button_options">Options</string>
     <string name="title_options">Options</string>
+    <string name="label_limit_rate">Limit Rate</string>
 </resources>

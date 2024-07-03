@@ -61,6 +61,10 @@
       "value": "加密方式"
     },
     {
+      "name": "limit_rate",
+      "value": "限制速率"
+    },
+    {
       "name": "timeout",
       "value": "超时时间"
     },

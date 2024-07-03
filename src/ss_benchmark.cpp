@@ -130,9 +130,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
   ContentProviderConnection(ContentProviderConnection&&) = delete;
   ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
 
-  void start() {
-    do_io();
-  }
+  void start() { do_io(); }
 
   void close() {
     VLOG(1) << "Connection (content-provider) " << connection_id() << " disconnected";

@@ -98,6 +98,7 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   auto local_port_label = new QLabel(tr("Local Port"));
   auto doh_url_label = new QLabel(tr("DNS over HTTPS URL"));
   auto dot_host_label = new QLabel(tr("DNS over TLS Host"));
+  auto limit_rate_label = new QLabel(tr("Limit Rate"));
   auto timeout_label = new QLabel(tr("Timeout"));
   auto autostart_label = new QLabel(tr("Auto Start"));
   auto systemproxy_label = new QLabel(tr("System Proxy"));
@@ -112,9 +113,10 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   right_grid->addWidget(local_port_label, 7, 0);
   right_grid->addWidget(doh_url_label, 8, 0);
   right_grid->addWidget(dot_host_label, 9, 0);
-  right_grid->addWidget(timeout_label, 10, 0);
-  right_grid->addWidget(autostart_label, 11, 0);
-  right_grid->addWidget(systemproxy_label, 12, 0);
+  right_grid->addWidget(limit_rate_label, 10, 0);
+  right_grid->addWidget(timeout_label, 11, 0);
+  right_grid->addWidget(autostart_label, 12, 0);
+  right_grid->addWidget(systemproxy_label, 13, 0);
 
   server_host_ = new QLineEdit;
   server_sni_ = new QLineEdit;
@@ -142,6 +144,8 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   doh_url_->setPlaceholderText("https://1.1.1.1/dns-query");
   dot_host_ = new QLineEdit;
   dot_host_->setPlaceholderText("1.1.1.1");
+  limit_rate_ = new QLineEdit;
+  limit_rate_->setPlaceholderText("10m");
   timeout_ = new QLineEdit;
   timeout_->setValidator(new QIntValidator(0, INT32_MAX, this));
 
@@ -162,9 +166,10 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   right_grid->addWidget(local_port_, 7, 1);
   right_grid->addWidget(doh_url_, 8, 1);
   right_grid->addWidget(dot_host_, 9, 1);
-  right_grid->addWidget(timeout_, 10, 1);
-  right_grid->addWidget(autostart_, 11, 1);
-  right_grid->addWidget(systemproxy_, 12, 1);
+  right_grid->addWidget(limit_rate_, 10, 1);
+  right_grid->addWidget(timeout_, 11, 1);
+  right_grid->addWidget(autostart_, 12, 1);
+  right_grid->addWidget(systemproxy_, 13, 1);
 
   hbox->addItem(right_grid);
 
@@ -214,6 +219,7 @@ void YASSWindow::OnStartButtonClicked() {
   local_port_->setEnabled(false);
   doh_url_->setEnabled(false);
   dot_host_->setEnabled(false);
+  limit_rate_->setEnabled(false);
   timeout_->setEnabled(false);
 
   App()->OnStart();
@@ -274,6 +280,10 @@ std::string YASSWindow::GetDoTHost() {
   return dot_host_->text().toUtf8().data();
 }
 
+std::string YASSWindow::GetLimitRate() {
+  return limit_rate_->text().toUtf8().data();
+}
+
 std::string YASSWindow::GetTimeout() {
   return timeout_->text().toUtf8().data();
 }
@@ -329,6 +339,7 @@ void YASSWindow::StartFailed() {
   local_port_->setEnabled(true);
   doh_url_->setEnabled(true);
   dot_host_->setEnabled(true);
+  limit_rate_->setEnabled(true);
   timeout_->setEnabled(true);
 
   QMessageBox::warning(this, tr("Start Failed"), QString::fromStdString(App()->GetStatus()));
@@ -350,6 +361,7 @@ void YASSWindow::Stopped() {
   local_port_->setEnabled(true);
   doh_url_->setEnabled(true);
   dot_host_->setEnabled(true);
+  limit_rate_->setEnabled(true);
   timeout_->setEnabled(true);
 }
 
@@ -364,6 +376,7 @@ void YASSWindow::LoadChanges() {
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
   auto doh_url_str = absl::GetFlag(FLAGS_doh_url);
   auto dot_host_str = absl::GetFlag(FLAGS_dot_host);
+  std::string limit_rate_str = absl::GetFlag(FLAGS_limit_rate);
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   server_host_->setText(QString::fromStdString(server_host_str));
@@ -389,6 +402,7 @@ void YASSWindow::LoadChanges() {
   local_port_->setText(QString::fromStdString(local_port_str));
   doh_url_->setText(QString::fromStdString(doh_url_str));
   dot_host_->setText(QString::fromStdString(dot_host_str));
+  limit_rate_->setText(QString::fromStdString(limit_rate_str));
   timeout_->setText(QString::fromStdString(timeout_str));
 }
 

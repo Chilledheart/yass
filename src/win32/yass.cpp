@@ -161,7 +161,7 @@ BOOL CYassApp::InitInstance() {
   std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
-  RECT rect{0, 0, MULDIVDPI(530), MULDIVDPI(510)};
+  RECT rect{0, 0, MULDIVDPI(530), MULDIVDPI(540)};
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
@@ -403,8 +403,9 @@ std::string CYassApp::SaveConfig() {
   auto local_port = frame_->GetLocalPort();
   auto doh_url = frame_->GetDoHURL();
   auto dot_host = frame_->GetDoTHost();
+  auto limit_rate = frame_->GetLimitRate();
   auto connect_timeout = frame_->GetTimeout();
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method, local_host,
-                                        local_port, doh_url, dot_host, connect_timeout);
+                                        local_port, doh_url, dot_host, limit_rate, connect_timeout);
 }

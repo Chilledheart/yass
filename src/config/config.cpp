@@ -56,6 +56,7 @@ bool ReadConfig() {
   config_impl->Read("dot_host", &FLAGS_dot_host);
   config_impl->Read("connect_timeout", &FLAGS_connect_timeout);
   config_impl->Read("tcp_nodelay", &FLAGS_tcp_nodelay);
+  config_impl->Read("limit_rate", &FLAGS_limit_rate);
 
   config_impl->Read("tcp_keep_alive", &FLAGS_tcp_keep_alive);
   config_impl->Read("tcp_keep_alive_cnt", &FLAGS_tcp_keep_alive_cnt);
@@ -124,6 +125,7 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("connect_timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("tcp_nodelay", FLAGS_tcp_nodelay);
+  all_fields_written &= config_impl->Write("limit_rate", FLAGS_limit_rate);
 
   all_fields_written &= config_impl->Write("tcp_keep_alive", FLAGS_tcp_keep_alive);
   all_fields_written &= config_impl->Write("tcp_keep_alive_cnt", FLAGS_tcp_keep_alive_cnt);
@@ -158,7 +160,9 @@ std::string ReadConfigFromArgument(std::string_view server_host,
                                    std::string_view _local_port,
                                    std::string_view doh_url,
                                    std::string_view dot_host,
+                                   std::string_view _limit_rate,
                                    std::string_view _timeout) {
+  std::string err;
   std::ostringstream err_msg;
 
   if (server_host.empty() || server_host.size() >= TLSEXT_MAXLEN_host_name) {
@@ -169,8 +173,8 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     err_msg << ",Invalid Server Host: " << server_sni;
   }
 
-  auto server_port = StringToIntegerU(_server_port);
-  if (!server_port.has_value() || server_port.value() == 0u || server_port.value() > 65535u) {
+  PortFlag server_port;
+  if (!AbslParseFlag(_server_port, &server_port, &err)) {
     err_msg << ",Invalid Server Port: " << _server_port;
   }
 
@@ -200,8 +204,8 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     err_msg << ",Invalid Local Host: " << local_host;
   }
 
-  auto local_port = StringToIntegerU(_local_port);
-  if (!local_port.has_value() || local_port.value() > 65535u) {
+  PortFlag local_port;
+  if (!AbslParseFlag(_local_port, &local_port, &err)) {
     err_msg << ",Invalid Local Port: " << _local_port;
   }
 
@@ -221,6 +225,11 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     }
   }
 
+  RateFlag limit_rate;
+  if (!AbslParseFlag(_limit_rate, &limit_rate, &err)) {
+    err_msg << ",Invalid Rate Limit: " << _limit_rate;
+  }
+
   auto timeout = StringToIntegerU(_timeout);
   if (!timeout.has_value()) {
     err_msg << ",Invalid Connect Timeout: " << _timeout;
@@ -230,14 +239,15 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   if (ret.empty()) {
     absl::SetFlag(&FLAGS_server_host, server_host);
     absl::SetFlag(&FLAGS_server_sni, server_sni);
-    absl::SetFlag(&FLAGS_server_port, server_port.value());
+    absl::SetFlag(&FLAGS_server_port, server_port);
     absl::SetFlag(&FLAGS_username, username);
     absl::SetFlag(&FLAGS_password, password);
     absl::SetFlag(&FLAGS_method, method);
     absl::SetFlag(&FLAGS_local_host, local_host);
-    absl::SetFlag(&FLAGS_local_port, local_port.value());
+    absl::SetFlag(&FLAGS_local_port, local_port);
     absl::SetFlag(&FLAGS_doh_url, doh_url);
     absl::SetFlag(&FLAGS_dot_host, dot_host);
+    absl::SetFlag(&FLAGS_limit_rate, limit_rate);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);
@@ -255,7 +265,9 @@ std::string ReadConfigFromArgument(std::string_view server_host,
                                    std::string_view _local_port,
                                    std::string_view doh_url,
                                    std::string_view dot_host,
+                                   std::string_view _limit_rate,
                                    std::string_view _timeout) {
+  std::string err;
   std::ostringstream err_msg;
 
   if (server_host.empty() || server_host.size() >= TLSEXT_MAXLEN_host_name) {
@@ -266,13 +278,13 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     err_msg << ",Invalid Server Host: " << server_sni;
   }
 
-  auto server_port = StringToIntegerU(_server_port);
-  if (!server_port.has_value() || server_port.value() == 0u || server_port.value() > 65535u) {
+  PortFlag server_port;
+  if (!AbslParseFlag(_server_port, &server_port, &err)) {
     err_msg << ",Invalid Server Port: " << _server_port;
   }
 
-  auto method = to_cipher_method(method_string);
-  if (method == CRYPTO_INVALID) {
+  CipherMethodFlag method;
+  if (!AbslParseFlag(method_string, &method, &err)) {
     err_msg << ",Invalid Cipher: " << method_string;
   }
 
@@ -298,8 +310,8 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     err_msg << ",Invalid Local Host: " << local_host;
   }
 
-  auto local_port = StringToIntegerU(_local_port);
-  if (!local_port.has_value() || local_port.value() > 65535u) {
+  PortFlag local_port;
+  if (!AbslParseFlag(_local_port, &local_port, &err)) {
     err_msg << ",Invalid Local Port: " << _local_port;
   }
 
@@ -319,6 +331,11 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     }
   }
 
+  RateFlag limit_rate;
+  if (!AbslParseFlag(_limit_rate, &limit_rate, &err)) {
+    err_msg << ",Invalid Rate Limit: " << _limit_rate;
+  }
+
   auto timeout = StringToIntegerU(_timeout);
   if (!timeout.has_value()) {
     err_msg << ",Invalid Connect Timeout: " << _timeout;
@@ -328,14 +345,15 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   if (ret.empty()) {
     absl::SetFlag(&FLAGS_server_host, server_host);
     absl::SetFlag(&FLAGS_server_sni, server_sni);
-    absl::SetFlag(&FLAGS_server_port, server_port.value());
+    absl::SetFlag(&FLAGS_server_port, server_port);
     absl::SetFlag(&FLAGS_username, username);
     absl::SetFlag(&FLAGS_password, password);
     absl::SetFlag(&FLAGS_method, method);
     absl::SetFlag(&FLAGS_local_host, local_host);
-    absl::SetFlag(&FLAGS_local_port, local_port.value());
+    absl::SetFlag(&FLAGS_local_port, local_port);
     absl::SetFlag(&FLAGS_doh_url, doh_url);
     absl::SetFlag(&FLAGS_dot_host, dot_host);
+    absl::SetFlag(&FLAGS_limit_rate, limit_rate);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);

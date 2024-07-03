@@ -47,6 +47,7 @@ class YASSWindow : public QMainWindow {
   QLineEdit* local_port_;
   QLineEdit* doh_url_;
   QLineEdit* dot_host_;
+  QLineEdit* limit_rate_;
   QLineEdit* timeout_;
   QCheckBox* autostart_;
   QCheckBox* systemproxy_;
@@ -65,6 +66,7 @@ class YASSWindow : public QMainWindow {
   std::string GetLocalPort();
   std::string GetDoHUrl();
   std::string GetDoTHost();
+  std::string GetLimitRate();
   std::string GetTimeout();
   std::string GetStatusMessage();
 

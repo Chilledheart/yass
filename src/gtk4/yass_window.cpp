@@ -41,6 +41,7 @@ struct _YASSGtkWindow {
   GtkWidget* local_port;
   GtkWidget* doh_url;
   GtkWidget* dot_host;
+  GtkWidget* limit_rate;
   GtkWidget* timeout;
   GtkWidget* autostart;
   GtkWidget* systemproxy;
@@ -82,6 +83,7 @@ static void yass_window_dispose(GObject* object) {
   gtk_widget_unparent(window->local_port);
   gtk_widget_unparent(window->doh_url);
   gtk_widget_unparent(window->dot_host);
+  gtk_widget_unparent(window->limit_rate);
   gtk_widget_unparent(window->timeout);
   gtk_widget_unparent(window->autostart);
   gtk_widget_unparent(window->systemproxy);
@@ -108,6 +110,7 @@ static void yass_window_class_init(YASSGtkWindowClass* cls) {
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, local_port);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, doh_url);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, dot_host);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, limit_rate);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, timeout);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, autostart);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, systemproxy);
@@ -219,6 +222,7 @@ void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(impl_->local_port, false);
   gtk_widget_set_sensitive(impl_->doh_url, false);
   gtk_widget_set_sensitive(impl_->dot_host, false);
+  gtk_widget_set_sensitive(impl_->limit_rate, false);
   gtk_widget_set_sensitive(impl_->timeout, false);
 
   mApp->OnStart();
@@ -281,6 +285,10 @@ std::string YASSWindow::GetDoTHost() {
   return gtk_editable_get_text(GTK_EDITABLE(impl_->dot_host));
 }
 
+std::string YASSWindow::GetLimitRate() {
+  return gtk_editable_get_text(GTK_EDITABLE(impl_->limit_rate));
+}
+
 std::string YASSWindow::GetTimeout() {
   return gtk_editable_get_text(GTK_EDITABLE(impl_->timeout));
 }
@@ -336,6 +344,7 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->doh_url, true);
   gtk_widget_set_sensitive(impl_->dot_host, true);
+  gtk_widget_set_sensitive(impl_->limit_rate, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
 
   // Gtk4 Message Dialog is deprecated since 4.10
@@ -372,6 +381,7 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->doh_url, true);
   gtk_widget_set_sensitive(impl_->dot_host, true);
+  gtk_widget_set_sensitive(impl_->limit_rate, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
 }
 
@@ -386,6 +396,7 @@ void YASSWindow::LoadChanges() {
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
   auto doh_url_str = absl::GetFlag(FLAGS_doh_url);
   auto dot_host_str = absl::GetFlag(FLAGS_dot_host);
+  std::string limit_rate_str = absl::GetFlag(FLAGS_limit_rate);
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_host), server_host_str.c_str());
@@ -411,6 +422,7 @@ void YASSWindow::LoadChanges() {
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_port), local_port_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->doh_url), doh_url_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->dot_host), dot_host_str.c_str());
+  gtk_editable_set_text(GTK_EDITABLE(impl_->limit_rate), limit_rate_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->timeout), timeout_str.c_str());
 }
 

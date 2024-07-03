@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-14 11:19+0800\n"
+"POT-Creation-Date: 2024-07-03 11:14+0800\n"
 "PO-Revision-Date: 2023-09-15 11:28+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -18,59 +18,59 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: yass.cpp:245
+#: yass.cpp:297
 msgid "Connected with conns: "
 msgstr "已产生连接: "
 
-#: yass.cpp:247
+#: yass.cpp:299
 msgid "Connecting"
 msgstr "连接中"
 
-#: yass.cpp:249
+#: yass.cpp:301
 msgid "Failed to connect due to "
 msgstr "无法连接因为 "
 
-#: yass.cpp:251
+#: yass.cpp:303
 msgid "Disconnecting"
 msgstr "断开连接中"
 
-#: yass.cpp:253
+#: yass.cpp:305
 msgid "Disconnected with "
 msgstr "断开连接于服务器 "
 
-#: yass.cpp:363
+#: yass.cpp:416
 msgid "Last Change: "
 msgstr "最后改动: "
 
-#: yass.cpp:366
+#: yass.cpp:419
 msgid "Enabled Feature: "
 msgstr "启用功能: "
 
-#: yass.cpp:375
+#: yass.cpp:428
 msgid "official-site"
 msgstr "官方网站"
 
-#: yass.cpp:381
+#: yass.cpp:434
 msgid "YASS Option"
 msgstr "YASS 选项"
 
-#: yass_window.cpp:145
+#: yass_window.cpp:190
 msgid "READY"
 msgstr "就绪"
 
-#: yass_window.cpp:258
+#: yass_window.cpp:314
 msgid " tx rate: "
 msgstr " 上传速率: "
 
-#: yass_window.cpp:261
+#: yass_window.cpp:317
 msgid " rx rate: "
 msgstr " 下载速率: "
 
-#: yass_window.cpp:295
+#: yass_window.cpp:352
 msgid "Start Failed"
 msgstr "启动失败"
 
-#: yass_window.cpp:296
+#: yass_window.cpp:353
 msgid "OK"
 msgstr "确认"
 
@@ -163,21 +163,25 @@ msgid "DNS over TLS Host:"
 msgstr "基于 TLS 的 DNS (DoT) 域名:"
 
 #: yass_window.ui:131
+msgid "Limit Rate:"
+msgstr "限制速率:"
+
+#: yass_window.ui:141
 msgid "Timeout:"
 msgstr "超时时间:"
 
-#: yass_window.ui:141
+#: yass_window.ui:151
 msgid "Auto Start:"
 msgstr "随系统自启动:"
 
-#: yass_window.ui:151
+#: yass_window.ui:161
 msgid "System Proxy:"
 msgstr "系统代理:"
 
-#: yass_window.ui:265
+#: yass_window.ui:283
 msgid "Start"
 msgstr "启动"
 
-#: yass_window.ui:274
+#: yass_window.ui:292
 msgid "Stop"
 msgstr "停止"

@@ -25,5 +25,8 @@
 /* Class = "UILabel"; text = "DNS over TLS Host"; ObjectID = ""; */
 "bm9-gV-Cny.text" = "基于 TLS 的 DNS (DoT) 域名";
 
+/* Class = "UILabel"; text = "Limit Rate"; ObjectID = ""; */
+"1tx-Ul-6iU.text" = "限制速率";
+
 /* Class = "UILabel"; text = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "3S5-0B-efx.text" = "超时时间";

@@ -61,6 +61,10 @@
       "value": "Cipher/Method"
     },
     {
+      "name": "limit_rate",
+      "value": "Limit Rate"
+    },
+    {
       "name": "timeout",
       "value": "Timeout"
     },

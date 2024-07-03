@@ -45,6 +45,7 @@
   NSString* method_string_;
   NSString* doh_url_;
   NSString* dot_host_;
+  NSString* limit_rate_;
   NSString* connect_timeout_;
   BOOL enable_post_quantum_kyber_;
 }
@@ -263,6 +264,7 @@
     @(kMethodStringFieldName) : method_string_,
     @(kDoHURLFieldName) : doh_url_,
     @(kDoTHostFieldName) : dot_host_,
+    @(kLimitRateFieldName) : limit_rate_,
     @(kConnectTimeoutFieldName) : connect_timeout_,
     @(kEnablePostQuantumKyberKey) : @(enable_post_quantum_kyber_),
   };
@@ -419,6 +421,7 @@
   method_string_ = viewController.currentCiphermethod;
   doh_url_ = viewController.dohURL.text;
   dot_host_ = viewController.dotHost.text;
+  limit_rate_ = viewController.limitRate.text;
   connect_timeout_ = viewController.timeout.text;
 
   auto server_host = SysNSStringToUTF8(server_host_);
@@ -428,10 +431,11 @@
   auto method_string = SysNSStringToUTF8(method_string_);
   auto doh_url = SysNSStringToUTF8(doh_url_);
   auto dot_host = SysNSStringToUTF8(dot_host_);
+  auto limit_rate = SysNSStringToUTF8(limit_rate_);
   auto connect_timeout = SysNSStringToUTF8(connect_timeout_);
 
   return config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
-                                        "127.0.0.1", "0", doh_url, dot_host, connect_timeout);
+                                        "127.0.0.1", "0", doh_url, dot_host, limit_rate, connect_timeout);
 }
 
 @end
