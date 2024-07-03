@@ -95,6 +95,9 @@
 /* Class = "NSTextFieldCell"; title = "DNS over TLS Host"; ObjectID = "PXx-nB-Hn1"; */
 "PXx-nB-Hn1.title" = "基于 TLS 的 DNS (DoT) 域名";
 
+/* Class = "NSTextFieldCell"; title = "Limit Rate"; ObjectID = "Ux8-IL-FUS"; */
+"Ux8-IL-FUS.title" = "限制速率";
+
 /* Class = "NSTextFieldCell"; title = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "zY6-tD-aUd.title" = "超时时间";
 

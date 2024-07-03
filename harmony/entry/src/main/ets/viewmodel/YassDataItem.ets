@@ -13,5 +13,6 @@ export class YassDataItem {
   cipher: string = '';
   dohUrl: string = '';
   dotHost: string = '';
+  limitRate: string = '';
   timeout: number = 0;
 }

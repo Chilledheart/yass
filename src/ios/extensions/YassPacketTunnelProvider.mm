@@ -65,12 +65,13 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   auto method_string = SysNSStringToUTF8(dict[@(kMethodStringFieldName)]);
   auto doh_url = SysNSStringToUTF8(dict[@(kDoHURLFieldName)]);
   auto dot_host = SysNSStringToUTF8(dict[@(kDoTHostFieldName)]);
+  auto limit_rate = SysNSStringToUTF8(dict[@(kLimitRateFieldName)]);
   auto connect_timeout = SysNSStringToUTF8(dict[@(kConnectTimeoutFieldName)]);
   auto enable_post_quantum_kyber = [dict[@(kEnablePostQuantumKyberKey)] boolValue];
 
   auto err_msg =
       config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
-                                     local_host, local_port, doh_url, dot_host, connect_timeout);
+                                     local_host, local_port, doh_url, dot_host, limit_rate, connect_timeout);
   if (!err_msg.empty()) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
                                           code:200

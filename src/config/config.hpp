@@ -28,6 +28,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
                                    std::string_view local_port,
                                    std::string_view doh_url,
                                    std::string_view dot_host,
+                                   std::string_view limit_rate,
                                    std::string_view connect_timeout);
 
 std::string ReadConfigFromArgument(std::string_view server_host,
@@ -40,6 +41,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
                                    std::string_view local_port,
                                    std::string_view doh_url,
                                    std::string_view dot_host,
+                                   std::string_view limit_rate,
                                    std::string_view connect_timeout);
 
 void SetClientUsageMessage(std::string_view exec_path);

@@ -8,6 +8,7 @@
 #include <cassert>
 #include <iostream>
 
+#include "config/config_core.hpp"
 #include "config/config_export.hpp"
 #include "config/config_impl_apple.hpp"
 #include "config/config_impl_local.hpp"
@@ -161,13 +162,31 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<CipherMethodFlag>* valu
     std::cerr << "failed to load option " << key << std::endl;
     return false;
   }
-  auto cipher_method = to_cipher_method(real_value);
-  if (cipher_method == CRYPTO_INVALID) {
+  std::string err;
+  CipherMethodFlag method;
+  if (!AbslParseFlag(real_value, &method, &err)) {
     std::cerr << "invalid value for key: " << key << " value: " << to_masked_string(real_value, is_masked) << std::endl;
     return false;
   }
-  CipherMethodFlag method(cipher_method);
   absl::SetFlag(value, method);
+  std::cerr << "loaded option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
+  return true;
+}
+
+template <>
+bool ConfigImpl::Read(const std::string& key, absl::Flag<RateFlag>* value, bool is_masked) {
+  alignas(std::string) alignas(8) std::string real_value;
+  if (!ReadImpl(key, &real_value)) {
+    std::cerr << "failed to load option " << key << std::endl;
+    return false;
+  }
+  std::string err;
+  RateFlag limit_rate;
+  if (!AbslParseFlag(real_value, &limit_rate, &err)) {
+    std::cerr << "invalid value for key: " << key << " value: " << to_masked_string(real_value, is_masked) << std::endl;
+    return false;
+  }
+  absl::SetFlag(value, limit_rate);
   std::cerr << "loaded option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
@@ -224,6 +243,17 @@ bool ConfigImpl::Write(const std::string& key, const absl::Flag<CipherMethodFlag
   auto cipher_method = absl::GetFlag(value).method;
   assert(is_valid_cipher_method(cipher_method) && "Invalid cipher_method");
   auto real_value = to_cipher_method_str(cipher_method);
+  if (!WriteImpl(key, real_value)) {
+    std::cerr << "failed to saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
+    return false;
+  }
+  std::cerr << "saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
+  return true;
+}
+
+template <>
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<RateFlag>& value, bool is_masked) {
+  std::string real_value = absl::GetFlag(value);
   if (!WriteImpl(key, real_value)) {
     std::cerr << "failed to saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
     return false;

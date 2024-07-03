@@ -128,7 +128,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Timeout:</property>
+                <property name="label" translatable="yes">Limit Rate:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -138,7 +138,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Auto Start:</property>
+                <property name="label" translatable="yes">Timeout:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -148,11 +148,21 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">System Proxy:</property>
+                <property name="label" translatable="yes">Auto Start:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">12</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="label" translatable="yes">System Proxy:</property>
+                <property name="xalign">1</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="row">13</property>
                 </layout>
               </object>
             </child>
@@ -237,7 +247,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="timeout">
+              <object class="GtkEntry" id="limit_rate">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">10</property>
@@ -245,7 +255,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkCheckButton" id="autostart">
+              <object class="GtkEntry" id="timeout">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">11</property>
@@ -253,10 +263,18 @@
               </object>
             </child>
             <child>
-              <object class="GtkCheckButton" id="systemproxy">
+              <object class="GtkCheckButton" id="autostart">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">12</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="systemproxy">
+                <layout>
+                  <property name="column">2</property>
+                  <property name="row">13</property>
                 </layout>
               </object>
             </child>

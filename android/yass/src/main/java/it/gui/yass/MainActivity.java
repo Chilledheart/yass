@@ -136,6 +136,9 @@ public class MainActivity extends AppCompatActivity {
         EditText dotHostEditText = findViewById(R.id.dotHostEditText);
         dotHostEditText.setText(String.format(getLocale(), "%s", YassUtils.getDoTHost()));
 
+        EditText limitRateEditText = findViewById(R.id.limitRateEditText);
+        limitRateEditText.setText(String.format(getLocale(), "%s", YassUtils.getLimitRate()));
+
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
         timeoutEditText.setText(String.format(getLocale(), "%d", YassUtils.getTimeout()));
 
@@ -180,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
         Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
         EditText dohUrlEditText = findViewById(R.id.dohUrlEditText);
         EditText dotHostEditText = findViewById(R.id.dotHostEditText);
+        EditText limitRateEditText = findViewById(R.id.limitRateEditText);
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
 
         return YassUtils.saveConfig(serverHostEditText.getText().toString(),
@@ -190,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
                 cipherSpinner.getSelectedItemPosition(),
                 dohUrlEditText.getText().toString(),
                 dotHostEditText.getText().toString(),
+                limitRateEditText.getText().toString(),
                 timeoutEditText.getText().toString());
     }
 

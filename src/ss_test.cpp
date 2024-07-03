@@ -143,9 +143,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
   ContentProviderConnection(ContentProviderConnection&&) = delete;
   ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
 
-  void start() {
-    do_io();
-  }
+  void start() { do_io(); }
 
   void close() {
     VLOG(1) << "Connection (content-provider) " << connection_id() << " disconnected";
@@ -431,7 +429,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
 #if LIBCURL_VERSION_NUM >= 0x076200
     /* Added in 7.62.0. */
     /* The maximum buffer size allowed to be set is 2 megabytes. */
-    curl_easy_setopt(curl, CURLOPT_UPLOAD_BUFFERSIZE, 2*1024*1024);
+    curl_easy_setopt(curl, CURLOPT_UPLOAD_BUFFERSIZE, 2 * 1024 * 1024);
 #endif
     /* we want to use our own read function */
     curl_read_callback r_callback = [](char* buffer, size_t size, size_t nmemb, void* clientp) -> size_t {

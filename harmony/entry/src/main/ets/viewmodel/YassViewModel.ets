@@ -18,6 +18,7 @@ class YassViewModel {
     yassData.cipher = yass.getCipher();
     yassData.dohUrl = yass.getDoHUrl();
     yassData.dotHost = yass.getDoTHost();
+    yassData.limitRate = yass.getLimitRate();
     yassData.timeout = yass.getTimeout();
     return yassData;
   }

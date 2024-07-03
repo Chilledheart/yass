@@ -27,4 +27,5 @@
     <string name="post_quantum_kyber">TLS的Kyber后量子密钥协商</string>
     <string name="button_options">选项</string>
     <string name="title_options">选项</string>
+    <string name="label_limit_rate">限制速率</string>
 </resources>

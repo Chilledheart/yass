@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-14 11:19+0800\n"
+"POT-Creation-Date: 2024-07-03 11:14+0800\n"
 "PO-Revision-Date: 2023-05-24 14:35+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -17,59 +17,59 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: yass.cpp:245
+#: yass.cpp:297
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
 
-#: yass.cpp:247
+#: yass.cpp:299
 msgid "Connecting"
 msgstr "Connecting"
 
-#: yass.cpp:249
+#: yass.cpp:301
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
 
-#: yass.cpp:251
+#: yass.cpp:303
 msgid "Disconnecting"
 msgstr "Disconnecting"
 
-#: yass.cpp:253
+#: yass.cpp:305
 msgid "Disconnected with "
 msgstr "Disconnected with "
 
-#: yass.cpp:363
+#: yass.cpp:416
 msgid "Last Change: "
 msgstr "Last Change: "
 
-#: yass.cpp:366
+#: yass.cpp:419
 msgid "Enabled Feature: "
 msgstr "Enabled Feature: "
 
-#: yass.cpp:375
+#: yass.cpp:428
 msgid "official-site"
 msgstr "official-site"
 
-#: yass.cpp:381
+#: yass.cpp:434
 msgid "YASS Option"
 msgstr "YASS Option"
 
-#: yass_window.cpp:145
+#: yass_window.cpp:190
 msgid "READY"
 msgstr "READY"
 
-#: yass_window.cpp:258
+#: yass_window.cpp:314
 msgid " tx rate: "
 msgstr " tx rate: "
 
-#: yass_window.cpp:261
+#: yass_window.cpp:317
 msgid " rx rate: "
 msgstr " rx rate: "
 
-#: yass_window.cpp:295
+#: yass_window.cpp:352
 msgid "Start Failed"
 msgstr "Start Failed"
 
-#: yass_window.cpp:296
+#: yass_window.cpp:353
 msgid "OK"
 msgstr "OK"
 
@@ -162,21 +162,25 @@ msgid "DNS over TLS Host:"
 msgstr "DNS over TLS Host:"
 
 #: yass_window.ui:131
+msgid "Limit Rate:"
+msgstr "Limit Rate:"
+
+#: yass_window.ui:141
 msgid "Timeout:"
 msgstr "Timeout:"
 
-#: yass_window.ui:141
+#: yass_window.ui:151
 msgid "Auto Start:"
 msgstr "Auto Start:"
 
-#: yass_window.ui:151
+#: yass_window.ui:161
 msgid "System Proxy:"
 msgstr "System Proxy:"
 
-#: yass_window.ui:265
+#: yass_window.ui:283
 msgid "Start"
 msgstr "Start"
 
-#: yass_window.ui:274
+#: yass_window.ui:292
 msgid "Stop"
 msgstr "Stop"
