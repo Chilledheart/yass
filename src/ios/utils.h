@@ -24,6 +24,7 @@ constexpr const char kPasswordFieldName[] = "password";
 constexpr const char kMethodStringFieldName[] = "method_string";
 constexpr const char kDoHURLFieldName[] = "doh_url";
 constexpr const char kDoTHostFieldName[] = "dot_host";
+constexpr const char kLimitRateFieldName[] = "limit_rate";
 constexpr const char kConnectTimeoutFieldName[] = "connect_timeout";
 
 constexpr const char kEnablePostQuantumKyberKey[] = "ENABLE_POST_QUANTUM_KYBER";

@@ -5,6 +5,7 @@
 #define H_CONFIG_CONFIG_CORE
 
 #include <absl/flags/declare.h>
+#include <absl/strings/string_view.h>
 #include <stdint.h>
 #include <string>
 #include <string_view>
@@ -22,5 +23,17 @@ ABSL_DECLARE_FLAG(PortFlag, local_port);
 
 ABSL_DECLARE_FLAG(uint32_t, parallel_max);
 ABSL_DECLARE_FLAG(RateFlag, limit_rate);  // bytes per second
+
+bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err);
+
+std::string AbslUnparseFlag(const PortFlag&);
+
+bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err);
+
+std::string AbslUnparseFlag(const CipherMethodFlag&);
+
+bool AbslParseFlag(absl::string_view text, RateFlag* flag, std::string* err);
+
+std::string AbslUnparseFlag(const RateFlag&);
 
 #endif  // H_CONFIG_CONFIG_CORE

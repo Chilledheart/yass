@@ -89,11 +89,6 @@ These ca certificates are provided in both builtin ca bundle support and supplem
 ### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
 These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
 
-### Specify Rate Limit (Command Line only)
-Pass `--limit_rate rate` to command line.
-Limits the _rate_ of response transmission to a client.
-Uint can be `(none)`, `k` and `m`.
-
 ### Specify TCP Congestion Algorithm (Command Line only)
 Pass `--congestion_algorithm algo` to command line.
 Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux only).

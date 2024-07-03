@@ -201,10 +201,11 @@
   auto local_port = SysNSStringToUTF8(viewController.localPort.stringValue);
   auto doh_url = SysNSStringToUTF8(viewController.dohURL.stringValue);
   auto dot_host = SysNSStringToUTF8(viewController.dotHost.stringValue);
+  auto limit_rate = SysNSStringToUTF8(viewController.limitRate.stringValue);
   auto connect_timeout = SysNSStringToUTF8(viewController.timeout.stringValue);
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
-                                        local_host, local_port, doh_url, dot_host, connect_timeout);
+                                        local_host, local_port, doh_url, dot_host, limit_rate, connect_timeout);
 }
 
 @end

@@ -48,6 +48,7 @@
   [self.password setDelegate:self];
   [self.dohURL setDelegate:self];
   [self.dotHost setDelegate:self];
+  [self.limitRate setDelegate:self];
   [self.timeout setDelegate:self];
 
   [self LoadChanges];
@@ -114,6 +115,9 @@
     [self.dotHost becomeFirstResponder];
   } else if (textField == self.dotHost) {
     [textField resignFirstResponder];
+    [self.limitRate becomeFirstResponder];
+  } else if (textField == self.limitRate) {
+    [textField resignFirstResponder];
     [self.timeout becomeFirstResponder];
   } else if (textField == self.timeout) {
     [textField resignFirstResponder];
@@ -139,6 +143,14 @@
   }
   if (textField == self.dotHost) {
     if (textField.text.length > TLSEXT_MAXLEN_host_name) {
+      return NO;
+    }
+  }
+  if (textField == self.limitRate) {
+    auto _limit_rate = SysNSStringToUTF8(textField.text);
+    std::string err;
+    RateFlag limit_rate;
+    if (!AbslParseFlag(_limit_rate, &limit_rate, &err)) {
       return NO;
     }
   }
@@ -192,6 +204,7 @@
   [self.cipherMethod setUserInteractionEnabled:FALSE];
   [self.dohURL setUserInteractionEnabled:FALSE];
   [self.dotHost setUserInteractionEnabled:FALSE];
+  [self.limitRate setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
@@ -206,6 +219,7 @@
   [self.cipherMethod setUserInteractionEnabled:FALSE];
   [self.dohURL setUserInteractionEnabled:FALSE];
   [self.dotHost setUserInteractionEnabled:FALSE];
+  [self.limitRate setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:TRUE];
@@ -220,6 +234,7 @@
   [self.cipherMethod setUserInteractionEnabled:TRUE];
   [self.dohURL setUserInteractionEnabled:TRUE];
   [self.dotHost setUserInteractionEnabled:TRUE];
+  [self.limitRate setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -234,6 +249,7 @@
   [self.cipherMethod setUserInteractionEnabled:FALSE];
   [self.dohURL setUserInteractionEnabled:FALSE];
   [self.dotHost setUserInteractionEnabled:FALSE];
+  [self.limitRate setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
@@ -248,6 +264,7 @@
   [self.cipherMethod setUserInteractionEnabled:TRUE];
   [self.dohURL setUserInteractionEnabled:TRUE];
   [self.dotHost setUserInteractionEnabled:TRUE];
+  [self.limitRate setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -304,6 +321,7 @@
 
   self.dohURL.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
   self.dotHost.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_dot_host));
+  self.limitRate.text = SysUTF8ToNSString(std::string(absl::GetFlag(FLAGS_limit_rate)));
   self.timeout.text = SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
 }
 

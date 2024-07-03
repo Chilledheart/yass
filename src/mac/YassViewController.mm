@@ -105,6 +105,7 @@
   [self.localPort setEnabled:FALSE];
   [self.dohURL setEnabled:FALSE];
   [self.dotHost setEnabled:FALSE];
+  [self.limitRate setEnabled:FALSE];
   [self.timeout setEnabled:FALSE];
 
   YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
@@ -138,6 +139,7 @@
   [self.localPort setEnabled:TRUE];
   [self.dohURL setEnabled:TRUE];
   [self.dotHost setEnabled:TRUE];
+  [self.limitRate setEnabled:TRUE];
   [self.timeout setEnabled:TRUE];
 }
 
@@ -155,6 +157,7 @@
   [self.localPort setEnabled:TRUE];
   [self.dohURL setEnabled:TRUE];
   [self.dotHost setEnabled:TRUE];
+  [self.limitRate setEnabled:TRUE];
   [self.timeout setEnabled:TRUE];
 }
 
@@ -170,6 +173,7 @@
   self.localPort.intValue = absl::GetFlag(FLAGS_local_port);
   self.dohURL.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
   self.dotHost.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_dot_host));
+  self.limitRate.stringValue = SysUTF8ToNSString(std::string(absl::GetFlag(FLAGS_limit_rate)));
   self.timeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
 }
 

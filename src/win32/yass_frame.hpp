@@ -50,6 +50,7 @@ class CYassFrame {
   std::string GetLocalPort();
   std::string GetDoHURL();
   std::string GetDoTHost();
+  std::string GetLimitRate();
   std::string GetTimeout();
   std::wstring GetStatusMessage();
 
@@ -76,6 +77,7 @@ class CYassFrame {
   HWND local_port_label_;
   HWND doh_url_label_;
   HWND dot_host_label_;
+  HWND limit_rate_label_;
   HWND timeout_label_;
   HWND autostart_label_;
   HWND systemproxy_label_;
@@ -90,6 +92,7 @@ class CYassFrame {
   HWND local_port_edit_;
   HWND doh_url_edit_;
   HWND dot_host_edit_;
+  HWND limit_rate_edit_;
   HWND timeout_edit_;
   HWND autostart_button_;
   HWND systemproxy_button_;

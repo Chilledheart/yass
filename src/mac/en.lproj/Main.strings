@@ -95,6 +95,9 @@
 /* Class = "NSTextFieldCell"; title = "DNS over TLS Host"; ObjectID = "PXx-nB-Hn1"; */
 "PXx-nB-Hn1.title" = "DNS over TLS Host";
 
+/* Class = "NSTextFieldCell"; title = "Limit Rate"; ObjectID = "Ux8-IL-FUS"; */
+"Ux8-IL-FUS.title" = "Limit Rate";
+
 /* Class = "NSTextFieldCell"; title = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "zY6-tD-aUd.title" = "Timeout";
 

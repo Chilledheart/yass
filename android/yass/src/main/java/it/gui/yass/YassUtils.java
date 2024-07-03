@@ -20,11 +20,13 @@ public class YassUtils {
 
     public static native String getDoTHost();
 
+    public static native String getLimitRate();
+
     public static native int getTimeout();
 
     public static native String saveConfig(String serverHost, String serverSNI, String serverPort,
                                      String username, String password, int cipher, String doh_url,
-                                     String dot_host, String timeout);
+                                     String dot_host, String limit_rate, String timeout);
 
     public static native void setEnablePostQuantumKyber(boolean enable_post_quantum_kyber);
 }

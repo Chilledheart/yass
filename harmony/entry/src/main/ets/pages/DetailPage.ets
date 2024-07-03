@@ -156,7 +156,7 @@ struct DetailPage {
 
     let err_msg = yass.saveConfig(this.dataParam.serverHost, this.dataParam.serverSNI, this.dataParam.serverPort.toString(),
         this.dataParam.username, this.dataParam.password, this.dataParam.cipher, this.dataParam.dohUrl, this.dataParam.dotHost,
-        this.dataParam.timeout.toString());
+        this.dataParam.limitRate, this.dataParam.timeout.toString());
     if (err_msg != '') {
       this.onStartFailedWithMsg(err_msg);
       return;
