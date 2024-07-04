@@ -4,89 +4,28 @@
 #ifndef H_NET_RESOLVER_HPP
 #define H_NET_RESOLVER_HPP
 
-#include "core/utils.hpp"
-#include "net/asio.hpp"
-#include "net/doh_resolver.hpp"
-#include "net/dot_resolver.hpp"
+#include <functional>
 
-#ifdef HAVE_C_ARES
-#include "net/c-ares.hpp"
-#endif
+#include "net/asio.hpp"
 
 namespace net {
 
 class Resolver {
+  class ResolverImpl;
+
  public:
   Resolver(asio::io_context& io_context);
+  ~Resolver();
 
   int Init();
-
-  void Cancel() {
-    if (!doh_url_.empty()) {
-      if (doh_resolver_) {
-        doh_resolver_->Cancel();
-      }
-      return;
-    }
-    if (!dot_host_.empty()) {
-      if (dot_resolver_) {
-        dot_resolver_->Cancel();
-      }
-      return;
-    }
-#ifdef HAVE_C_ARES
-    if (resolver_) {
-      resolver_->Cancel();
-    }
-#else
-    resolver_.cancel();
-#endif
-  }
-
-  void Reset() {
-    if (!doh_url_.empty()) {
-      doh_resolver_.reset();
-      return;
-    }
-    if (!dot_host_.empty()) {
-      dot_resolver_.reset();
-      return;
-    }
-#ifdef HAVE_C_ARES
-    resolver_.reset();
-#endif
-  }
+  void Cancel();
+  void Reset();
 
   using AsyncResolveCallback = std::function<void(asio::error_code ec, asio::ip::tcp::resolver::results_type)>;
-  void AsyncResolve(const std::string& host_name, int port, AsyncResolveCallback cb) {
-    if (!doh_url_.empty()) {
-      doh_resolver_->AsyncResolve(host_name, port, cb);
-      return;
-    }
-    if (!dot_host_.empty()) {
-      dot_resolver_->AsyncResolve(host_name, port, cb);
-      return;
-    }
-#ifdef HAVE_C_ARES
-    resolver_->AsyncResolve(host_name, std::to_string(port), cb);
-#else
-    resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(), host_name,
-                            std::to_string(port), cb);
-#endif
-  }
+  void AsyncResolve(const std::string& host_name, int port, AsyncResolveCallback cb);
 
  private:
-  asio::io_context& io_context_;
-  std::string doh_url_;
-  std::string dot_host_;
-  scoped_refptr<DoHResolver> doh_resolver_;
-  scoped_refptr<DoTResolver> dot_resolver_;
-
-#ifdef HAVE_C_ARES
-  scoped_refptr<CAresResolver> resolver_;
-#else
-  asio::ip::tcp::resolver resolver_;
-#endif
+  ResolverImpl* impl_ = nullptr;
 };
 
 }  // namespace net

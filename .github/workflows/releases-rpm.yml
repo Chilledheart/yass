@@ -43,7 +43,6 @@ jobs:
       fail-fast: false
       matrix:
         container:
-        - 'centos7'
         - 'centos8'
         - 'centos9'
         - 'fedora39'
@@ -84,12 +83,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - container: 'centos7'
+          - container: 'centos8'
             gui_variant: gtk3
-          - container: 'centos7'
+          - container: 'centos8'
             gui_variant: qt5
-          - container: 'centos9'
-            gui_variant: gtk4
           # qt6 sits on epel repo, disabling
           # - container: 'centos9'
           #   gui_variant: qt6
@@ -129,19 +126,10 @@ jobs:
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v4
-        if: ${{ matrix.container != 'centos7' }}
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache clang (el7)
-        id: clang-cache-el7
-        uses: actions/cache@v3
-        if: ${{ matrix.container == 'centos7' }}
-        with:
-          path: |
-            third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-el7-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -152,16 +140,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-docker-
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' && matrix.container != 'centos7' }}
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Install dependency: prebuilt clang and clang-tidy binaries (el7 patch)"
-        if: ${{ steps.clang-cache-el7.outputs.cache-hit != 'true' && matrix.container == 'centos7' }}
-        run: |
-          ./scripts/download-clang-prebuilt-binaries.py
-          rm -f third_party/llvm-build/Release+Asserts/*.tgz
-          ./scripts/libstdc++-el7.sh
       - name: Set clang environment
         run: |
           # use custom compiler
@@ -172,11 +154,6 @@ jobs:
         run: |
           # use custom libc++
           echo "USE_LIBCXX=1" >> $GITHUB_ENV
-      - name: Set LLD environment
-        if: ${{ matrix.container == 'centos7' }}
-        run: |
-          # newer ld.lld doesn't work on glibc 2.17
-          echo "DISABLE_LLD=1" >> $GITHUB_ENV
       - name: Set QT6 environment
         if: ${{ matrix.gui_variant == 'qt6' }}
         run: |
