@@ -23,6 +23,7 @@
 
 #include "cli/cli_connection_stats.hpp"
 #include "config/config.hpp"
+#include "core/utils.hpp"
 #include "feature.h"
 #include "freedesktop/utils.hpp"
 #include "version.h"
