@@ -41,7 +41,7 @@ namespace config {
 bool ReadTLSConfigFile() {
   do {
     static constexpr const size_t kBufferSize = 256 * 1024;
-    const bool is_server = pType == YASS_SERVER;
+    const bool is_server = pType & YASS_SERVER_MASK;
 
     ssize_t ret;
     if (is_server) {

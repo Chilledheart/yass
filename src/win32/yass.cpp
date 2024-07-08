@@ -25,6 +25,10 @@
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
 
+namespace config {
+const ProgramType pType = YASS_CLIENT_GUI;
+}  // namespace config
+
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
 #define MULDIVDPI(x) MulDiv(x, uDpi, 96)

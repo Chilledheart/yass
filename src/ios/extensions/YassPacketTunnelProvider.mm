@@ -19,6 +19,10 @@
 
 using namespace std::string_literals;
 
+namespace config {
+const ProgramType pType = YASS_CLIENT_GUI;
+}  // namespace config
+
 static constexpr const int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
 static const char PRIVATE_VLAN4_GATEWAY[] = "172.19.0.2";

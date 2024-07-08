@@ -64,7 +64,8 @@ static void ParseConfigFileOption(int argc, const char** argv) {
       pos += 2;
       continue;
     } else if (arg == "-version" || arg == "--version") {
-      std::cout << absl::flags_internal::ShortProgramInvocationName() << " " << YASS_APP_TAG << std::endl;
+      std::cout << absl::flags_internal::ShortProgramInvocationName() << " " << YASS_APP_TAG
+                << " type: " << ProgramTypeToStr(pType) << std::endl;
       std::cout << "Last Change: " << YASS_APP_LAST_CHANGE << std::endl;
       std::cout << "Features: " << YASS_APP_FEATURES << std::endl;
 #ifdef HAVE_TCMALLOC
@@ -83,7 +84,8 @@ static void ParseConfigFileOption(int argc, const char** argv) {
     ++pos;
   }
 
-  std::cerr << "Application starting: " << YASS_APP_TAG << std::endl;
+  std::cerr << "Application starting: " << YASS_APP_TAG << " type: " << ProgramTypeToStr(pType) << std::endl;
+  ;
   std::cerr << "Last Change: " << YASS_APP_LAST_CHANGE << std::endl;
   std::cerr << "Features: " << YASS_APP_FEATURES << std::endl;
 #ifdef HAVE_TCMALLOC
@@ -95,6 +97,24 @@ static void ParseConfigFileOption(int argc, const char** argv) {
 #ifndef NDEBUG
   std::cerr << "Debug build (NDEBUG not #defined)\n" << std::endl;
 #endif
+}
+
+const char* ProgramTypeToStr(ProgramType type) {
+  switch (type) {
+    case YASS_SERVER_DEFAULT:
+      return "server";
+    case YASS_UNITTEST_DEFAULT:
+      return "unittest";
+    case YASS_BENCHMARK_DEFAULT:
+      return "benchmark";
+    case YASS_CLIENT_DEFAULT:
+      return "client";
+    case YASS_CLIENT_GUI:
+      return "gui client (" YASS_GUI_FLAVOUR ")";
+    case YASS_UNSPEC:
+    default:
+      return "unspec";
+  }
 }
 
 void ReadConfigFileAndArguments(int argc, const char** argv) {

@@ -29,7 +29,10 @@
 #include "server/server_server.hpp"
 #include "version.h"
 
-const ProgramType pType = YASS_BENCHMARK;
+namespace config {
+const ProgramType pType = YASS_BENCHMARK_DEFAULT;
+}  // namespace config
+using namespace config;
 
 using namespace net;
 using namespace std::string_literals;

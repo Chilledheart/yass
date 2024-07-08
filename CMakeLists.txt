@@ -2159,6 +2159,20 @@ else()
   message(STATUS "Compiling with no GUI support")
 endif()
 
+# setup gui flavour header
+if (GUI)
+  set(_GUI_FLAVOUR_ ${GUI_FLAVOUR})
+else()
+  set(_GUI_FLAVOUR_ "unspec")
+endif()
+
+set(GUI_VARIANT_HEADER "${CMAKE_CURRENT_BINARY_DIR}/gui_variant.h")
+configure_file("src/gui_variant.h.in" "${GUI_VARIANT_HEADER}" @ONLY)
+set(SUPPORT_INCLUDE_DIRS
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${SUPPORT_INCLUDE_DIRS}
+)
+
 # *****************************************************************************************
 #           Compiler compiler and link flags (common)
 # *****************************************************************************************
@@ -4317,6 +4331,7 @@ message(STATUS "Enabled Feature: ${YASS_APP_FEATURES}")
 # *****************************************************************************************
 
 if (GUI)
+    message(STATUS "GUI Variant: ${GUI_FLAVOUR}")
     set(APP_NAME yass)
     set(SRC_FILES)
     if (GUI_FLAVOUR STREQUAL "android")

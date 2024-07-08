@@ -16,6 +16,10 @@
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
 
+namespace config {
+const ProgramType pType = YASS_CLIENT_GUI;
+}  // namespace config
+
 // Data
 static bool g_Initialized = false;
 

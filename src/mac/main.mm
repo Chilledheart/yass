@@ -38,6 +38,10 @@
 __attribute__((used)) const char kGrossPaddingForCrbug1300598[68 * 1024] = {};
 #endif
 
+namespace config {
+const ProgramType pType = YASS_CLIENT_GUI;
+}  // namespace config
+
 int main(int argc, const char** argv) {
   // setup signal handler
   signal(SIGPIPE, SIG_IGN);
