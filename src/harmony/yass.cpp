@@ -24,6 +24,10 @@
 
 using namespace std::string_literals;
 
+namespace config {
+const ProgramType pType = YASS_CLIENT_GUI;
+}  // namespace config
+
 typedef enum {
   HILOG_LOG_DEBUG = 3,
   HILOG_LOG_INFO = 4,

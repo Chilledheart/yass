@@ -25,6 +25,10 @@
 #include "gtk/yass_window.hpp"
 #include "version.h"
 
+namespace config {
+const ProgramType pType = YASS_CLIENT_GUI;
+}  // namespace config
+
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
 YASSApp* mApp = nullptr;

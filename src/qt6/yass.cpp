@@ -26,6 +26,10 @@
 #include "freedesktop/utils.hpp"
 #include "version.h"
 
+namespace config {
+const ProgramType pType = YASS_CLIENT_GUI;
+}  // namespace config
+
 int main(int argc, const char** argv) {
 #ifndef _WIN32
   // setup signal handler

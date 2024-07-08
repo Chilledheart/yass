@@ -20,7 +20,9 @@
 #include "net/resolver.hpp"
 #include "version.h"
 
-const ProgramType pType = YASS_CLIENT;
+namespace config {
+const ProgramType pType = YASS_CLIENT_DEFAULT;
+}  // namespace config
 
 using namespace net::cli;
 
