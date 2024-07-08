@@ -34,7 +34,9 @@ class DoHResolver : public RefCountedThreadSafe<DoHResolver> {
 
  private:
   void DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& endpoint);
-  void OnDoneRequest(asio::error_code ec);
+  void OnDoRequestDoneA(scoped_refptr<DoHRequest> req, asio::error_code ec, struct addrinfo* addrinfo);
+  void OnDoRequestDoneAAAA(scoped_refptr<DoHRequest> req, asio::error_code ec, struct addrinfo* addrinfo);
+  void OnDoRequestDone(asio::error_code ec);
 
   asio::io_context& io_context_;
   asio::ip::tcp::resolver resolver_;
