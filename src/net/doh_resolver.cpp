@@ -145,7 +145,7 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
       return;
     }
     VLOG(1) << "DoH Resolver timed out";
-    OnDoneRequest(asio::error::timed_out);
+    OnDoRequestDone(asio::error::timed_out);
   });
 
   // use cached dns resolve results
@@ -173,7 +173,7 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
         }
         if (ec) {
           DCHECK(reqs_.empty());
-          OnDoneRequest(ec);
+          OnDoRequestDone(ec);
           return;
         }
         for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
@@ -187,49 +187,59 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
 
 void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& endpoint) {
   scoped_refptr<DoHResolver> self(this);
-  VLOG(2) << "DoH Query Request IPv4: " << host_;
+  VLOG(2) << "DoH Query Request (A): " << host_;
   auto req = DoHRequest::Create(ssl_socket_data_index_, io_context_, endpoint, doh_host_, doh_port_, doh_path_,
                                 ssl_ctx_.get());
-  req->DoRequest(DNS_TYPE_A, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
-    VLOG(2) << "DoH Query Request IPv4: " << host_ << " Done: " << ec;
-    /* ipv4 address comes first */
-    if (addrinfo) {
-      struct addrinfo* next_addrinfo = addrinfo_;
-      addrinfo_ = addrinfo;
-      while (addrinfo->ai_next) {
-        addrinfo = addrinfo->ai_next;
-      }
-      addrinfo->ai_next = next_addrinfo;
-    }
-    reqs_.pop_front();
-    OnDoneRequest(ec);
-  });
   reqs_.push_back(req);
+  req->DoRequest(DNS_TYPE_A, host_, port_, [this, req, self](asio::error_code ec, struct addrinfo* addrinfo) {
+    OnDoRequestDoneA(req, ec, addrinfo);
+  });
   if (enable_ipv6) {
-    VLOG(2) << "DoH Query Request IPv6: " << host_;
+    VLOG(2) << "DoH Query Request (AAAA): " << host_;
     auto req = DoHRequest::Create(ssl_socket_data_index_, io_context_, endpoint, doh_host_, doh_port_, doh_path_,
                                   ssl_ctx_.get());
-    req->DoRequest(DNS_TYPE_AAAA, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
-      VLOG(2) << "DoH Query Request IPv6: " << host_ << " Done: " << ec;
-      /* ipv6 address comes later */
-      if (addrinfo_) {
-        struct addrinfo* prev_addrinfo = addrinfo_;
-        while (prev_addrinfo->ai_next) {
-          prev_addrinfo = prev_addrinfo->ai_next;
-        }
-        prev_addrinfo->ai_next = addrinfo;
-      } else {
-        addrinfo_ = addrinfo;
-      }
-      reqs_.pop_back();
-      // FIXME should we ignore the failure?
-      OnDoneRequest(ec);
-    });
     reqs_.push_back(req);
+    req->DoRequest(DNS_TYPE_AAAA, host_, port_, [this, req, self](asio::error_code ec, struct addrinfo* addrinfo) {
+      OnDoRequestDoneAAAA(req, ec, addrinfo);
+    });
   }
 }
 
-void DoHResolver::OnDoneRequest(asio::error_code ec) {
+void DoHResolver::OnDoRequestDoneA(scoped_refptr<DoHRequest> req, asio::error_code ec, struct addrinfo* addrinfo) {
+  VLOG(2) << "DoH Query Request (A): " << host_ << " Done: " << ec;
+  /* ipv4 address comes first */
+  if (addrinfo) {
+    struct addrinfo* next_addrinfo = addrinfo_;
+    addrinfo_ = addrinfo;
+    while (addrinfo->ai_next) {
+      addrinfo = addrinfo->ai_next;
+    }
+    addrinfo->ai_next = next_addrinfo;
+  }
+  DCHECK_EQ(req, reqs_.front());
+  reqs_.pop_front();
+  OnDoRequestDone(ec);
+}
+
+void DoHResolver::OnDoRequestDoneAAAA(scoped_refptr<DoHRequest> req, asio::error_code ec, struct addrinfo* addrinfo) {
+  VLOG(2) << "DoH Query Request (AAAA): " << host_ << " Done: " << ec;
+  /* ipv6 address comes later */
+  if (addrinfo_) {
+    struct addrinfo* prev_addrinfo = addrinfo_;
+    while (prev_addrinfo->ai_next) {
+      prev_addrinfo = prev_addrinfo->ai_next;
+    }
+    prev_addrinfo->ai_next = addrinfo;
+  } else {
+    addrinfo_ = addrinfo;
+  }
+  DCHECK_EQ(req, reqs_.back());
+  reqs_.pop_back();
+  // FIXME should we ignore the failure?
+  OnDoRequestDone(ec);
+}
+
+void DoHResolver::OnDoRequestDone(asio::error_code ec) {
   if (ec) {
     auto reqs = std::move(reqs_);
     for (auto req : reqs) {
