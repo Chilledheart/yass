@@ -17,7 +17,6 @@
 #include "cli/cli_server.hpp"
 
 using namespace std::string_literals;
-const ProgramType pType = YASS_CLIENT_SLAVE;
 
 using namespace net::cli;
 

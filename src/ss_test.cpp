@@ -40,7 +40,10 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 
 #include "test_util.hpp"
 
-const ProgramType pType = YASS_UNITTEST;
+namespace config {
+const ProgramType pType = YASS_UNITTEST_DEFAULT;
+}  // namespace config
+using namespace config;
 
 using namespace net;
 using namespace std::string_literals;
