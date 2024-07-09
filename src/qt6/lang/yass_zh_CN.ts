@@ -216,5 +216,9 @@
         <source>Limit Rate</source>
         <translation>限制速率</translation>
     </message>
+    <message>
+        <source>GUI Variant: </source>
+        <translation>图形版本: </translation>
+    </message>
 </context>
 </TS>

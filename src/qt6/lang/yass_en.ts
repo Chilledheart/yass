@@ -212,5 +212,9 @@
         <source>Limit Rate</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>GUI Variant: </source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>

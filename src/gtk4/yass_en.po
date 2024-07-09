@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-03 11:14+0800\n"
+"POT-Creation-Date: 2024-07-09 09:56+0800\n"
 "PO-Revision-Date: 2023-05-24 14:35+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -17,39 +17,43 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: yass.cpp:297
+#: yass.cpp:301
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
 
-#: yass.cpp:299
+#: yass.cpp:303
 msgid "Connecting"
 msgstr "Connecting"
 
-#: yass.cpp:301
+#: yass.cpp:305
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
 
-#: yass.cpp:303
+#: yass.cpp:307
 msgid "Disconnecting"
 msgstr "Disconnecting"
 
-#: yass.cpp:305
+#: yass.cpp:309
 msgid "Disconnected with "
 msgstr "Disconnected with "
 
-#: yass.cpp:416
+#: yass.cpp:420
 msgid "Last Change: "
 msgstr "Last Change: "
 
-#: yass.cpp:419
+#: yass.cpp:423
 msgid "Enabled Feature: "
 msgstr "Enabled Feature: "
 
-#: yass.cpp:428
+#: yass.cpp:426
+msgid "GUI Variant: "
+msgstr "GUI Variant: "
+
+#: yass.cpp:435
 msgid "official-site"
 msgstr "official-site"
 
-#: yass.cpp:434
+#: yass.cpp:441
 msgid "YASS Option"
 msgstr "YASS Option"
 

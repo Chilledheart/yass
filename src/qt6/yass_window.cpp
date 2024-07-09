@@ -26,6 +26,7 @@
 #include "core/utils.hpp"
 #include "feature.h"
 #include "freedesktop/utils.hpp"
+#include "gui_variant.h"
 #include "version.h"
 
 YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
@@ -428,6 +429,7 @@ void YASSWindow::OnAbout() {
 
   text += tr("Last Change: ") + QString::fromUtf8(YASS_APP_LAST_CHANGE) + "\n";
   text += tr("Enabled Feature: ") + QString::fromUtf8(YASS_APP_FEATURES) + "\n";
+  text += tr("GUI Variant: ") + QString::fromUtf8(YASS_GUI_FLAVOUR) + "\n";
   text += tr("Website: ") + QString::fromUtf8(YASS_APP_WEBSITE) + "\n";
   text += tr("Copyright: ") + QString::fromUtf8(YASS_APP_COPYRIGHT) + "\n";
   text += tr("Authors: ") + QString::fromUtf8(YASS_APP_COMPANY_NAME) + "\n";
