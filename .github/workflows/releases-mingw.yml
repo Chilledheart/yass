@@ -63,7 +63,7 @@ jobs:
           key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v1
       - name: "Download dependency: clang (chocolatey)"
         run: |
-          choco upgrade -y llvm --version=18.1.6
+          REM choco upgrade -y llvm --version=18.1.6
           clang -v
       - name: "Download dependency: mingw64"
         if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
@@ -80,7 +80,7 @@ jobs:
           "C:\Program Files\NASM\nasm" --version
       - name: "Download dependency: cmake (chocolatey)"
         run: |
-          choco install -y cmake.portable --version=3.28.5
+          REM choco install -y cmake.portable --version=3.28.5
           cmake --version
       - name: "Download dependency: ninja (chocolatey)"
         run: |

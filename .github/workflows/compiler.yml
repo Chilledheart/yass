@@ -98,7 +98,7 @@ jobs:
           scripts\download-curl-msvc.bat ${{ matrix.arch }}
       - name: "Download dependency: cmake (chocolatey)"
         run: |
-          choco install -y cmake.portable --version=3.28.5
+          REM choco install -y cmake.portable --version=3.28.5
           cmake --version
       - name: "Download dependency: ninja (chocolatey)"
         run: |
