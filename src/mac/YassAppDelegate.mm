@@ -70,7 +70,7 @@
 
   NSAttributedString* enabled_features =
       [[NSAttributedString alloc] initWithString:@("Enabled Features: " YASS_APP_FEATURES "\n") attributes:attributes];
-  NSAttributedString* gui_variant = [[NSAttributedString alloc] initWithString:@("GUI Variant: " YASS_GUI_FLAVOUR "\n")
+  NSAttributedString* gui_variant = [[NSAttributedString alloc] initWithString:@("GUI Variant: " YASS_GUI_FLAVOUR)
                                                                     attributes:attributes];
 
   NSMutableAttributedString* credits = [[NSMutableAttributedString alloc] init];
