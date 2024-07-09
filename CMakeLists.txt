@@ -2157,13 +2157,7 @@ if (GUI)
   message(STATUS "Compiling with GUI support: ${GUI_FLAVOUR}")
 else()
   message(STATUS "Compiling with no GUI support")
-endif()
-
-# setup gui flavour header
-if (GUI)
-  set(_GUI_FLAVOUR_ ${GUI_FLAVOUR})
-else()
-  set(_GUI_FLAVOUR_ "unspec")
+  set(GUI_FLAVOUR "unspec")
 endif()
 
 set(GUI_VARIANT_HEADER "${CMAKE_CURRENT_BINARY_DIR}/gui_variant.h")

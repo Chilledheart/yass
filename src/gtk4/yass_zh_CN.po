@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-03 11:14+0800\n"
+"POT-Creation-Date: 2024-07-09 09:56+0800\n"
 "PO-Revision-Date: 2023-09-15 11:28+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -18,39 +18,43 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: yass.cpp:297
+#: yass.cpp:301
 msgid "Connected with conns: "
 msgstr "已产生连接: "
 
-#: yass.cpp:299
+#: yass.cpp:303
 msgid "Connecting"
 msgstr "连接中"
 
-#: yass.cpp:301
+#: yass.cpp:305
 msgid "Failed to connect due to "
 msgstr "无法连接因为 "
 
-#: yass.cpp:303
+#: yass.cpp:307
 msgid "Disconnecting"
 msgstr "断开连接中"
 
-#: yass.cpp:305
+#: yass.cpp:309
 msgid "Disconnected with "
 msgstr "断开连接于服务器 "
 
-#: yass.cpp:416
+#: yass.cpp:420
 msgid "Last Change: "
 msgstr "最后改动: "
 
-#: yass.cpp:419
+#: yass.cpp:423
 msgid "Enabled Feature: "
 msgstr "启用功能: "
 
-#: yass.cpp:428
+#: yass.cpp:426
+msgid "GUI Variant: "
+msgstr "图形版本: "
+
+#: yass.cpp:435
 msgid "official-site"
 msgstr "官方网站"
 
-#: yass.cpp:434
+#: yass.cpp:441
 msgid "YASS Option"
 msgstr "YASS 选项"
 

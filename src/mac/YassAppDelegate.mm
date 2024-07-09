@@ -14,6 +14,7 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "feature.h"
+#include "gui_variant.h"
 #include "mac/OptionViewController.h"
 #include "mac/YassViewController.h"
 #include "mac/YassWindowController.h"
@@ -61,17 +62,26 @@
   NSMutableParagraphStyle* paragraphStyle = [[NSMutableParagraphStyle alloc] init];
   paragraphStyle.alignment = NSTextAlignmentCenter;
 
+  NSDictionary* attributes = @{
+    NSForegroundColorAttributeName : [NSColor labelColor],
+    NSFontAttributeName : [NSFont systemFontOfSize:[NSFont labelFontSize]],
+    NSParagraphStyleAttributeName : paragraphStyle
+  };
+
+  NSAttributedString* enabled_features =
+      [[NSAttributedString alloc] initWithString:@("Enabled Features: " YASS_APP_FEATURES "\n") attributes:attributes];
+  NSAttributedString* gui_variant = [[NSAttributedString alloc] initWithString:@("GUI Variant: " YASS_GUI_FLAVOUR "\n")
+                                                                    attributes:attributes];
+
+  NSMutableAttributedString* credits = [[NSMutableAttributedString alloc] init];
+  [credits appendAttributedString:enabled_features];
+  [credits appendAttributedString:gui_variant];
+
   NSDictionary<NSAboutPanelOptionKey, id>* dict = @{
     NSAboutPanelOptionApplicationName : @(YASS_APP_PRODUCT_NAME),
     NSAboutPanelOptionApplicationVersion : @(YASS_APP_PRODUCT_VERSION),
     NSAboutPanelOptionVersion : @(YASS_APP_LAST_CHANGE),
-    NSAboutPanelOptionCredits :
-        [[NSAttributedString alloc] initWithString:@("Enabled Features: " YASS_APP_FEATURES)
-                                        attributes:@{
-                                          NSForegroundColorAttributeName : [NSColor labelColor],
-                                          NSFontAttributeName : [NSFont systemFontOfSize:[NSFont labelFontSize]],
-                                          NSParagraphStyleAttributeName : paragraphStyle
-                                        }],
+    NSAboutPanelOptionCredits : credits,
   };
   [[NSApplication sharedApplication] orderFrontStandardAboutPanelWithOptions:dict];
 }
