@@ -15,6 +15,7 @@
 #include "gtk/option_dialog.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass.hpp"
+#include "gui_variant.h"
 #include "version.h"
 
 #ifdef HAVE_APP_INDICATOR
@@ -657,6 +658,9 @@ void YASSWindow::OnAbout() {
   comments += "\n";
   comments += _("Enabled Feature: ");
   comments += YASS_APP_FEATURES;
+  comments += "\n";
+  comments += _("GUI Variant: ");
+  comments += YASS_GUI_FLAVOUR;
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0_ONLY);
