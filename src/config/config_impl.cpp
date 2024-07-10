@@ -240,9 +240,7 @@ bool ConfigImpl::Write(const std::string& key, const absl::Flag<PortFlag>& value
 
 template <>
 bool ConfigImpl::Write(const std::string& key, const absl::Flag<CipherMethodFlag>& value, bool is_masked) {
-  auto cipher_method = absl::GetFlag(value).method;
-  assert(is_valid_cipher_method(cipher_method) && "Invalid cipher_method");
-  auto real_value = to_cipher_method_str(cipher_method);
+  std::string_view real_value = absl::GetFlag(value);
   if (!WriteImpl(key, real_value)) {
     std::cerr << "failed to saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
     return false;

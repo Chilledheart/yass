@@ -7,6 +7,7 @@
 #include <absl/strings/str_cat.h>
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include "crypto/crypter_export.hpp"
 
 struct PortFlag {
@@ -17,6 +18,7 @@ struct PortFlag {
 
 struct CipherMethodFlag {
   explicit CipherMethodFlag(cipher_method m = CRYPTO_INVALID) : method(m) {}
+  operator std::string_view() const { return to_cipher_method_str(method); }
   operator cipher_method() const { return method; }
   cipher_method method;
 };

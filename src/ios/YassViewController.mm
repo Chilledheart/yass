@@ -312,10 +312,10 @@
   self.username.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
 
-  auto cipherMethod = absl::GetFlag(FLAGS_method).method;
-  NSUInteger row = [cipher_methods_ indexOfObject:SysUTF8ToNSString(to_cipher_method_str(cipherMethod))];
+  NSString* cipherMethod = SysUTF8ToNSString(std::string_view(absl::GetFlag(FLAGS_method)));
+  NSUInteger row = [cipher_methods_ indexOfObject:cipherMethod];
   if (row != NSNotFound) {
-    self.currentCiphermethod = SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+    self.currentCiphermethod = cipherMethod;
     [self.cipherMethod selectRow:row inComponent:0 animated:NO];
   }
 
