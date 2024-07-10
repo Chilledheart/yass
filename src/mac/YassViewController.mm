@@ -167,8 +167,7 @@
   self.serverPort.intValue = absl::GetFlag(FLAGS_server_port);
   self.username.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
-  auto cipherMethod = absl::GetFlag(FLAGS_method).method;
-  self.cipherMethod.stringValue = SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+  self.cipherMethod.stringValue = SysUTF8ToNSString(std::string_view(absl::GetFlag(FLAGS_method)));
   self.localHost.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
   self.localPort.intValue = absl::GetFlag(FLAGS_local_port);
   self.dohURL.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));

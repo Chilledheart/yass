@@ -28,7 +28,7 @@ bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err) {
 // Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
 // the constituent types.
 std::string AbslUnparseFlag(const PortFlag& flag) {
-  return std::to_string(flag.port);
+  return std::to_string(flag);
 }
 
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err) {
@@ -43,8 +43,7 @@ bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* 
 // Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
 // the constituent types.
 std::string AbslUnparseFlag(const CipherMethodFlag& flag) {
-  assert(is_valid_cipher_method(flag.method) && "Invalid cipher_method");
-  return std::string(to_cipher_method_str(flag.method));
+  return std::string(flag);
 }
 
 // Within the implementation, `AbslParseFlag()` will, in turn invoke
