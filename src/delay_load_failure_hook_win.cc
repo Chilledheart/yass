@@ -31,7 +31,7 @@ FARPROC WINAPI HandleDelayLoadFailureCommon(unsigned reason,
   // behavior or be hard to diagnose. See https://crbug.com/1320845.
   abort();
 
-  return 0;
+  return nullptr;
 }
 
 namespace {
@@ -44,7 +44,7 @@ bool g_hooks_enabled = true;
 FARPROC WINAPI DelayLoadFailureHookEXE(unsigned reason,
                                        DelayLoadInfo* dll_info) {
   if (!g_hooks_enabled)
-    return 0;
+    return nullptr;
 
   return HandleDelayLoadFailureCommon(reason, dll_info);
 }

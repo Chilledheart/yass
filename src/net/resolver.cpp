@@ -16,7 +16,7 @@ namespace net {
 
 class Resolver::ResolverImpl {
  public:
-  ResolverImpl(asio::io_context& io_context)
+  explicit ResolverImpl(asio::io_context& io_context)
       : io_context_(io_context),
         doh_resolver_(nullptr),
         dot_resolver_(nullptr),

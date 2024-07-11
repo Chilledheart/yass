@@ -23,7 +23,7 @@ BOOL WINAPI ProcessPrng(PBYTE pbData, SIZE_T cbData);
 namespace {
 
 // wine's trick
-decltype(&ProcessPrng) GetProcessPrngFallback(void) {
+decltype(&ProcessPrng) GetProcessPrngFallback() {
   HMODULE hmod = LoadLibraryW(L"advapi32");
   CHECK(hmod);
   auto process_prng_fn =
