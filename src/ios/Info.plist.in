@@ -24,6 +24,8 @@
     <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
     <key>NSHumanReadableCopyright</key>
     <string>${MACOSX_BUNDLE_COPYRIGHT}</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UISupportedInterfaceOrientations</key>
