@@ -39,7 +39,7 @@ env:
   GOPROXY: direct
 jobs:
   mingw64-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -131,15 +131,14 @@ jobs:
       - name: Populate depedencies (i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
-          # fix for missing i386 deb packages from deb.sury.org repository
-          sudo add-apt-repository ppa:ondrej/php
-          # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
-          # sudo apt-get install -y --allow-downgrades libpcre2-8-0=10.34-7ubuntu0.1 libpcre2-16-0=10.34-7ubuntu0.1 libpcre2-32-0=10.34-7ubuntu0.1 libpcre2-dev=10.34-7ubuntu0.1 libgd3=2.2.5-5.2ubuntu2.1
-          sudo dpkg --add-architecture i386 && sudo apt-get update -qq && sudo apt-get install -y wine wine32
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -y wine wine32
       - name: Populate depedencies (x86_64)
-        if: ${{ matrix.arch == 'x86_64' || matrix.arch == 'aarch64' }}
+        if: ${{ matrix.arch == 'x86_64' }}
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y wine wine64
+          sudo apt-get update -qq
+          sudo apt-get install -y wine wine64
       - name: Patch libcxx for windows xp
         if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
         run: |
