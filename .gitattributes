@@ -8,3 +8,4 @@
 *.qm    binary
 *.mo    binary
 *.gmo   binary
+*.strings binary
