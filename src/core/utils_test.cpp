@@ -79,7 +79,7 @@ TEST(UtilsTest, StringToInteger) {
   ASSERT_TRUE(i.has_value());
   ASSERT_EQ(i.value(), 123);
 
-  const char s3[] = "123";
+  constexpr const char s3[] = "123\1";
   i = StringToInteger(std::string(s3, 3));
   ASSERT_TRUE(i.has_value());
   ASSERT_EQ(i.value(), 123);
@@ -87,7 +87,7 @@ TEST(UtilsTest, StringToInteger) {
   i = StringToInteger(std::string(s3, 4));
   ASSERT_FALSE(i.has_value());
 
-  const char s4[] = "123a";
+  constexpr const char s4[] = "123a\1";
 
   i = StringToInteger(std::string(s4, 4));
   ASSERT_FALSE(i.has_value());
@@ -97,13 +97,13 @@ TEST(UtilsTest, GetTempDir) {
   std::string tmp_dir;
   ASSERT_TRUE(GetTempDir(&tmp_dir));
   ASSERT_FALSE(tmp_dir.empty());
-  LOG(ERROR) << "tmp_dir: " << tmp_dir;
+  LOG(WARNING) << "tmp_dir: " << tmp_dir;
 }
 
 TEST(UtilsTest, GetHomeDir) {
   std::string home_dir = GetHomeDir();
   ASSERT_FALSE(home_dir.empty());
-  LOG(ERROR) << "home_dir: " << home_dir;
+  LOG(WARNING) << "home_dir: " << home_dir;
 }
 
 TEST(UtilsTest, ReadFileAndWrite4K) {
