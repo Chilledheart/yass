@@ -21,7 +21,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
-
+#include <string_view>
 #include "core/utils.hpp"
 #include "core/utils_fs.hpp"
 
@@ -42,10 +42,10 @@ class ConfigImplLocal : public ConfigImpl {
 
     do {
       static constexpr const size_t kBufferSize = 32768;
-      std::string buffer;
+      std::vector<uint8_t> buffer;
       buffer.resize(kBufferSize);
 
-      ssize_t ret = ReadFileToBuffer(path_, absl::MakeSpan(buffer));
+      ssize_t ret = ReadFileToBuffer(path_, make_span(buffer));
       if (ret <= 0) {
         std::cerr << "configure file failed to read: " << path_ << std::endl;
         break;
@@ -53,7 +53,8 @@ class ConfigImplLocal : public ConfigImpl {
       buffer.resize(ret);
       root_ = json::parse(buffer, nullptr, false);
       if (root_.is_discarded() || !root_.is_object()) {
-        std::cerr << "bad config file: " << path_ << " content: \"" << buffer << "\"" << std::endl;
+        std::cerr << "bad config file: " << path_ << " content: \"" << std::string_view((const char*)buffer.data(), ret)
+                  << "\"" << std::endl;
         break;
       }
       std::cerr << "loaded from config file: " << path_ << std::endl;

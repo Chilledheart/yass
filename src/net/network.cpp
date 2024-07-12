@@ -16,7 +16,7 @@
 
 #include <absl/flags/flag.h>
 #include <cerrno>
-
+#include <string_view>
 #include "config/config_network.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -45,12 +45,12 @@ void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::er
 #ifdef __linux__
 static void PrintTcpAllowedCongestionControls() {
   constexpr std::string_view kAllowedCongestionControl = "/proc/sys/net/ipv4/tcp_allowed_congestion_control";
-  char buf[256];
-  auto ret = ReadFileToBuffer(std::string(kAllowedCongestionControl), absl::MakeSpan(buf));
+  uint8_t buf[256];
+  auto ret = ReadFileToBuffer(std::string(kAllowedCongestionControl), make_span(buf));
   if (ret < 0) {
     return;
   }
-  LOG(WARNING) << "Allowed Congestion Control: " << std::string(buf, ret);
+  LOG(WARNING) << "Allowed Congestion Control: " << std::string_view((const char*)buf, ret);
 }
 #endif
 
