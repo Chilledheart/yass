@@ -6,6 +6,7 @@
 #include <base/strings/string_util.h>
 #include <stddef.h>
 #include "core/logging.hpp"
+#include "core/span.hpp"
 
 #include "third_party/modp_b64/modp_b64.h"
 
@@ -28,13 +29,13 @@ ModpDecodePolicy GetModpPolicy(Base64DecodePolicy policy) {
 
 }  // namespace
 
-std::string Base64Encode(absl::Span<uint8_t> input) {
+std::string Base64Encode(span<const uint8_t> input) {
   std::string output;
   Base64EncodeAppend(input, &output);
   return output;
 }
 
-void Base64EncodeAppend(absl::Span<uint8_t> input, std::string* output) {
+void Base64EncodeAppend(span<const uint8_t> input, std::string* output) {
   // Ensure `modp_b64_encode_data_len` will not overflow.
   CHECK_LE(input.size(), MODP_B64_MAX_INPUT_LEN);
   size_t encode_data_len = modp_b64_encode_data_len(input.size());

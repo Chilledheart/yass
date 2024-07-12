@@ -15,6 +15,7 @@
 
 #include <absl/strings/str_format.h>
 #include <filesystem>
+#include <string_view>
 
 using namespace yass;
 
@@ -124,19 +125,19 @@ TEST(UtilsTest, ReadFileAndWrite4K) {
 
   // undersize
   buf2.resize(buf.size() / 2);
-  ASSERT_EQ(ReadFileToBuffer(tmp, absl::MakeSpan(buf2)), (ssize_t)buf.size() / 2);
+  ASSERT_EQ(ReadFileToBuffer(tmp, as_writable_bytes(make_span(buf2))), (ssize_t)buf.size() / 2);
   // don't need to resize buf2
   ASSERT_EQ(std::string_view(buf).substr(0, buf.size() / 2), std::string_view(buf2).substr(0, buf.size() / 2));
 
   // equalsize
   buf2.resize(buf.size());
-  ASSERT_EQ(ReadFileToBuffer(tmp, absl::MakeSpan(buf2)), (ssize_t)buf.size());
+  ASSERT_EQ(ReadFileToBuffer(tmp, as_writable_bytes(make_span(buf2))), (ssize_t)buf.size());
   // don't need to resize buf2
   ASSERT_EQ(buf, buf2);
 
   // oversize
   buf2.resize(buf.size() * 2);
-  ASSERT_EQ(ReadFileToBuffer(tmp, absl::MakeSpan(buf2)), (ssize_t)buf.size());
+  ASSERT_EQ(ReadFileToBuffer(tmp, as_writable_bytes(make_span(buf2))), (ssize_t)buf.size());
   buf2.resize(buf.size());
   ASSERT_EQ(buf, buf2);
 
