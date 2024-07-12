@@ -926,6 +926,8 @@ if (NOT MSVC)
   endif()
 
   ## optimization flags
+  ## TODO Changed in version 3.19: Multiple configurations can be specified for cfgs
+  ## see https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html#genex:CONFIG
   add_compile_options(
     "$<$<CONFIG:RELEASE>:-DNDEBUG>"
     "$<$<CONFIG:MINSIZEREL>:-DNDEBUG>"
