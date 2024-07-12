@@ -11,11 +11,12 @@
 #include <string_view>
 #include <thread>
 
-#include <absl/types/span.h>
 #include <base/compiler_specific.h>
 #include <base/files/memory_mapped_file.h>
 #include <base/files/platform_file.h>
 #include <base/strings/sys_string_conversions.h>
+
+#include "core/span.hpp"
 
 #ifdef __ANDROID__
 extern std::string a_cache_dir;
@@ -205,7 +206,7 @@ bool Net_ipv6works();
 using ssize_t = ptrdiff_t;
 #endif
 
-ssize_t ReadFileToBuffer(const std::string& path, absl::Span<char> buffer);
+ssize_t ReadFileToBuffer(const std::string& path, span<uint8_t> buffer);
 ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf);
 PlatformFile OpenReadFile(const std::string& path);
 #ifdef _WIN32

@@ -341,7 +341,7 @@ bool Net_ipv6works() {
 }
 
 #ifndef _WIN32
-ssize_t ReadFileToBuffer(const std::string& path, absl::Span<char> buffer) {
+ssize_t ReadFileToBuffer(const std::string& path, span<uint8_t> buffer) {
   DCHECK_LE(buffer.size(), static_cast<size_t>(std::numeric_limits<ssize_t>::max()));
   int fd = HANDLE_EINTR(::open(path.c_str(), O_RDONLY));
   if (fd < 0) {
