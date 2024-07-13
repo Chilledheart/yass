@@ -308,6 +308,9 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Sat Jul 13 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.4-1
+  - gui: add limit rate option
+  - gtk4: use cairo render for now
 * Tue Jun 25 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.3-1
   - gtk3: add libappindicator3 and legacy tray icon support
 * Sat Jun 15 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.2-1
