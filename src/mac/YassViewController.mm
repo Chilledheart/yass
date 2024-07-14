@@ -21,6 +21,7 @@
 @end
 
 @implementation YassViewController {
+  bool should_startup_at_app_load;
 }
 
 - (void)viewDidLoad {
@@ -36,13 +37,14 @@
     [self.cipherMethod addItemWithObjectValue:methodString];
   }
   self.cipherMethod.numberOfVisibleItems = sizeof(methodStrings) / sizeof(methodStrings[0]);
-
-  [self.autoStart setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn : NSControlStateValueOff)];
+  should_startup_at_app_load = CheckLoginItemStatus(nullptr);
+  [self.autoStart setState:(should_startup_at_app_load ? NSControlStateValueOn : NSControlStateValueOff)];
   [self.systemProxy setState:(GetSystemProxy() ? NSControlStateValueOn : NSControlStateValueOff)];
   [self LoadChanges];
 }
 
 - (void)viewWillAppear {
+  [super viewWillAppear];
   // vc might be dismissed in starting/stopping state, refresh the state
   YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
   switch ([appDelegate getState]) {
@@ -60,6 +62,14 @@
   }
 
   [self.view.window center];
+}
+
+- (void)viewDidAppear {
+  [super viewDidAppear];
+  if (should_startup_at_app_load) {
+    should_startup_at_app_load = false;
+    [self OnStart];
+  }
 }
 
 - (IBAction)OnStartButtonClicked:(id)sender {
@@ -109,7 +119,7 @@
   [self.timeout setEnabled:FALSE];
 
   YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
-  [windowController OnStart];
+  [windowController OnStart:self];
 }
 
 - (void)OnStop {
@@ -117,7 +127,7 @@
   [self.stopButton setEnabled:FALSE];
 
   YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
-  [windowController OnStop];
+  [windowController OnStop:self];
 }
 
 - (void)Started {

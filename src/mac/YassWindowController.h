@@ -6,9 +6,10 @@
 
 #import <Cocoa/Cocoa.h>
 
+@class YassViewController;
 @interface YassWindowController : NSWindowController <NSWindowDelegate>
-- (void)OnStart;
-- (void)OnStop;
+- (void)OnStart:(YassViewController*)viewController;
+- (void)OnStop:(YassViewController*)viewController;
 - (void)Started;
 - (void)StartFailed;
 - (void)Stopped;
