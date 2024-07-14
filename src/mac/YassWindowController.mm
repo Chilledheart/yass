@@ -131,15 +131,15 @@
                                                    repeats:NO];
 }
 
-- (void)OnStart {
+- (void)OnStart:(YassViewController*)viewController {
   YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
 
-  [appDelegate OnStart];
+  [appDelegate OnStart:viewController];
 }
 
-- (void)OnStop {
+- (void)OnStop:(YassViewController*)viewController {
   YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
-  [appDelegate OnStop:FALSE];
+  [appDelegate OnStop:viewController withOption:FALSE];
 }
 
 - (void)Started {

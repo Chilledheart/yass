@@ -22,7 +22,7 @@
 #include "version.h"
 
 @interface YassAppDelegate ()
-- (std::string)SaveConfig;
+- (std::string)SaveConfig:(YassViewController*)viewController;
 - (void)OnStarted;
 - (void)OnStartFailed:(std::string)error_msg;
 - (void)OnStopped;
@@ -35,13 +35,6 @@
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)aNotification {
-  YassViewController* viewController =
-      (YassViewController*)NSApplication.sharedApplication.mainWindow.contentViewController;
-  state_ = STOPPED;
-  if (CheckLoginItemStatus(nullptr)) {
-    [viewController OnStart];
-  }
-
   SetDockIconStyle(false);
 
   if (![NSApp isActive]) {
@@ -51,7 +44,7 @@
 
 - (void)applicationWillTerminate:(NSNotification*)aNotification {
   LOG(WARNING) << "Application exiting";
-  [self OnStop:TRUE];
+  [self OnStop:nil withOption:TRUE];
 }
 
 - (BOOL)applicationSupportsSecureRestorableState:(NSApplication*)app {
@@ -123,9 +116,9 @@
   return SysUTF8ToNSString(ss.str());
 }
 
-- (void)OnStart {
+- (void)OnStart:(YassViewController*)viewController {
   state_ = STARTING;
-  auto err_msg = [self SaveConfig];
+  auto err_msg = [self SaveConfig:viewController];
   if (!err_msg.empty()) {
     [self OnStartFailed:err_msg];
     return;
@@ -154,7 +147,7 @@
   worker_.Start(std::move(callback));
 }
 
-- (void)OnStop:(BOOL)quiet {
+- (void)OnStop:(YassViewController*)viewController withOption:(BOOL)quiet {
   state_ = STOPPING;
 
   absl::AnyInvocable<void()> callback;
@@ -198,9 +191,7 @@
   [windowController Stopped];
 }
 
-- (std::string)SaveConfig {
-  YassViewController* viewController =
-      (YassViewController*)NSApplication.sharedApplication.mainWindow.contentViewController;
+- (std::string)SaveConfig:(YassViewController*)viewController {
   auto server_host = SysNSStringToUTF8(viewController.serverHost.stringValue);
   auto server_sni = SysNSStringToUTF8(viewController.serverSNI.stringValue);
   auto server_port = SysNSStringToUTF8(viewController.serverPort.stringValue);
