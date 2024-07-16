@@ -11,7 +11,16 @@ yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/
 [![Language: C++](https://img.shields.io/github/languages/top/Chilledheart/yass.svg)](https://github.com/Chilledheart/yass/search?l=cpp)
 [![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/Chilledheart/yass/latest/total)](https://github.com/Chilledheart/yass/releases/latest)
 
-More details are at [Latest Release Page](https://github.com/Chilledheart/yass/releases/tag/1.11.4)
+Because we are reusing chromium's network stack directly,
+we are following [chromium's release schedule](https://chromiumdash.appspot.com/schedule) and delivering new versions based on its beta branch.
+
+- [Latest M127's Release (1.11.x)](https://github.com/Chilledheart/yass/releases/tag/1.11.4) will become Stable since _Jul 23, 2024_.
+- [Latest M126's Release (1.10.x)](https://github.com/Chilledheart/yass/releases/tag/1.10.7) becomes Stable since _Jun 11, 2024_ (Extended Support)
+- [Latest M125's Release (1.9.x)](https://github.com/Chilledheart/yass/releases/tag/1.9.7) becomes Stable since _May 14, 2024_
+- [Latest M124's Release (1.8.x)](https://github.com/Chilledheart/yass/releases/tag/1.8.7) becomes Stable since _Apr 16, 2024_ (Extended Support)
+- [Latest M123's Release (1.7.x)](https://github.com/Chilledheart/yass/releases/tag/1.7.7) becomes Stable since _Mar 19, 2024_
+- [Latest M122's Release (1.6.x)](https://github.com/Chilledheart/yass/releases/tag/1.6.5) becomes Stable since _Feb 20, 2024_ (Extended Support)
+- [Latest M121's Release (1.5.x)](https://github.com/Chilledheart/yass/releases/tag/1.5.24) becomes Stable since _Jan 23, 2024_
 
 ### Prebuilt binaries (Linux)
 - GTK3 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.11.4/yass-gtk3.el8.x86_64.1.11.4.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.11.4/yass-gtk3-ubuntu-16.04-xenial_amd64.1.11.4.deb) (minimum requirement: centos 8 or ubuntu 16.04)
