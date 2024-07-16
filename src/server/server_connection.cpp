@@ -64,7 +64,7 @@ static bool VerifyProxyAuthorizationIdentity(std::string_view auth) {
   }
   auth.remove_prefix(kBasicAuthPrefix.size());
   std::string pass;
-  if (!Base64Decode(auth, &pass)) {
+  if (!Base64Decode(auth, &pass, Base64DecodePolicy::kForgiving)) {
     return false;
   }
   return pass == absl::StrCat(absl::GetFlag(FLAGS_username), ":", absl::GetFlag(FLAGS_password));
