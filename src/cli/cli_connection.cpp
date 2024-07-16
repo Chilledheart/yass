@@ -19,7 +19,7 @@
 #include <build/build_config.h>
 
 #ifdef HAVE_QUICHE
-#include <quiche/spdy/core/hpack/hpack_constants.h>
+#include <quiche/http2/hpack/hpack_constants.h>
 #endif
 
 static_assert(TLSEXT_MAXLEN_host_name == uint8_t(~0));
