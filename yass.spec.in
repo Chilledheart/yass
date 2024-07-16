@@ -308,10 +308,18 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
-* Tue Jun 25 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.7-1
-  - add qt5 build profile
+* Sat Jul 13 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.4-1
+  - gui: add limit rate option
+  - gtk4: use cairo render for now
+* Tue Jun 25 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.3-1
   - gtk3: add libappindicator3 and legacy tray icon support
-* Tue Jun 11 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.6-1
+* Sat Jun 15 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.2-1
+  - add qt5 build profile
+* Thu Jun 13 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.1-1
+  - miscellaneous fixes
+  - add gtk3/gtk4/qt6 build profile (rpm)
+* Tue Jun 11 2024 Chilledheart <keeyou-cn@outlook.com> - 1.11.0-1
+  - bump to chromium 127 dependents
   - add gtk3/gtk4/qt6 build profile (source)
 * Mon Jun 3 2024 Chilledheart <keeyou-cn@outlook.com> - 1.10.5-1
   - miscellaneous fixes
