@@ -18,7 +18,7 @@ on:
   schedule:
     - cron: '0 16 * * *'
 env:
-  CACHE_EPOCH: 128-1
+  CACHE_EPOCH: 128-2
   GOPROXY: direct
 jobs:
   win-clang-tidy:
