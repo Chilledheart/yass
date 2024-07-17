@@ -53,6 +53,10 @@
         <translatorcomment>File</translatorcomment>
         <translation>文件</translation>
     </message>
+    <message>
+        <source>Show</source>
+        <translation>唤醒</translation>
+    </message>
 </context>
 <context>
     <name>YASSApp</name>
