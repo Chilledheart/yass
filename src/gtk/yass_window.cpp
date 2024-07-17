@@ -237,12 +237,14 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 13, 1, 1);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
-  gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 5);
-  gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 5);
+  gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 12);
+  gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 12);
 #else
-  gtk_widget_set_margin_left(GTK_WIDGET(right_panel_grid), 5);
-  gtk_widget_set_margin_right(GTK_WIDGET(right_panel_grid), 5);
+  gtk_widget_set_margin_left(GTK_WIDGET(right_panel_grid), 12);
+  gtk_widget_set_margin_right(GTK_WIDGET(right_panel_grid), 12);
 #endif
+  gtk_grid_set_column_spacing(GTK_GRID(right_panel_grid), 12);
+  gtk_grid_set_row_spacing(GTK_GRID(right_panel_grid), 12);
 
   gtk_widget_set_margin_top(GTK_WIDGET(hbox), 15);
   gtk_widget_set_margin_bottom(GTK_WIDGET(hbox), 10);
