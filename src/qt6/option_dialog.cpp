@@ -19,7 +19,8 @@ OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
   QGridLayout* grid = new QGridLayout;
-  grid->setContentsMargins(20, 15, 20, 15);
+  grid->setContentsMargins(12, 12, 12, 12);
+  grid->setSpacing(12);
 
   auto tcp_keep_alive_label = new QLabel(tr("TCP keep alive"));
   auto tcp_keep_alive_cnt_label = new QLabel(tr("The number of TCP keep-alive probes"));

@@ -49,6 +49,16 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
   gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_), 1, 3, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(enable_post_quantum_kyber_), 1, 4, 1, 1);
 
+#if GTK_CHECK_VERSION(3, 12, 0)
+  gtk_widget_set_margin_start(GTK_WIDGET(grid), 12);
+  gtk_widget_set_margin_end(GTK_WIDGET(grid), 12);
+#else
+  gtk_widget_set_margin_left(GTK_WIDGET(grid), 12);
+  gtk_widget_set_margin_right(GTK_WIDGET(grid), 12);
+#endif
+  gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+  gtk_grid_set_row_spacing(GTK_GRID(grid), 12);
+
   okay_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(okay_button_, _("Okay"));
 

@@ -88,7 +88,8 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   // Right Grid << Horizon Box << Vertical Box
 
   QGridLayout* right_grid = new QGridLayout;
-  right_grid->setContentsMargins(10, 0, 20, 0);
+  right_grid->setContentsMargins(12, 12, 24, 12);
+  right_grid->setSpacing(12);
 
   auto server_host_label = new QLabel(tr("Server Host"));
   auto server_sni_label = new QLabel(tr("Server SNI"));
