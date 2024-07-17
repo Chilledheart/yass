@@ -26,7 +26,6 @@ extern "C" void app_indicator_uninit();
 
 YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
   gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
-  gtk_window_set_default_size(GTK_WINDOW(impl_), 530, 540);
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
   gtk_window_set_resizable(GTK_WINDOW(impl_), false);
   gtk_window_set_icon_name(GTK_WINDOW(impl_), "yass");
@@ -46,9 +45,8 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   // vbox, hbox
   GtkBox* vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
-  GtkBox* hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20));
-  GtkBox* left_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
-  GtkGrid* right_panel_grid = GTK_GRID(gtk_grid_new());
+  GtkGrid* grid = GTK_GRID(gtk_grid_new());
+  gtk_grid_set_row_homogeneous(grid, true);
 
   // gtkmm's MenuBar/Menu/MenuItem is binded to model
   GtkWidget* menubar;
@@ -107,13 +105,8 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   start_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(start_button_, _("Start"));
 
-  gtk_widget_set_margin_top(GTK_WIDGET(start_button_), 30);
-  gtk_widget_set_margin_bottom(GTK_WIDGET(start_button_), 30);
-
   stop_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(stop_button_, _("Stop"));
-  gtk_widget_set_margin_top(GTK_WIDGET(stop_button_), 30);
-  gtk_widget_set_margin_bottom(GTK_WIDGET(stop_button_), 30);
 
   auto start_callback = [](GtkButton* self, gpointer pointer) {
     YASSWindow* window = (YASSWindow*)pointer;
@@ -131,18 +124,8 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), false);
 
-  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(start_button_));
-  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(stop_button_));
-
-#if GTK_CHECK_VERSION(3, 12, 0)
-  gtk_widget_set_margin_start(GTK_WIDGET(left_box), 15);
-  gtk_widget_set_margin_end(GTK_WIDGET(left_box), 5);
-#else
-  gtk_widget_set_margin_left(GTK_WIDGET(left_box), 15);
-  gtk_widget_set_margin_right(GTK_WIDGET(left_box), 5);
-#endif
-
-  gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
+  gtk_grid_attach(grid, GTK_WIDGET(start_button_), 0, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(stop_button_), 0, 7, 1, 1);
 
   auto server_host_label_ = gtk_label_new(_("Server Host"));
   auto server_sni_label_ = gtk_label_new(_("Server SNI"));
@@ -159,20 +142,20 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   auto autostart_label_ = gtk_label_new(_("Auto Start"));
   auto systemproxy_label_ = gtk_label_new(_("System Proxy"));
 
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_sni_label_), 0, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_label_), 0, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(doh_url_label_), 0, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(dot_host_label_), 0, 9, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(limit_rate_label_), 0, 10, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 11, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 12, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 13, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_host_label_), 1, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_sni_label_), 1, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_port_label_), 1, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(username_label_), 1, 3, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(password_label_), 1, 4, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(method_label_), 1, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(local_host_label_), 1, 6, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(local_port_label_), 1, 7, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(doh_url_label_), 1, 8, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(dot_host_label_), 1, 9, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(limit_rate_label_), 1, 10, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(timeout_label_), 1, 11, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(autostart_label_), 1, 12, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(systemproxy_label_), 1, 13, 1, 1);
 
   server_host_ = GTK_ENTRY(gtk_entry_new());
   server_sni_ = GTK_ENTRY(gtk_entry_new());
@@ -221,44 +204,35 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   gtk_entry_set_visibility(password_, false);
 
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_), 1, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_sni_), 1, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_), 1, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(doh_url_), 1, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(dot_host_), 1, 9, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(limit_rate_), 1, 10, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 11, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 12, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 13, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_host_), 2, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_sni_), 2, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_port_), 2, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(username_), 2, 3, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(password_), 2, 4, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(method_), 2, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(local_host_), 2, 6, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(local_port_), 2, 7, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(doh_url_), 2, 8, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(dot_host_), 2, 9, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(limit_rate_), 2, 10, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(timeout_), 2, 11, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(autostart_), 2, 12, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(systemproxy_), 2, 13, 1, 1);
+
+  gtk_widget_set_margin_top(GTK_WIDGET(grid), 12);
+  gtk_widget_set_margin_bottom(GTK_WIDGET(grid), 12);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
-  gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 12);
-  gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 12);
+  gtk_widget_set_margin_start(GTK_WIDGET(grid), 12);
+  gtk_widget_set_margin_end(GTK_WIDGET(grid), 12);
 #else
-  gtk_widget_set_margin_left(GTK_WIDGET(right_panel_grid), 12);
-  gtk_widget_set_margin_right(GTK_WIDGET(right_panel_grid), 12);
+  gtk_widget_set_margin_left(GTK_WIDGET(grid), 12);
+  gtk_widget_set_margin_right(GTK_WIDGET(grid), 12);
 #endif
-  gtk_grid_set_column_spacing(GTK_GRID(right_panel_grid), 12);
-  gtk_grid_set_row_spacing(GTK_GRID(right_panel_grid), 12);
+  gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+  gtk_grid_set_row_spacing(GTK_GRID(grid), 12);
 
-  gtk_widget_set_margin_top(GTK_WIDGET(hbox), 15);
-  gtk_widget_set_margin_bottom(GTK_WIDGET(hbox), 10);
-#if GTK_CHECK_VERSION(3, 12, 0)
-  gtk_widget_set_margin_start(GTK_WIDGET(hbox), 20);
-  gtk_widget_set_margin_end(GTK_WIDGET(hbox), 20);
-#else
-  gtk_widget_set_margin_left(GTK_WIDGET(hbox), 20);
-  gtk_widget_set_margin_right(GTK_WIDGET(hbox), 20);
-#endif
-
-  gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(right_panel_grid));
-
-  gtk_box_pack_start(vbox, GTK_WIDGET(hbox), true, false, 0);
+  gtk_box_pack_start(vbox, GTK_WIDGET(grid), true, false, 0);
 
   status_bar_ = GTK_STATUSBAR(gtk_statusbar_new());
   gtk_statusbar_remove_all(status_bar_, 0);

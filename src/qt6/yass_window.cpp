@@ -63,33 +63,23 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   menubar->addMenu(help_menu);
   vbox->addWidget(menubar);
 
-  // Horizon Box << Vertical Box
+  // Grid << Vertical Box
 
-  QHBoxLayout* hbox = new QHBoxLayout;
-  hbox->addSpacing(20);
-  hbox->setContentsMargins(0, 0, 0, 0);
+  QGridLayout* grid = new QGridLayout;
+  grid->setContentsMargins(12, 12, 12, 12);
+  grid->setSpacing(12);
 
-  // Left Box << Horizon Box << Vertical Box
+  // Left (Column 0) << Grid << Vertical Box
 
-  QVBoxLayout* left_box = new QVBoxLayout;
-  left_box->addSpacing(0);
-  left_box->setContentsMargins(15, 0, 15, 0);
   start_button_ = new QPushButton(tr("Start"));
   stop_button_ = new QPushButton(tr("Stop"));
-  start_button_->setContentsMargins(0, 30, 0, 30);
   connect(start_button_, &QPushButton::clicked, this, &YASSWindow::OnStartButtonClicked);
-  left_box->addWidget(start_button_);
-  stop_button_->setContentsMargins(0, 30, 0, 30);
+  grid->addWidget(start_button_, 2, 0);
   connect(stop_button_, &QPushButton::clicked, this, &YASSWindow::OnStopButtonClicked);
   stop_button_->setEnabled(false);
-  left_box->addWidget(stop_button_);
-  hbox->addItem(left_box);
+  grid->addWidget(stop_button_, 7, 0);
 
-  // Right Grid << Horizon Box << Vertical Box
-
-  QGridLayout* right_grid = new QGridLayout;
-  right_grid->setContentsMargins(12, 12, 24, 12);
-  right_grid->setSpacing(12);
+  // Left (Column 1) << Grid << Vertical Box
 
   auto server_host_label = new QLabel(tr("Server Host"));
   auto server_sni_label = new QLabel(tr("Server SNI"));
@@ -106,20 +96,22 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   auto autostart_label = new QLabel(tr("Auto Start"));
   auto systemproxy_label = new QLabel(tr("System Proxy"));
 
-  right_grid->addWidget(server_host_label, 0, 0);
-  right_grid->addWidget(server_sni_label, 1, 0);
-  right_grid->addWidget(server_port_label, 2, 0);
-  right_grid->addWidget(username_label, 3, 0);
-  right_grid->addWidget(password_label, 4, 0);
-  right_grid->addWidget(method_label, 5, 0);
-  right_grid->addWidget(local_host_label, 6, 0);
-  right_grid->addWidget(local_port_label, 7, 0);
-  right_grid->addWidget(doh_url_label, 8, 0);
-  right_grid->addWidget(dot_host_label, 9, 0);
-  right_grid->addWidget(limit_rate_label, 10, 0);
-  right_grid->addWidget(timeout_label, 11, 0);
-  right_grid->addWidget(autostart_label, 12, 0);
-  right_grid->addWidget(systemproxy_label, 13, 0);
+  grid->addWidget(server_host_label, 0, 1);
+  grid->addWidget(server_sni_label, 1, 1);
+  grid->addWidget(server_port_label, 2, 1);
+  grid->addWidget(username_label, 3, 1);
+  grid->addWidget(password_label, 4, 1);
+  grid->addWidget(method_label, 5, 1);
+  grid->addWidget(local_host_label, 6, 1);
+  grid->addWidget(local_port_label, 7, 1);
+  grid->addWidget(doh_url_label, 8, 1);
+  grid->addWidget(dot_host_label, 9, 1);
+  grid->addWidget(limit_rate_label, 10, 1);
+  grid->addWidget(timeout_label, 11, 1);
+  grid->addWidget(autostart_label, 12, 1);
+  grid->addWidget(systemproxy_label, 13, 1);
+
+  // Right (Column 2) << Grid << Vertical Box
 
   server_host_ = new QLineEdit;
   server_sni_ = new QLineEdit;
@@ -159,26 +151,24 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
   connect(autostart_, &QPushButton::clicked, this, &YASSWindow::OnAutoStartClicked);
   connect(systemproxy_, &QPushButton::clicked, this, &YASSWindow::OnSystemProxyClicked);
 
-  right_grid->addWidget(server_host_, 0, 1);
-  right_grid->addWidget(server_sni_, 1, 1);
-  right_grid->addWidget(server_port_, 2, 1);
-  right_grid->addWidget(username_, 3, 1);
-  right_grid->addWidget(password_, 4, 1);
-  right_grid->addWidget(method_, 5, 1);
-  right_grid->addWidget(local_host_, 6, 1);
-  right_grid->addWidget(local_port_, 7, 1);
-  right_grid->addWidget(doh_url_, 8, 1);
-  right_grid->addWidget(dot_host_, 9, 1);
-  right_grid->addWidget(limit_rate_, 10, 1);
-  right_grid->addWidget(timeout_, 11, 1);
-  right_grid->addWidget(autostart_, 12, 1);
-  right_grid->addWidget(systemproxy_, 13, 1);
-
-  hbox->addItem(right_grid);
+  grid->addWidget(server_host_, 0, 2);
+  grid->addWidget(server_sni_, 1, 2);
+  grid->addWidget(server_port_, 2, 2);
+  grid->addWidget(username_, 3, 2);
+  grid->addWidget(password_, 4, 2);
+  grid->addWidget(method_, 5, 2);
+  grid->addWidget(local_host_, 6, 2);
+  grid->addWidget(local_port_, 7, 2);
+  grid->addWidget(doh_url_, 8, 2);
+  grid->addWidget(dot_host_, 9, 2);
+  grid->addWidget(limit_rate_, 10, 2);
+  grid->addWidget(timeout_, 11, 2);
+  grid->addWidget(autostart_, 12, 2);
+  grid->addWidget(systemproxy_, 13, 2);
 
   // StatusBar << Vertical Box
 
-  vbox->addItem(hbox);
+  vbox->addItem(grid);
   status_bar_ = new QStatusBar;
   status_bar_->showMessage(tr("READY"));
   vbox->addWidget(status_bar_);
