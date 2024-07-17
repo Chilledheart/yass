@@ -2,8 +2,6 @@
 <interface>
   <template class="OptionGtkDialog" parent="GtkDialog">
     <property name="title" translatable="yes">Option</property>
-    <property name="default-width">400</property>
-    <property name="default-height">200</property>
     <child>
       <object class="GtkBox" id="content_box">
         <property name="orientation">vertical</property>
