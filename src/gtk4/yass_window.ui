@@ -2,8 +2,6 @@
 <interface>
   <template class="YASSGtkWindow" parent="GtkApplicationWindow">
     <property name="title" translatable="yes">Yet Another Shadow Socket</property>
-    <property name="default-width">450</property>
-    <property name="default-height">420</property>
     <property name="resizable">0</property>
     <property name="modal">0</property>
     <child type="titlebar">
@@ -26,6 +24,7 @@
             <property name="margin-bottom">12</property>
             <property name="row-spacing">12</property>
             <property name="column-spacing">12</property>
+            <property name="row-homogeneous">true</property>
             <child>
               <object class="GtkLabel">
                 <property name="label" translatable="yes">Server Host:</property>

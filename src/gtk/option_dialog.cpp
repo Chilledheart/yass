@@ -17,12 +17,9 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
                                                    (modal ? GTK_DIALOG_MODAL : GTK_DIALOG_DESTROY_WITH_PARENT),
                                                    nullptr,
                                                    nullptr))) {
-  gtk_window_set_default_size(GTK_WINDOW(impl_), 400, 200);
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
 
   GtkGrid* grid = GTK_GRID(gtk_grid_new());
-  gtk_grid_set_row_homogeneous(grid, true);
-  gtk_grid_set_column_homogeneous(grid, true);
 
   auto tcp_keep_alive_label = gtk_label_new(_("TCP keep alive"));
   auto tcp_keep_alive_cnt_label = gtk_label_new(_("The number of TCP keep-alive probes"));
@@ -48,6 +45,9 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
   gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_idle_timeout_), 1, 2, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_), 1, 3, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(enable_post_quantum_kyber_), 1, 4, 1, 1);
+
+  gtk_widget_set_margin_top(GTK_WIDGET(grid), 12);
+  gtk_widget_set_margin_bottom(GTK_WIDGET(grid), 12);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(grid), 12);
