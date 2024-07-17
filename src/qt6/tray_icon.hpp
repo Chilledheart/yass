@@ -12,7 +12,8 @@ class TrayIcon : public QSystemTrayIcon {
   TrayIcon(QObject* parent);
 
  private slots:
-  void onActivated(QSystemTrayIcon::ActivationReason);
+  void OnActivated(QSystemTrayIcon::ActivationReason);
+  void OnShow();
   void OnOption();
 };
 #endif  // TRAY_ICON_H
