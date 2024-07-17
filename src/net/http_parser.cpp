@@ -2,6 +2,7 @@
 /* Copyright (c) 2023-2024 Chilledheart  */
 
 #include "net/http_parser.hpp"
+#include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "url/gurl.h"
 
@@ -214,8 +215,8 @@ HttpRequestParser::HttpRequestParser(bool is_request) {
   framer_.set_is_request(is_request);
 }
 
-int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
-  int processed = framer_.ProcessInput(reinterpret_cast<const char*>(buf->data()), buf->length());
+int HttpRequestParser::Parse(span<const uint8_t> buf, bool* ok) {
+  int processed = framer_.ProcessInput(reinterpret_cast<const char*>(buf.data()), buf.size());
   *ok = status_ == ParserStatus::Ok;
   return processed;
 }
@@ -425,7 +426,7 @@ HttpRequestParser::~HttpRequestParser() {
   delete parser_;
 }
 
-int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
+int HttpRequestParser::Parse(span<const uint8_t> buf, bool* ok) {
   struct http_parser_settings settings_connect = {//.on_message_begin
                                                   nullptr,
                                                   //.on_url
@@ -447,7 +448,7 @@ int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
                                                   //.on_chunk_complete
                                                   nullptr};
   size_t nparsed;
-  nparsed = http_parser_execute(parser_, &settings_connect, reinterpret_cast<const char*>(buf->data()), buf->length());
+  nparsed = http_parser_execute(parser_, &settings_connect, reinterpret_cast<const char*>(buf.data()), buf.size());
   *ok = HTTP_PARSER_ERRNO(parser_) == HPE_OK;
   return nparsed;
 }

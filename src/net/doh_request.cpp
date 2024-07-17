@@ -198,10 +198,10 @@ void DoHRequest::OnReadHeader() {
   HttpResponseParser parser;
 
   bool ok;
-  int nparsed = parser.Parse(recv_buf_, &ok);
+  int nparsed = parser.Parse(*recv_buf_, &ok);
   if (nparsed) {
     VLOG(3) << "Connection (doh resolver) "
-            << " http: " << std::string(reinterpret_cast<const char*>(recv_buf_->data()), nparsed);
+            << " http: " << std::string_view(reinterpret_cast<const char*>(recv_buf_->data()), nparsed);
   }
   if (!ok) {
     LOG(WARNING) << "DoH Response Invalid HTTP Response";

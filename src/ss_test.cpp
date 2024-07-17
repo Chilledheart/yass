@@ -34,6 +34,7 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "core/scoped_refptr.hpp"
 #include "feature.h"
 #include "net/cipher.hpp"
+#include "net/http_parser.hpp"
 #include "net/iobuf.hpp"
 #include "server/server_server.hpp"
 #include "version.h"
@@ -168,21 +169,33 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
             shutdown();
             return;
           }
-          VLOG(1) << "Connection (content-provider) " << connection_id() << " read http header: " << bytes_transferred
-                  << " bytes";
-      // FIXME parse http header
-#if 0
-        std::string recv_buff_hdr_str(asio::buffers_begin(recv_buff_hdr.data()),
-                                      asio::buffers_begin(recv_buff_hdr.data()) + bytes_transferred);
-#endif
+
+          std::string recv_buff_hdr_str(asio::buffers_begin(recv_buff_hdr.data()),
+                                        asio::buffers_begin(recv_buff_hdr.data()) + bytes_transferred);
+          span<const uint8_t> buf = as_bytes(make_span(recv_buff_hdr_str));
+
+          HttpRequestParser parser;
+          bool ok;
+          int nparsed = parser.Parse(buf, &ok);
+          if (nparsed) {
+            VLOG(1) << "Connection (content-provider) " << connection_id() << " http request received: "
+                    << std::string_view(reinterpret_cast<const char*>(buf.data()), nparsed);
+          }
+          if (!ok) {
+            LOG(WARNING) << "Connection (content-provider) " << connection_id() << " Bad http request received: "
+                         << std::string_view(reinterpret_cast<const char*>(buf.data()), nparsed);
+            shutdown();
+            return;
+          }
 
           // append the rest of data to another stage
-          recv_buff_hdr.consume(bytes_transferred);
+          recv_buff_hdr.consume(nparsed);
+
           if (recv_buff_hdr.size()) {
             memcpy(g_recv_buffer->mutable_tail(), &*asio::buffers_begin(recv_buff_hdr.data()), recv_buff_hdr.size());
             g_recv_buffer->append(recv_buff_hdr.size());
-            VLOG(1) << "Connection (content-provider) " << connection_id() << " read http data: " << bytes_transferred
-                    << " bytes";
+            VLOG(1) << "Connection (content-provider) " << connection_id()
+                    << " read http data: " << recv_buff_hdr.size() << " bytes";
           }
 
           write_http_response_hdr1();
@@ -564,14 +577,28 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     //    Connection: close
     asio::streambuf response_hdr2;
     read = asio::read_until(s, response_hdr2, "\r\n\r\n", ec);
-    VLOG(1) << "Connection (content-consumer) read hdr2: " << read << " bytes";
     EXPECT_FALSE(ec) << ec;
-    // FIXME parse http response2 and extract content-length
-#if 0
+    VLOG(1) << "Connection (content-consumer) read hdr2: " << read << " bytes";
+
     std::string response_hdr2_str(asio::buffers_begin(response_hdr2.data()),
                                   asio::buffers_begin(response_hdr2.data()) + read);
-#endif
-    response_hdr2.consume(read);
+    span<const uint8_t> buf = as_bytes(make_span(response_hdr2_str));
+
+    HttpResponseParser parser;
+    bool ok;
+    int nparsed = parser.Parse(buf, &ok);
+    if (nparsed) {
+      VLOG(1) << "Connection (content-consumer) http response hdr2 received: "
+              << std::string_view(reinterpret_cast<const char*>(buf.data()), nparsed);
+    }
+
+    EXPECT_TRUE(ok) << "Connection (content-consumer) bad http response hdr2 received: "
+                    << std::string_view(reinterpret_cast<const char*>(buf.data()), nparsed);
+
+    EXPECT_EQ(parser.status_code(), 200) << "Bad response status";
+
+    response_hdr2.consume(nparsed);
+    EXPECT_EQ(parser.content_length(), g_send_buffer.length()) << "Dismatched content-length";
 
     // Read HTTP Data
     IOBuf resp_buffer;

@@ -665,10 +665,10 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
   HttpRequestParser parser;
 
   bool ok;
-  int nparsed = parser.Parse(buf, &ok);
+  int nparsed = parser.Parse(*buf, &ok);
   if (nparsed) {
     VLOG(3) << "Connection (client) " << connection_id()
-            << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+            << " http: " << std::string_view(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
 
   http_is_keep_alive_ = false;
@@ -1099,11 +1099,11 @@ void CliConnection::ReadUpstreamHttpsHandshake(std::shared_ptr<IOBuf> buf, asio:
   HttpResponseParser parser;
 
   bool ok;
-  int nparsed = parser.Parse(buf, &ok);
+  int nparsed = parser.Parse(*buf, &ok);
 
   if (nparsed) {
     VLOG(3) << "Connection (client) " << connection_id()
-            << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+            << " http: " << std::string_view(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
   if (ok && parser.status_code() == 200) {
     buf->trimStart(nparsed);
@@ -1136,11 +1136,11 @@ void CliConnection::ReadUpstreamHttpsChunk(std::shared_ptr<IOBuf> buf, asio::err
   HttpResponseParser parser;
 
   bool ok;
-  int nparsed = parser.Parse(buf, &ok);
+  int nparsed = parser.Parse(*buf, &ok);
 
   if (nparsed) {
     VLOG(3) << "Connection (client) " << connection_id()
-            << " chunked http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+            << " chunked http: " << std::string_view(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
   if (ok && parser.status_code() == 200) {
     buf->trimStart(nparsed);

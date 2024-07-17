@@ -581,7 +581,7 @@ void ServerConnection::OnReadHandshakeViaHttps() {
   HttpRequestParser parser;
 
   bool ok;
-  int nparsed = parser.Parse(buf, &ok);
+  int nparsed = parser.Parse(*buf, &ok);
   if (nparsed) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
