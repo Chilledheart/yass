@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "core/logging.hpp"
+#include "core/span.hpp"
 
 namespace net {
 
@@ -28,8 +29,6 @@ class ByteRange {
 // [Headroom] - [Data] - [Tailroom]
 class IOBuf {
  public:
-  class Iterator;
-
   enum CreateOp { CREATE };
   enum CopyBufferOp { COPY_BUFFER };
 
@@ -95,16 +94,8 @@ class IOBuf {
   }
 
   size_t length() const { return length_; }
-
-  /**
-   * Iteration support: a chain of IOBufs may be iterated through using
-   * STL-style iterators over const ByteRanges.  Iterators are only invalidated
-   * if the IOBuf that they currently point to is removed.
-   */
-  Iterator cbegin() const;
-  Iterator cend() const;
-  Iterator begin() const;
-  Iterator end() const;
+  size_t size() const { return length_; }
+  operator span<const uint8_t>() const { return {data(), length()}; }
 
   /**
    * Allocate a new null buffer.

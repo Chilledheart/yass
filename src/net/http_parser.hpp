@@ -6,7 +6,7 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include "net/iobuf.hpp"
+#include "core/span.hpp"
 
 #ifdef HAVE_BALSA_HTTP_PARSER
 #if defined(__clang__) || defined(__GNUC__)
@@ -42,7 +42,7 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
  public:
   HttpRequestParser(bool is_request = true);
 
-  int Parse(std::shared_ptr<IOBuf> buf, bool* ok);
+  int Parse(span<const uint8_t> buf, bool* ok);
 
   const std::string& host() const { return http_host_; }
   uint16_t port() const { return http_port_; }
@@ -128,7 +128,7 @@ class HttpRequestParser {
   HttpRequestParser(bool is_request = true);
   virtual ~HttpRequestParser();
 
-  int Parse(std::shared_ptr<IOBuf> buf, bool* ok);
+  int Parse(span<const uint8_t> buf, bool* ok);
 
   void ReforgeHttpRequest(std::string* header,
                           const absl::flat_hash_map<std::string, std::string>* additional_headers = nullptr);
