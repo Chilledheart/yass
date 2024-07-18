@@ -30,10 +30,27 @@ namespace config {
 const ProgramType pType = YASS_CLIENT_GUI;
 }  // namespace config
 
+#ifdef _WIN32
+void YASSApp::commitData(QSessionManager& manager) {
+  if (auto main = App()->main_window_.get()) {
+    QMetaObject::invokeMethod(main, "close", Qt::QueuedConnection);
+    manager.cancel();
+  }
+}
+#endif
+
 int main(int argc, const char** argv) {
 #ifndef _WIN32
   // setup signal handler
   signal(SIGPIPE, SIG_IGN);
+
+  struct sigaction sig_handler;
+
+  sig_handler.sa_handler = YASSApp::SigIntSignalHandler;
+  sigemptyset(&sig_handler.sa_mask);
+  sig_handler.sa_flags = 0;
+
+  sigaction(SIGINT, &sig_handler, nullptr);
 
   /* Block SIGPIPE in all threads, this can happen if a thread calls write on
      a closed pipe. */
@@ -87,19 +104,53 @@ int main(int argc, const char** argv) {
   return program.exec();
 }
 
-YASSApp::YASSApp(int& argc, char** argv) : QApplication(argc, argv) {
-  QObject::connect(this, &YASSApp::OnStartedSignal, this, &YASSApp::OnStarted);
-  QObject::connect(this, &YASSApp::OnStartFailedSignal, this, &YASSApp::OnStartFailed);
-  QObject::connect(this, &YASSApp::OnStoppedSignal, this, &YASSApp::OnStopped);
-}
+#ifndef _WIN32
+int YASSApp::sigintFd[2] = {-1, -1};
+#endif
 
-bool YASSApp::Init() {
+#ifndef _WIN32
+void YASSApp::SigIntSignalHandler(int /*s*/) {
+  /* Handles SIGINT and writes to a socket. Qt will read
+   * from the socket in the main thread event loop and trigger
+   * a call to the ProcessSigInt slot, where we can safely run
+   * shutdown code without signal safety issues. */
+
+  char a = 1;
+  send(sigintFd[1], &a, sizeof(a), 0);
+}
+#endif
+
+#ifndef _WIN32
+void YASSApp::ProcessSigInt() {
+  char tmp;
+  recv(sigintFd[0], &tmp, sizeof(tmp), 0);
+
+  App()->quit();
+}
+#endif
+
+YASSApp::YASSApp(int& argc, char** argv) : QApplication(argc, argv) {
+#ifndef _WIN32
+  /* Handle SIGINT properly */
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sigintFd) < 0) {
+    PLOG(FATAL) << "socketpair failure at startup";
+  }
+  snInt = new QSocketNotifier(sigintFd[0], QSocketNotifier::Read, this);
+  connect(snInt, &QSocketNotifier::activated, this, &YASSApp::ProcessSigInt);
+#else
+  connect(qApp, &QGuiApplication::commitDataRequest, this, &YASSApp::commitData);
+#endif
+
   setApplicationVersion(YASS_APP_TAG);
+#ifndef __APPLE__
   setWindowIcon(QIcon::fromTheme("yass", QIcon(":/res/images/yass.png")));
+#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
   setDesktopFileName("it.gui.yass");
 #endif
+}
 
+bool YASSApp::Init() {
   QObject::connect(this, &QCoreApplication::aboutToQuit, this, &YASSApp::OnQuit);
 
   qt_translator_ = new QTranslator(this);
@@ -125,7 +176,11 @@ bool YASSApp::Init() {
   qApp->installTranslator(qt_translator_);
   qApp->installTranslator(my_translator_);
 
-  main_window_ = new YASSWindow();
+  QObject::connect(this, &YASSApp::OnStartedSignal, this, &YASSApp::OnStarted);
+  QObject::connect(this, &YASSApp::OnStartFailedSignal, this, &YASSApp::OnStartFailed);
+  QObject::connect(this, &YASSApp::OnStoppedSignal, this, &YASSApp::OnStopped);
+
+  main_window_ = std::make_unique<YASSWindow>();
   main_window_->show();
   main_window_->moveToCenter();
 
@@ -144,6 +199,12 @@ bool YASSApp::Init() {
   idle_timer_->start();
 
   return true;
+}
+
+YASSApp::~YASSApp() {
+  delete snInt;
+  close(sigintFd[0]);
+  close(sigintFd[1]);
 }
 
 void YASSApp::OnIdle() {
@@ -208,6 +269,7 @@ void YASSApp::OnStop(bool quiet) {
 
 void YASSApp::OnQuit() {
   LOG(WARNING) << "Application Exit";
+  idle_timer_->stop();
   PrintMallocStats();
 }
 
