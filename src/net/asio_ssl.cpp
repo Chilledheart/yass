@@ -396,6 +396,9 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string& dir_path
       if (dent->d_type != DT_REG && dent->d_type != DT_LNK) {
         continue;
       }
+      if (dent->d_name[0] == '.') {
+        continue;
+      }
       std::string ca_bundle = absl::StrCat(dir_path, "/", dent->d_name);
       int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
       if (result > 0) {
