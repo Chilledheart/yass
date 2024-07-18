@@ -57,6 +57,13 @@ bool IsKDE() {
   std::string_view desktop = desktop_ptr ? std::string_view(desktop_ptr) : std::string_view();
   return desktop == "KDE" || desktop == "plasma";
 }
+
+// see https://userbase.kde.org/KDE_System_Administration/Environment_Variables
+std::string GetKDESessionVersion() {
+  DCHECK(IsKDE());
+  const char* kde_session_ptr = getenv("KDE_SESSION_VERSION");
+  return kde_session_ptr ? std::string(kde_session_ptr) : "5"s;
+}
 }  // namespace
 
 bool Utils::GetAutoStart() {
@@ -259,10 +266,12 @@ bool SetSystemProxy(bool enable,
 bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* bypass_addr) {
   bypass_addr->clear();
 
-  std::string config_dir = GetConfigDir();
+  const std::string kde_session_version = GetKDESessionVersion();
+  const std::string kreadconfig = absl::StrCat("kreadconfig"s, kde_session_version);
+  const std::string config_dir = GetConfigDir();
   std::string output, _;
   std::vector<std::string> params = {
-      "kreadconfig5"s, "--file"s, config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s, "ProxyType"s};
+      kreadconfig, "--file"s, config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s, "ProxyType"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -272,8 +281,7 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
   }
   *enabled = output == "1"s;
 
-  params = {"kreadconfig5"s, "--file"s,   config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s,
-            "--key"s,        "httpProxy"s};
+  params = {kreadconfig, "--file"s, config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s, "httpProxy"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -283,8 +291,8 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
   }
   *server_addr = output;
 
-  params = {"kreadconfig5"s, "--file"s,    config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s,
-            "--key"s,        "NoProxyFor"s};
+  params = {kreadconfig, "--file"s,    config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s,
+            "--key"s,    "NoProxyFor"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -298,11 +306,13 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
 }
 
 bool SetSystemProxy_KDE(bool enable, const std::string& server_addr, const std::string& bypass_addr) {
-  std::string config_dir = GetConfigDir();
+  const std::string kde_session_version = GetKDESessionVersion();
+  const std::string kwriteconfig = absl::StrCat("kwriteconfig"s, kde_session_version);
+  const std::string config_dir = GetConfigDir();
   std::string _;
-  std::vector<std::string> params = {"kwriteconfig5"s, "--file"s,           config_dir + "/kioslaverc"s,
-                                     "--group"s,       "Proxy Settings"s,   "--key"s,
-                                     "ProxyType"s,     enable ? "1"s : "0"s};
+  std::vector<std::string> params = {kwriteconfig, "--file"s,           config_dir + "/kioslaverc"s,
+                                     "--group"s,   "Proxy Settings"s,   "--key"s,
+                                     "ProxyType"s, enable ? "1"s : "0"s};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
@@ -315,15 +325,15 @@ bool SetSystemProxy_KDE(bool enable, const std::string& server_addr, const std::
   };
 
   for (std::string_view protocol : kProtocol) {
-    params = {"kwriteconfig5"s,  "--file"s, config_dir + "/kioslaverc"s, "--group"s,
+    params = {kwriteconfig,      "--file"s, config_dir + "/kioslaverc"s, "--group"s,
               "Proxy Settings"s, "--key"s,  std::string(protocol),       server_addr};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
     }
   }
 
-  params = {"kwriteconfig5"s, "--file"s,  config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s,
-            "NoProxyFor"s,    bypass_addr};
+  params = {kwriteconfig,  "--file"s,  config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s,
+            "NoProxyFor"s, bypass_addr};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
