@@ -75,528 +75,392 @@
             <objects>
                 <viewController storyboardIdentifier="YassViewController" id="XfG-lQ-9wD" customClass="YassViewController" sceneMemberID="viewController">
                     <view key="view" id="m2S-Jp-Qdl">
-                        <rect key="frame" x="0.0" y="0.0" width="491" height="463"/>
+                        <rect key="frame" x="0.0" y="0.0" width="523" height="516"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="top" spacing="24" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="54R-Wd-bXi">
-                                <rect key="frame" x="24" y="12" width="443" height="439"/>
-                                <subviews>
-                                    <stackView distribution="fillProportionally" orientation="vertical" alignment="leading" spacing="200" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4W6-4f-vPf">
-                                        <rect key="frame" x="0.0" y="199" width="50" height="240"/>
-                                        <subviews>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="oW6-a4-bGz">
-                                                <rect key="frame" x="-7" y="213" width="64" height="32"/>
-                                                <buttonCell key="cell" type="push" title="Start" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="KPU-2Q-dN7">
-                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                </buttonCell>
-                                                <connections>
-                                                    <action selector="OnStartButtonClicked:" target="XfG-lQ-9wD" id="13h-gz-KuK"/>
-                                                </connections>
-                                            </button>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dAY-cJ-YEJ">
-                                                <rect key="frame" x="-7" y="-7" width="63" height="32"/>
-                                                <buttonCell key="cell" type="push" title="Stop" bezelStyle="rounded" alignment="center" enabled="NO" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="JYa-MA-4KH">
-                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                </buttonCell>
-                                                <connections>
-                                                    <action selector="OnStopButtonClicked:" target="XfG-lQ-9wD" id="wPn-eF-JP8"/>
-                                                </connections>
-                                            </button>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                    <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GWi-Ha-x3f">
-                                        <rect key="frame" x="74" y="0.0" width="369" height="439"/>
-                                        <subviews>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="i7z-vB-WLg">
-                                                <rect key="frame" x="0.0" y="418" width="239" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Naa-UR-FJH">
-                                                        <rect key="frame" x="-2" y="3" width="76" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Server Host" id="g3k-Ab-Oin">
-                                                            <font key="font" usesAppearanceFont="YES"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VTW-w6-cOR">
-                                                        <rect key="frame" x="84" y="0.0" width="155" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="hcQ-Jk-ceh">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="PoW-74-CnI">
-                                                <rect key="frame" x="0.0" y="385" width="273" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MAC-gA-ioH">
-                                                        <rect key="frame" x="-2" y="3" width="69" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Server SNI" id="bxG-gg-LTc">
-                                                            <font key="font" usesAppearanceFont="YES"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5JO-ae-X9H">
-                                                        <rect key="frame" x="77" y="0.0" width="196" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="Blg-iu-XaZ">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E86-0C-hu6">
-                                                <rect key="frame" x="0.0" y="352" width="277" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="FpN-6F-ejx">
-                                                        <rect key="frame" x="-2" y="3" width="73" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Server Port" id="mcp-Vm-U1E">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="R0f-I9-5IS">
-                                                        <rect key="frame" x="81" y="0.0" width="196" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="aCt-xH-vPZ">
-                                                            <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="4Fe-3g-QZ5">
-                                                                <real key="minimum" value="0.0"/>
-                                                                <real key="maximum" value="65535"/>
-                                                            </numberFormatter>
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="m5x-My-ApT">
-                                                <rect key="frame" x="0.0" y="319" width="270" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" verticalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="nkM-1Q-VtC">
-                                                        <rect key="frame" x="-2" y="3" width="66" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Username" id="QRy-PK-jJT">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="z07-tR-0U9">
-                                                        <rect key="frame" x="74" y="0.0" width="196" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="HAi-bY-2sC">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="pZm-U9-uDm">
-                                                <rect key="frame" x="0.0" y="286" width="267" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="O29-63-IKZ">
-                                                        <rect key="frame" x="-2" y="3" width="63" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Password" id="9N4-Lw-6Ob">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <secureTextField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="0pr-Eo-W1k">
-                                                        <rect key="frame" x="71" y="0.0" width="196" height="21"/>
-                                                        <secureTextFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" usesSingleLineMode="YES" id="EZ3-1U-Un3">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                            <allowedInputSourceLocales>
-                                                                <string>NSAllRomanInputSourcesLocaleIdentifier</string>
-                                                            </allowedInputSourceLocales>
-                                                        </secureTextFieldCell>
-                                                    </secureTextField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="XsT-Ke-hCo">
-                                                <rect key="frame" x="0.0" y="254" width="369" height="20"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hCJ-rP-siw">
-                                                        <rect key="frame" x="-2" y="2" width="161" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Cipher/Method" id="tOi-q9-yJY">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <comboBox focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4xh-Ub-Yhf">
-                                                        <rect key="frame" x="168" y="-2" width="204" height="23"/>
-                                                        <constraints>
-                                                            <constraint firstAttribute="width" constant="200" id="7n3-v5-Bj3"/>
-                                                        </constraints>
-                                                        <comboBoxCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" allowsUndo="NO" borderStyle="bezel" drawsBackground="YES" completes="NO" numberOfVisibleItems="10" id="qHI-jj-mpI">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                            <objectValues>
-                                                                <string>Item</string>
-                                                            </objectValues>
-                                                        </comboBoxCell>
-                                                    </comboBox>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="b8B-Nw-TeI">
-                                                <rect key="frame" x="0.0" y="221" width="273" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bDw-Ik-ckM">
-                                                        <rect key="frame" x="-2" y="3" width="69" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Local Host" id="rim-zj-Iub">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Hzm-G4-aes">
-                                                        <rect key="frame" x="77" y="0.0" width="196" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="Z02-8g-7U6">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bns-lC-8FN">
-                                                <rect key="frame" x="0.0" y="188" width="269" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7Lc-g6-Z1Z">
-                                                        <rect key="frame" x="-2" y="3" width="65" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Local Port" id="3bJ-wb-xnh">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="4ft-zv-tpp">
-                                                        <rect key="frame" x="73" y="0.0" width="196" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="6eq-QO-A6b">
-                                                            <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="uWT-vl-bd6">
-                                                                <real key="minimum" value="0.0"/>
-                                                                <real key="maximum" value="65535"/>
-                                                            </numberFormatter>
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="t0e-ny-HZO">
-                                                <rect key="frame" x="0.0" y="155" width="240" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="2U7-zl-tc8">
-                                                        <rect key="frame" x="-2" y="3" width="136" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="DNS over HTTPS URL" id="yxt-ql-TD8">
-                                                            <font key="font" usesAppearanceFont="YES"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VS4-tB-4bb">
-                                                        <rect key="frame" x="144" y="0.0" width="96" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="https://1.1.1.1/dns-query" drawsBackground="YES" id="IlA-i9-6tc">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Avk-E4-aMk">
-                                                <rect key="frame" x="0.0" y="122" width="225" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eZN-yT-YJS">
-                                                        <rect key="frame" x="-2" y="3" width="121" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="DNS over TLS Host" id="PXx-nB-Hn1">
-                                                            <font key="font" usesAppearanceFont="YES"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="LsY-AX-mE3">
-                                                        <rect key="frame" x="129" y="0.0" width="96" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="1.1.1.1" drawsBackground="YES" id="86y-sR-xrG">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8fj-1U-5MP">
-                                                <rect key="frame" x="0.0" y="89" width="169" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="aOE-Cb-Jq7">
-                                                        <rect key="frame" x="-2" y="3" width="65" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Limit Rate" id="Ux8-IL-FUS">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="exc-7i-jLy">
-                                                        <rect key="frame" x="73" y="0.0" width="96" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="10m" drawsBackground="YES" id="Xbb-ks-3E5">
-                                                            <font key="font" usesAppearanceFont="YES"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ruz-7m-NgU">
-                                                <rect key="frame" x="0.0" y="56" width="258" height="21"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="AnO-ZT-CUz">
-                                                        <rect key="frame" x="-2" y="3" width="54" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Timeout" id="zY6-tD-aUd">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="d0Y-hk-xNM">
-                                                        <rect key="frame" x="62" y="0.0" width="196" height="21"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="Srv-97-Ip1">
-                                                            <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="gqX-zp-tFE">
-                                                                <real key="minimum" value="0.0"/>
-                                                            </numberFormatter>
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="gDI-xb-uXh">
-                                                <rect key="frame" x="0.0" y="28" width="139" height="16"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OYi-iS-mW2">
-                                                        <rect key="frame" x="-2" y="0.0" width="66" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Auto Start" id="8hL-Qd-hQU">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <button verticalHuggingPriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="Cu9-FF-7Of">
-                                                        <rect key="frame" x="72" y="-1" width="67" height="18"/>
-                                                        <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="hei-7a-ZHr">
-                                                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                                            <font key="font" metaFont="system"/>
-                                                        </buttonCell>
-                                                        <connections>
-                                                            <action selector="OnAutoStartChecked:" target="XfG-lQ-9wD" id="wRF-PD-xiK"/>
-                                                        </connections>
-                                                    </button>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                            <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2e5-iQ-kd4">
-                                                <rect key="frame" x="0.0" y="0.0" width="160" height="16"/>
-                                                <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="gsJ-2M-W13">
-                                                        <rect key="frame" x="-2" y="0.0" width="87" height="16"/>
-                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="System Proxy" id="g0k-mZ-0JW">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
-                                                    <button verticalHuggingPriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="fIt-Cr-IJG">
-                                                        <rect key="frame" x="93" y="-1" width="67" height="18"/>
-                                                        <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Jw2-My-hmB">
-                                                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                                            <font key="font" metaFont="system"/>
-                                                        </buttonCell>
-                                                        <connections>
-                                                            <action selector="OnSystemProxyChecked:" target="XfG-lQ-9wD" id="9FW-pP-tKh"/>
-                                                        </connections>
-                                                    </button>
-                                                </subviews>
-                                                <visibilityPriorities>
-                                                    <integer value="1000"/>
-                                                    <integer value="1000"/>
-                                                </visibilityPriorities>
-                                                <customSpacing>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                    <real value="3.4028234663852886e+38"/>
-                                                </customSpacing>
-                                            </stackView>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                </subviews>
-                                <visibilityPriorities>
-                                    <integer value="1000"/>
-                                    <integer value="1000"/>
-                                </visibilityPriorities>
-                                <customSpacing>
-                                    <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
-                                </customSpacing>
-                            </stackView>
+                            <gridView xPlacement="leading" yPlacement="bottom" rowAlignment="firstBaseline" rowSpacing="12" columnSpacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="u4K-Et-hUS">
+                                <rect key="frame" x="12" y="12" width="499" height="492"/>
+                                <constraints>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="d0Y-hk-xNM" secondAttribute="trailing" id="39R-bq-g6c"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="z07-tR-0U9" secondAttribute="trailing" id="7C1-f5-V76"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="Hzm-G4-aes" secondAttribute="trailing" id="8Ue-UL-k0i"/>
+                                    <constraint firstAttribute="trailing" secondItem="VTW-w6-cOR" secondAttribute="trailing" constant="12" id="B7t-XM-2eQ"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="VS4-tB-4bb" secondAttribute="trailing" id="KDu-eO-ZGR"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="0pr-Eo-W1k" secondAttribute="trailing" id="MYO-6C-UeT"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="4ft-zv-tpp" secondAttribute="trailing" id="NRS-BW-Sds"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="LsY-AX-mE3" secondAttribute="trailing" id="OEt-XG-dL7"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="5JO-ae-X9H" secondAttribute="trailing" id="tTo-O0-Ica"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="4xh-Ub-Yhf" secondAttribute="trailing" id="up5-TJ-Mlz"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="exc-7i-jLy" secondAttribute="trailing" id="xeY-nU-N0T"/>
+                                    <constraint firstItem="VTW-w6-cOR" firstAttribute="trailing" secondItem="R0f-I9-5IS" secondAttribute="trailing" id="yNs-sL-Vvs"/>
+                                </constraints>
+                                <rows>
+                                    <gridRow height="24" id="cJj-yp-Enp"/>
+                                    <gridRow height="24" id="Wsq-Ny-R0E"/>
+                                    <gridRow height="24" id="hyR-W9-a1z"/>
+                                    <gridRow height="24" id="pkr-kF-jbx"/>
+                                    <gridRow height="24" id="8qE-4c-4mw"/>
+                                    <gridRow height="24" id="Ati-67-7pZ"/>
+                                    <gridRow height="24" id="Kh8-rv-NWX"/>
+                                    <gridRow height="24" id="wLH-ke-dja"/>
+                                    <gridRow height="24" id="nlG-nP-3oh"/>
+                                    <gridRow height="24" id="6aU-Cw-j5C"/>
+                                    <gridRow height="24" id="qX1-aa-MLj"/>
+                                    <gridRow height="24" id="mTL-cj-Nle"/>
+                                    <gridRow height="24" id="e6X-BZ-bV8"/>
+                                    <gridRow height="24" id="1cJ-xv-Xd3"/>
+                                </rows>
+                                <columns>
+                                    <gridColumn width="75" id="LO3-Dh-mOI"/>
+                                    <gridColumn width="200" id="a9F-Xp-86m"/>
+                                    <gridColumn width="200" id="XrQ-Tc-XCS"/>
+                                </columns>
+                                <gridCells>
+                                    <gridCell row="cJj-yp-Enp" column="LO3-Dh-mOI" id="Xwk-pR-CCg"/>
+                                    <gridCell row="cJj-yp-Enp" column="a9F-Xp-86m" id="Cfs-Zz-VA6">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Naa-UR-FJH">
+                                            <rect key="frame" x="85" y="471" width="76" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Server Host" id="g3k-Ab-Oin">
+                                                <font key="font" usesAppearanceFont="YES"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="cJj-yp-Enp" column="XrQ-Tc-XCS" id="gUO-L2-R51">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VTW-w6-cOR">
+                                            <rect key="frame" x="299" y="468" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="hcQ-Jk-ceh">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="Wsq-Ny-R0E" column="LO3-Dh-mOI" id="fQT-0E-xvC"/>
+                                    <gridCell row="Wsq-Ny-R0E" column="a9F-Xp-86m" id="CgG-pY-O5X">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MAC-gA-ioH">
+                                            <rect key="frame" x="85" y="435" width="69" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Server SNI" id="bxG-gg-LTc">
+                                                <font key="font" usesAppearanceFont="YES"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="Wsq-Ny-R0E" column="XrQ-Tc-XCS" id="dhv-f4-1Be">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5JO-ae-X9H">
+                                            <rect key="frame" x="299" y="432" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="Blg-iu-XaZ">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="hyR-W9-a1z" column="LO3-Dh-mOI" id="uOI-bG-SCP">
+                                        <button key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="oW6-a4-bGz">
+                                            <rect key="frame" x="-7" y="389" width="64" height="32"/>
+                                            <buttonCell key="cell" type="push" title="Start" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="KPU-2Q-dN7">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="OnStartButtonClicked:" target="XfG-lQ-9wD" id="13h-gz-KuK"/>
+                                            </connections>
+                                        </button>
+                                    </gridCell>
+                                    <gridCell row="hyR-W9-a1z" column="a9F-Xp-86m" id="3Tp-MP-Iuu">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="FpN-6F-ejx">
+                                            <rect key="frame" x="85" y="399" width="73" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Server Port" id="mcp-Vm-U1E">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="hyR-W9-a1z" column="XrQ-Tc-XCS" id="iFI-Oq-jSi">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="R0f-I9-5IS">
+                                            <rect key="frame" x="299" y="396" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="aCt-xH-vPZ">
+                                                <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="4Fe-3g-QZ5">
+                                                    <real key="minimum" value="0.0"/>
+                                                    <real key="maximum" value="65535"/>
+                                                </numberFormatter>
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="pkr-kF-jbx" column="LO3-Dh-mOI" id="hax-GH-sFx"/>
+                                    <gridCell row="pkr-kF-jbx" column="a9F-Xp-86m" id="6kp-AQ-bdX">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" verticalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="nkM-1Q-VtC">
+                                            <rect key="frame" x="85" y="363" width="66" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Username" id="QRy-PK-jJT">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="pkr-kF-jbx" column="XrQ-Tc-XCS" id="qFw-l7-IDb">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="z07-tR-0U9">
+                                            <rect key="frame" x="299" y="360" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="HAi-bY-2sC">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="8qE-4c-4mw" column="LO3-Dh-mOI" id="MHm-pE-P6f"/>
+                                    <gridCell row="8qE-4c-4mw" column="a9F-Xp-86m" id="6tg-qc-dBJ">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="O29-63-IKZ">
+                                            <rect key="frame" x="85" y="327" width="63" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Password" id="9N4-Lw-6Ob">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="8qE-4c-4mw" column="XrQ-Tc-XCS" id="Yil-mh-t4n">
+                                        <secureTextField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="0pr-Eo-W1k">
+                                            <rect key="frame" x="299" y="324" width="188" height="21"/>
+                                            <secureTextFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" usesSingleLineMode="YES" id="EZ3-1U-Un3">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                <allowedInputSourceLocales>
+                                                    <string>NSAllRomanInputSourcesLocaleIdentifier</string>
+                                                </allowedInputSourceLocales>
+                                            </secureTextFieldCell>
+                                        </secureTextField>
+                                    </gridCell>
+                                    <gridCell row="Ati-67-7pZ" column="LO3-Dh-mOI" id="2aB-Y2-dTP"/>
+                                    <gridCell row="Ati-67-7pZ" column="a9F-Xp-86m" id="F3R-J3-yJX">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hCJ-rP-siw">
+                                            <rect key="frame" x="85" y="290" width="94" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Cipher/Method" id="tOi-q9-yJY">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="Ati-67-7pZ" column="XrQ-Tc-XCS" id="FXV-mY-iWS">
+                                        <comboBox key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4xh-Ub-Yhf">
+                                            <rect key="frame" x="298" y="286" width="192" height="23"/>
+                                            <comboBoxCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" allowsUndo="NO" borderStyle="bezel" drawsBackground="YES" completes="NO" numberOfVisibleItems="10" id="qHI-jj-mpI">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                <objectValues>
+                                                    <string>Item</string>
+                                                </objectValues>
+                                            </comboBoxCell>
+                                        </comboBox>
+                                    </gridCell>
+                                    <gridCell row="Kh8-rv-NWX" column="LO3-Dh-mOI" id="IBD-OY-ImG"/>
+                                    <gridCell row="Kh8-rv-NWX" column="a9F-Xp-86m" id="x9M-ta-sLa">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bDw-Ik-ckM">
+                                            <rect key="frame" x="85" y="255" width="69" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Local Host" id="rim-zj-Iub">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="Kh8-rv-NWX" column="XrQ-Tc-XCS" id="0QG-0P-cDO">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Hzm-G4-aes">
+                                            <rect key="frame" x="299" y="252" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="Z02-8g-7U6">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="wLH-ke-dja" column="LO3-Dh-mOI" id="26B-As-jh6">
+                                        <button key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dAY-cJ-YEJ">
+                                            <rect key="frame" x="-7" y="209" width="63" height="32"/>
+                                            <buttonCell key="cell" type="push" title="Stop" bezelStyle="rounded" alignment="center" enabled="NO" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="JYa-MA-4KH">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="OnStopButtonClicked:" target="XfG-lQ-9wD" id="wPn-eF-JP8"/>
+                                            </connections>
+                                        </button>
+                                    </gridCell>
+                                    <gridCell row="wLH-ke-dja" column="a9F-Xp-86m" id="NRi-eF-70k">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7Lc-g6-Z1Z">
+                                            <rect key="frame" x="85" y="219" width="65" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Local Port" id="3bJ-wb-xnh">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="wLH-ke-dja" column="XrQ-Tc-XCS" id="tY9-oE-V66">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="4ft-zv-tpp">
+                                            <rect key="frame" x="299" y="216" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="6eq-QO-A6b">
+                                                <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="uWT-vl-bd6">
+                                                    <real key="minimum" value="0.0"/>
+                                                    <real key="maximum" value="65535"/>
+                                                </numberFormatter>
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="nlG-nP-3oh" column="LO3-Dh-mOI" id="9jK-dz-vSF"/>
+                                    <gridCell row="nlG-nP-3oh" column="a9F-Xp-86m" id="a7U-ff-9Pb">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="2U7-zl-tc8">
+                                            <rect key="frame" x="85" y="183" width="136" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="DNS over HTTPS URL" id="yxt-ql-TD8">
+                                                <font key="font" usesAppearanceFont="YES"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="nlG-nP-3oh" column="XrQ-Tc-XCS" id="40l-GO-bgp">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VS4-tB-4bb">
+                                            <rect key="frame" x="299" y="180" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="https://1.1.1.1/dns-query" drawsBackground="YES" id="IlA-i9-6tc">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="6aU-Cw-j5C" column="LO3-Dh-mOI" id="49x-3P-I1V"/>
+                                    <gridCell row="6aU-Cw-j5C" column="a9F-Xp-86m" id="P0z-mH-Imd">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eZN-yT-YJS">
+                                            <rect key="frame" x="85" y="147" width="121" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="DNS over TLS Host" id="PXx-nB-Hn1">
+                                                <font key="font" usesAppearanceFont="YES"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="6aU-Cw-j5C" column="XrQ-Tc-XCS" id="QvK-s7-HnO">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="LsY-AX-mE3">
+                                            <rect key="frame" x="299" y="144" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="1.1.1.1" drawsBackground="YES" id="86y-sR-xrG">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="qX1-aa-MLj" column="LO3-Dh-mOI" id="HLC-Y2-4bN"/>
+                                    <gridCell row="qX1-aa-MLj" column="a9F-Xp-86m" id="dOz-Kf-ah3">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="aOE-Cb-Jq7">
+                                            <rect key="frame" x="85" y="110" width="65" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Limit Rate" id="Ux8-IL-FUS">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="qX1-aa-MLj" column="XrQ-Tc-XCS" id="98I-JF-Dp3">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="exc-7i-jLy">
+                                            <rect key="frame" x="299" y="108" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="10m" drawsBackground="YES" id="Xbb-ks-3E5">
+                                                <font key="font" usesAppearanceFont="YES"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="mTL-cj-Nle" column="LO3-Dh-mOI" id="0zt-ie-sRL"/>
+                                    <gridCell row="mTL-cj-Nle" column="a9F-Xp-86m" id="Pnu-WJ-mBn">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="AnO-ZT-CUz">
+                                            <rect key="frame" x="85" y="75" width="54" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Timeout" id="zY6-tD-aUd">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="mTL-cj-Nle" column="XrQ-Tc-XCS" id="NRI-fr-t3C">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="d0Y-hk-xNM">
+                                            <rect key="frame" x="299" y="72" width="188" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="Srv-97-Ip1">
+                                                <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="gqX-zp-tFE">
+                                                    <real key="minimum" value="0.0"/>
+                                                </numberFormatter>
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="e6X-BZ-bV8" column="LO3-Dh-mOI" id="5aI-Pb-YXS"/>
+                                    <gridCell row="e6X-BZ-bV8" column="a9F-Xp-86m" id="xkv-I7-ILZ">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OYi-iS-mW2">
+                                            <rect key="frame" x="85" y="36" width="66" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Auto Start" id="8hL-Qd-hQU">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="e6X-BZ-bV8" column="XrQ-Tc-XCS" id="pI2-ba-pFT">
+                                        <button key="contentView" verticalHuggingPriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="Cu9-FF-7Of">
+                                            <rect key="frame" x="297" y="35" width="67" height="18"/>
+                                            <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="hei-7a-ZHr">
+                                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="OnAutoStartChecked:" target="XfG-lQ-9wD" id="wRF-PD-xiK"/>
+                                            </connections>
+                                        </button>
+                                    </gridCell>
+                                    <gridCell row="1cJ-xv-Xd3" column="LO3-Dh-mOI" id="0ZG-UH-0MQ"/>
+                                    <gridCell row="1cJ-xv-Xd3" column="a9F-Xp-86m" id="dvS-cU-tpD">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="gsJ-2M-W13">
+                                            <rect key="frame" x="85" y="0.0" width="87" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="System Proxy" id="g0k-mZ-0JW">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="1cJ-xv-Xd3" column="XrQ-Tc-XCS" id="IsN-Qi-s8F">
+                                        <button key="contentView" verticalHuggingPriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="fIt-Cr-IJG">
+                                            <rect key="frame" x="297" y="-1" width="67" height="18"/>
+                                            <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Jw2-My-hmB">
+                                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="OnSystemProxyChecked:" target="XfG-lQ-9wD" id="9FW-pP-tKh"/>
+                                            </connections>
+                                        </button>
+                                    </gridCell>
+                                </gridCells>
+                            </gridView>
                         </subviews>
                         <constraints>
-                            <constraint firstItem="54R-Wd-bXi" firstAttribute="top" secondItem="m2S-Jp-Qdl" secondAttribute="top" constant="12" id="2G3-3p-AEM"/>
-                            <constraint firstAttribute="trailing" secondItem="54R-Wd-bXi" secondAttribute="trailing" constant="24" id="Xgv-Ri-usy"/>
-                            <constraint firstAttribute="bottom" secondItem="54R-Wd-bXi" secondAttribute="bottom" constant="12" id="xuu-6R-m0C"/>
-                            <constraint firstItem="54R-Wd-bXi" firstAttribute="leading" secondItem="m2S-Jp-Qdl" secondAttribute="leading" constant="24" id="ypX-ox-Z1b"/>
+                            <constraint firstAttribute="bottom" secondItem="u4K-Et-hUS" secondAttribute="bottom" constant="12" id="KYw-Bb-PEs"/>
+                            <constraint firstItem="u4K-Et-hUS" firstAttribute="leading" secondItem="m2S-Jp-Qdl" secondAttribute="leading" constant="12" id="Mp8-ll-Y4u"/>
+                            <constraint firstAttribute="trailing" secondItem="u4K-Et-hUS" secondAttribute="trailing" constant="12" id="RUo-BE-gMv"/>
+                            <constraint firstItem="u4K-Et-hUS" firstAttribute="top" secondItem="m2S-Jp-Qdl" secondAttribute="top" constant="12" id="TIL-dL-0LB"/>
                         </constraints>
                     </view>
                     <connections>
@@ -620,234 +484,175 @@
                 </viewController>
                 <customObject id="rPt-NT-nkU" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="56.5" y="781.5"/>
+            <point key="canvasLocation" x="216" y="857"/>
         </scene>
         <!--Option View Controller-->
         <scene sceneID="yyT-TH-wo5">
             <objects>
                 <viewController storyboardIdentifier="OptionViewController" id="Rl3-9N-Ypa" customClass="OptionViewController" sceneMemberID="viewController">
                     <view key="view" id="zIF-tN-wo1">
-                        <rect key="frame" x="0.0" y="0.0" width="493" height="289"/>
+                        <rect key="frame" x="0.0" y="0.0" width="436" height="228"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cYd-zL-FYj">
-                                <rect key="frame" x="24" y="12" width="445" height="265"/>
-                                <subviews>
-                                    <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RCz-2p-ygM">
-                                        <rect key="frame" x="0.0" y="231" width="169" height="34"/>
-                                        <subviews>
-                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ntm-zj-sC8">
-                                                <rect key="frame" x="-2" y="9" width="96" height="16"/>
-                                                <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive" id="z0q-m8-6KJ">
-                                                    <font key="font" metaFont="system"/>
-                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="mtt-Vz-5jG">
-                                                <rect key="frame" x="102" y="9" width="67" height="16"/>
-                                                <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="IpF-Ur-Zlh">
-                                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                </buttonCell>
-                                                <constraints>
-                                                    <constraint firstAttribute="height" constant="14" id="ReD-Bx-G3s"/>
-                                                </constraints>
-                                            </button>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                    <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="tDj-Oe-5j3">
-                                        <rect key="frame" x="0.0" y="185" width="295" height="34"/>
-                                        <subviews>
-                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BJp-Io-gl8">
-                                                <rect key="frame" x="-2" y="9" width="137" height="16"/>
-                                                <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive Count" id="DwU-MU-ncE">
-                                                    <font key="font" metaFont="system"/>
-                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                            <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="aaB-XL-no7">
-                                                <rect key="frame" x="145" y="6" width="150" height="21"/>
-                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="8tD-KN-XwR">
-                                                    <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="NCD-jR-QoX"/>
-                                                    <font key="font" metaFont="system"/>
-                                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                    <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="o4m-Q3-eUL">
-                                        <rect key="frame" x="0.0" y="139" width="354" height="34"/>
-                                        <subviews>
-                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hCK-tE-t9g">
-                                                <rect key="frame" x="-2" y="9" width="175" height="16"/>
-                                                <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive Idle Timeout" id="EnC-Oa-kda">
-                                                    <font key="font" metaFont="system"/>
-                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                            <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="vKb-Fc-qV5">
-                                                <rect key="frame" x="183" y="6" width="171" height="21"/>
-                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="nOf-jN-DQX">
-                                                    <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="NGY-o4-plc"/>
-                                                    <font key="font" metaFont="system"/>
-                                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                    <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hyW-wa-ass">
-                                        <rect key="frame" x="0.0" y="92" width="303" height="35"/>
-                                        <subviews>
-                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EQc-sT-cRe">
-                                                <rect key="frame" x="-2" y="9" width="145" height="16"/>
-                                                <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive Interval" id="dCR-E3-G0W">
-                                                    <font key="font" metaFont="system"/>
-                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                            <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="FCy-Ix-JtV">
-                                                <rect key="frame" x="153" y="7" width="150" height="21"/>
-                                                <constraints>
-                                                    <constraint firstAttribute="width" constant="150" id="T7R-aQ-AIm"/>
-                                                </constraints>
-                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="fs7-4d-4EQ">
-                                                    <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="KMj-84-Y99"/>
-                                                    <font key="font" metaFont="system"/>
-                                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                    <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="a5b-wP-TBW">
-                                        <rect key="frame" x="0.0" y="46" width="343" height="34"/>
-                                        <subviews>
-                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3br-w1-dtI">
-                                                <rect key="frame" x="-2" y="9" width="270" height="16"/>
-                                                <textFieldCell key="cell" lineBreakMode="clipping" title="Kyber post-quantum key agreement for TLS" id="EY5-8C-G6C">
-                                                    <font key="font" usesAppearanceFont="YES"/>
-                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                </textFieldCell>
-                                            </textField>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eCq-VL-0xN">
-                                                <rect key="frame" x="276" y="8" width="67" height="18"/>
-                                                <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="aFJ-Zj-eao">
-                                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                </buttonCell>
-                                            </button>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                    <stackView distribution="fillProportionally" orientation="horizontal" alignment="centerY" spacing="12" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="euh-KE-yQe">
-                                        <rect key="frame" x="0.0" y="0.0" width="113" height="34"/>
-                                        <subviews>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="DeI-uB-d4V">
-                                                <rect key="frame" x="-7" y="0.0" width="53" height="32"/>
-                                                <buttonCell key="cell" type="push" title="OK" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="yzs-Gu-p7Y">
-                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                    <string key="keyEquivalent" base64-UTF8="YES">
+                            <gridView xPlacement="leading" yPlacement="bottom" rowAlignment="none" rowSpacing="12" columnSpacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="XUN-Bn-cfn">
+                                <rect key="frame" x="12" y="12" width="412" height="204"/>
+                                <constraints>
+                                    <constraint firstItem="FCy-Ix-JtV" firstAttribute="trailing" secondItem="vKb-Fc-qV5" secondAttribute="trailing" id="IrF-yb-oaO"/>
+                                    <constraint firstAttribute="trailing" secondItem="FCy-Ix-JtV" secondAttribute="trailing" constant="12" id="Lgf-n3-NC8"/>
+                                    <constraint firstItem="FCy-Ix-JtV" firstAttribute="trailing" secondItem="aaB-XL-no7" secondAttribute="trailing" id="TKk-tc-1nj"/>
+                                </constraints>
+                                <rows>
+                                    <gridRow height="24" id="mrN-pz-1Oa"/>
+                                    <gridRow height="24" id="pro-5c-Rbh"/>
+                                    <gridRow height="24" id="OaS-mO-GLn"/>
+                                    <gridRow height="24" id="u9C-AX-ell"/>
+                                    <gridRow height="24" id="dEK-1Q-llb"/>
+                                    <gridRow height="24" id="7Cr-lG-X0w"/>
+                                </rows>
+                                <columns>
+                                    <gridColumn width="275" id="hxb-rW-bCk"/>
+                                    <gridColumn width="125" id="BSc-hd-WXx"/>
+                                </columns>
+                                <gridCells>
+                                    <gridCell row="mrN-pz-1Oa" column="hxb-rW-bCk" id="NN6-Wm-nJC">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ntm-zj-sC8">
+                                            <rect key="frame" x="-2" y="180" width="96" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive" id="z0q-m8-6KJ">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="mrN-pz-1Oa" column="BSc-hd-WXx" id="Opw-34-sct">
+                                        <button key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="mtt-Vz-5jG">
+                                            <rect key="frame" x="285" y="179" width="67" height="18"/>
+                                            <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="IpF-Ur-Zlh">
+                                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                        </button>
+                                    </gridCell>
+                                    <gridCell row="pro-5c-Rbh" column="hxb-rW-bCk" id="Zvf-RC-ruS">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BJp-Io-gl8">
+                                            <rect key="frame" x="-2" y="144" width="137" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive Count" id="DwU-MU-ncE">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="pro-5c-Rbh" column="BSc-hd-WXx" id="zdE-rB-Pec">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="aaB-XL-no7">
+                                            <rect key="frame" x="287" y="144" width="113" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="8tD-KN-XwR">
+                                                <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="NCD-jR-QoX"/>
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="OaS-mO-GLn" column="hxb-rW-bCk" id="pJ7-Z4-dpM">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hCK-tE-t9g">
+                                            <rect key="frame" x="-2" y="108" width="175" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive Idle Timeout" id="EnC-Oa-kda">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="OaS-mO-GLn" column="BSc-hd-WXx" id="VAb-Vg-nQf">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="vKb-Fc-qV5">
+                                            <rect key="frame" x="287" y="108" width="113" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="nOf-jN-DQX">
+                                                <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="NGY-o4-plc"/>
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="u9C-AX-ell" column="hxb-rW-bCk" id="Mki-MU-1Xs">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EQc-sT-cRe">
+                                            <rect key="frame" x="-2" y="72" width="145" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="TCP Keep Alive Interval" id="dCR-E3-G0W">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="u9C-AX-ell" column="BSc-hd-WXx" id="uea-jg-zXU">
+                                        <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="FCy-Ix-JtV">
+                                            <rect key="frame" x="287" y="72" width="113" height="21"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="fs7-4d-4EQ">
+                                                <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" formatWidth="-1" groupingSize="0" minimumIntegerDigits="1" maximumIntegerDigits="42" id="KMj-84-Y99"/>
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="dEK-1Q-llb" column="hxb-rW-bCk" id="yXv-wF-rtT">
+                                        <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3br-w1-dtI">
+                                            <rect key="frame" x="-2" y="36" width="270" height="16"/>
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Kyber post-quantum key agreement for TLS" id="EY5-8C-G6C">
+                                                <font key="font" usesAppearanceFont="YES"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                    </gridCell>
+                                    <gridCell row="dEK-1Q-llb" column="BSc-hd-WXx" id="WnE-iw-kNO">
+                                        <button key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eCq-VL-0xN">
+                                            <rect key="frame" x="285" y="35" width="67" height="18"/>
+                                            <buttonCell key="cell" type="check" title="Enable" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="aFJ-Zj-eao">
+                                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                        </button>
+                                    </gridCell>
+                                    <gridCell row="7Cr-lG-X0w" column="hxb-rW-bCk" id="bjc-gh-Yad">
+                                        <button key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="DeI-uB-d4V">
+                                            <rect key="frame" x="-7" y="-7" width="53" height="32"/>
+                                            <buttonCell key="cell" type="push" title="OK" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="yzs-Gu-p7Y">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                                <string key="keyEquivalent" base64-UTF8="YES">
 DQ
 </string>
-                                                </buttonCell>
-                                                <connections>
-                                                    <action selector="OnOkButtonClicked:" target="Rl3-9N-Ypa" id="U2F-Hr-N16"/>
-                                                </connections>
-                                            </button>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="50U-gT-ab3">
-                                                <rect key="frame" x="44" y="0.0" width="76" height="32"/>
-                                                <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Mei-lK-JLB">
-                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                    <string key="keyEquivalent" base64-UTF8="YES">
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="OnOkButtonClicked:" target="Rl3-9N-Ypa" id="U2F-Hr-N16"/>
+                                            </connections>
+                                        </button>
+                                    </gridCell>
+                                    <gridCell row="7Cr-lG-X0w" column="BSc-hd-WXx" id="TvI-Ro-1ez">
+                                        <button key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="50U-gT-ab3">
+                                            <rect key="frame" x="280" y="-7" width="76" height="32"/>
+                                            <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Mei-lK-JLB">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                                <string key="keyEquivalent" base64-UTF8="YES">
 Gw
 </string>
-                                                </buttonCell>
-                                                <connections>
-                                                    <action selector="OnCancelButtonClicked:" target="Rl3-9N-Ypa" id="sWw-C3-Skt"/>
-                                                </connections>
-                                            </button>
-                                        </subviews>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
-                                </subviews>
-                                <visibilityPriorities>
-                                    <integer value="1000"/>
-                                    <integer value="1000"/>
-                                    <integer value="1000"/>
-                                    <integer value="1000"/>
-                                    <integer value="1000"/>
-                                    <integer value="1000"/>
-                                </visibilityPriorities>
-                                <customSpacing>
-                                    <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
-                                </customSpacing>
-                            </stackView>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="OnCancelButtonClicked:" target="Rl3-9N-Ypa" id="sWw-C3-Skt"/>
+                                            </connections>
+                                        </button>
+                                    </gridCell>
+                                </gridCells>
+                            </gridView>
                         </subviews>
                         <constraints>
-                            <constraint firstAttribute="bottom" secondItem="cYd-zL-FYj" secondAttribute="bottom" constant="12" id="0aN-Cy-p3Q"/>
-                            <constraint firstItem="cYd-zL-FYj" firstAttribute="leading" secondItem="zIF-tN-wo1" secondAttribute="leading" constant="24" id="2VX-nW-TOA"/>
-                            <constraint firstAttribute="trailing" secondItem="cYd-zL-FYj" secondAttribute="trailing" constant="24" id="IzY-gY-min"/>
-                            <constraint firstItem="cYd-zL-FYj" firstAttribute="top" secondItem="zIF-tN-wo1" secondAttribute="top" constant="12" id="i9h-Pu-eeG"/>
+                            <constraint firstAttribute="bottom" secondItem="XUN-Bn-cfn" secondAttribute="bottom" constant="12" id="03L-nx-onG"/>
+                            <constraint firstItem="XUN-Bn-cfn" firstAttribute="leading" secondItem="zIF-tN-wo1" secondAttribute="leading" constant="12" id="EYq-uK-JoM"/>
+                            <constraint firstItem="XUN-Bn-cfn" firstAttribute="top" secondItem="zIF-tN-wo1" secondAttribute="top" constant="12" id="ZMs-rj-QQ2"/>
+                            <constraint firstAttribute="trailing" secondItem="XUN-Bn-cfn" secondAttribute="trailing" constant="12" id="pe4-qf-9B8"/>
                         </constraints>
                     </view>
                     <connections>
