@@ -2097,13 +2097,6 @@ elseif (GUI)
       set(GUI off)
     endif()
 
-    # fix up for loongarch64 gtk support
-    # see https://github.com/microcai/gentoo-zh/pull/4486
-    if (USE_GTK4 AND CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
-      message(STATUS "Blacklist gtk4 for loongarch64 target")
-      set(USE_GTK4 OFF)
-    endif()
-
     if (GUI AND USE_GTK4)
       pkg_check_modules(GTK4 gtk4)
     endif()
