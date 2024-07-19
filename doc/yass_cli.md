@@ -12,8 +12,8 @@ yass_cli(1) -- a lightweight and efficient, socks5/http forward proxy
 provide the similar functionalities. During the recent development, it also
 supports naiveproxy protocol which is more efficient protocol. Compared with
 shadowsocks-libev, it not only contains the client cli command and server cli
-command, but also it contains a gtk3/gtk4 (both are supported) graphical
-interface which is more friendly to the new users.
+command, but also it contains a gtk3/gtk4/qt5/qt6 (all are supported) graphical
+interface client which is more friendly to the new users.
 
 ### How to use
 See <https://github.com/Chilledheart/yass/wiki/Usage>.
