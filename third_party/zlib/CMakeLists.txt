@@ -1,3 +1,5 @@
+option(ZLIB_ENABLE_INTEL_QAT_COMPRESSION "Enable Intel Quick Assist Technology use for compression" OFF)
+
 set (zlib_SRCS
   adler32.c
   chromeconf.h
@@ -30,9 +32,34 @@ set (zlib_SRCS
   zutil.h
   )
 
+if (ZLIB_ENABLE_INTEL_QAT_COMPRESSION)
+  pkg_check_modules(QATZPP qatzpp)
+  if(NOT QATZPP_FOUND)
+    message(STATUS "package qatzpp not found, disabling")
+    set(ZLIB_ENABLE_INTEL_QAT_COMPRESSION OFF)
+  endif()
+endif()
+
+if (ZLIB_ENABLE_INTEL_QAT_COMPRESSION)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/deflate_qat.cpp)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp/io_buffers.cpp)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp/memory.cpp)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp/qat_buffer_list.cpp)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp/qat.cpp)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp/qat_instance.cpp)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp/session.cpp)
+  list(APPEND zlib_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp/qat_task.cpp)
+
+  # TODO(gustavoa): Find a way to include the qatzpp headers without having the
+  # presubmit check throw errors.
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/contrib/qat/qatzpp)
+  add_compile_definitions(QAT_COMPRESSION_ENABLED)
+endif()
+
 add_library(zlib STATIC ${zlib_SRCS})
 
 target_include_directories(zlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 if (COMPILER_CLANG)
   set_target_properties(zlib PROPERTIES
     COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-sign-compare -Wno-strict-prototypes")
@@ -42,6 +69,12 @@ elseif (COMPILER_GCC)
 elseif (COMPILER_MSVC)
   set_target_properties(zlib PROPERTIES
     COMPILE_FLAGS "/wd4131 /wd4255 /wd4245 /wd4244 /wd4100 /wd4702 /wd4127 /wd4267")
+endif()
+
+if (ZLIB_ENABLE_INTEL_QAT_COMPRESSION)
+  target_include_directories(zlib PRIVATE ${QATZPP_INCLUDE_DIRS})
+  target_link_libraries(zlib ${QATZPP_LIBRARY})
+  target_link_libraries(zlib qat)
 endif()
 
 # use_x86_x64_optimizations
