@@ -12,11 +12,11 @@ import android.util.Log;
 
 public class YassVpnService extends VpnService {
     private static final String TAG = "YassVpnService";
-    public static int DEFAULT_MTU = 1500;
-    private static String PRIVATE_VLAN4_CLIENT = "172.19.0.1";
-    private static String PRIVATE_VLAN4_GATEWAY = "172.19.0.2";
-    private static String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
-    private static String PRIVATE_VLAN6_GATEWAY = "fdfe:dcba:9876::2";
+    public static final int DEFAULT_MTU = 1500;
+    private static final String PRIVATE_VLAN4_CLIENT = "172.19.0.1";
+    private static final String PRIVATE_VLAN4_GATEWAY = "172.19.0.2";
+    private static final String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
+    private static final String PRIVATE_VLAN6_GATEWAY = "fdfe:dcba:9876::2";
 
     public ParcelFileDescriptor connect(String session_name, Context context, int local_port) {
         Builder builder = new Builder();
@@ -56,12 +56,7 @@ public class YassVpnService extends VpnService {
     @Override
     public void onRevoke() {
         Log.e(TAG, "onRevoke");
-        MainActivity.self.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                MainActivity.self.onStopVpn();
-            }
-        });
+        MainActivity.self.runOnUiThread(() -> MainActivity.self.onStopVpn());
         // super.onRevoke() is invoked in onStopVpn
     }
 }

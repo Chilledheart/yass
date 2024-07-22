@@ -7,6 +7,7 @@ import android.app.Dialog;
 import android.app.UiModeManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
@@ -14,7 +15,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -23,15 +23,17 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.preference.PreferenceManager;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -50,18 +52,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private final YassVpnService vpnService = new YassVpnService();
-    private final int VPN_REQUEST_CODE = 10000;
-    private final int SETTINGS_REQUEST_CODE = 10001;
     private final Handler handler = new Handler();
+    private final ActivityResultLauncher<Intent> optionActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+            });
     private NativeMachineState state = NativeMachineState.STOPPED;
     private Timer mRefreshTimer;
     private int nativeLocalPort = 0;
     private long tun2proxyPtr = 0;
     private Thread tun2proxyThread;
+    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
+    private final ActivityResultLauncher<Intent> vpnActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> onVpnActivityResult(result.getResultCode()));
 
     private static String humanReadableByteCountBin(long bytes) {
         if (bytes < 1024) {
-            return String.format("%d B/s", bytes);
+            return String.format(self.getLocale(), "%d B/s", bytes);
         }
         long value = bytes;
         String ci = "KMGTPE";
@@ -70,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
             value >>= 10;
             ++cPos;
         }
-        return String.format("%5.2f %c/s", value / 1024.0, ci.charAt(cPos));
+        return String.format(self.getLocale(), "%5.2f %c/s", value / 1024.0, ci.charAt(cPos));
     }
 
     @Override
@@ -144,14 +152,14 @@ public class MainActivity extends AppCompatActivity {
 
         loadSettingsFromNativeCurrentIp();
 
-        HashMap preferences = (HashMap) PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getAll();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        preferences.forEach((key, value) -> {
-            Log.d("Preferences", String.format("Loading Preferences: %s -> %s", key, value));
-            if (key.equals(YassSettingsFragment.EnablePostQuantumKyberPreferenceKey)) {
-                YassUtils.setEnablePostQuantumKyber((Boolean) value);
-            }
-        });
+        {
+            boolean is_enabled = preferences.getBoolean(YassSettingsFragment.EnablePostQuantumKyberPreferenceKey, false);
+            Log.d("Preferences", String.format(getLocale(), "Preferences: Post Quantumn Kyber: %b", is_enabled));
+            YassUtils.setEnablePostQuantumKyber(is_enabled);
+        }
+
 
         Button stopButton = findViewById(R.id.stopButton);
         stopButton.setEnabled(false);
@@ -223,9 +231,9 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = YassVpnService.prepare(getApplicationContext());
 
         if (intent == null) {
-            onActivityResult(VPN_REQUEST_CODE, RESULT_OK, null);
+            onVpnActivityResult(RESULT_OK);
         } else {
-            startActivityForResult(intent, VPN_REQUEST_CODE);
+            vpnActivityResultLauncher.launch(intent);
         }
     }
 
@@ -255,13 +263,11 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Log.v(YASS_TAG, String.format("yass thr started with port %d", local_port));
         }
-        this.runOnUiThread(new Runnable() {
-            public void run() {
-                if (error_msg != null) {
-                    onNativeStartFailedOnUIThread(error_msg, false);
-                } else {
-                    onNativeStartedOnUIThread(local_port);
-                }
+        this.runOnUiThread(() -> {
+            if (error_msg != null) {
+                onNativeStartFailedOnUIThread(error_msg, false);
+            } else {
+                onNativeStartedOnUIThread(local_port);
             }
         });
     }
@@ -271,33 +277,23 @@ public class MainActivity extends AppCompatActivity {
     @SuppressWarnings("unused")
     private void onNativeStopped() {
         Log.v(YASS_TAG, "yass thr stopped");
-        this.runOnUiThread(new Runnable() {
-            public void run() {
-                state = NativeMachineState.STOPPED;
-                Button startButton = findViewById(R.id.startButton);
-                startButton.setEnabled(true);
+        this.runOnUiThread(() -> {
+            state = NativeMachineState.STOPPED;
+            Button startButton = findViewById(R.id.startButton);
+            startButton.setEnabled(true);
 
-                TextView statusTextView = findViewById(R.id.statusTextView);
-                statusTextView.setText(String.format(getString(R.string.status_stopped), YassUtils.getServerHost(), YassUtils.getServerPort()));
-            }
+            TextView statusTextView = findViewById(R.id.statusTextView);
+            statusTextView.setText(String.format(getString(R.string.status_stopped), YassUtils.getServerHost(), YassUtils.getServerPort()));
         });
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == SETTINGS_REQUEST_CODE) {
-            return;
-        }
-        if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
+    protected void onVpnActivityResult(int resultCode) {
+        if (resultCode == RESULT_OK) {
             onStartVpn();
             return;
         }
-        if (requestCode == VPN_REQUEST_CODE) {
-            Log.e(TAG, "vpn service intent not allowed");
-            onNativeStartFailedOnUIThread(String.format(getString(R.string.status_started_with_error_msg), "No permission to create VPN service"), true);
-            return;
-        }
-        super.onActivityResult(requestCode, resultCode, data);
+        Log.e(TAG, "vpn service intent not allowed");
+        onNativeStartFailedOnUIThread(String.format(getString(R.string.status_started_with_error_msg), "No permission to create VPN service"), true);
     }
 
     public void onStartVpn() {
@@ -404,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
     public void onOptionsClicked(View view) {
         // opening a new intent to open settings activity.
         Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-        startActivityForResult(intent, SETTINGS_REQUEST_CODE);
+        optionActivityResultLauncher.launch(intent);
     }
 
     private native long tun2ProxyInit(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);
@@ -427,19 +423,16 @@ public class MainActivity extends AppCompatActivity {
         TimerTask mRefreshTimerTask = new TimerTask() {
             @Override
             public void run() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (state != NativeMachineState.STARTED) {
-                            return;
-                        }
-                        long[] result = getRealtimeTransferRate();
-                        TextView statusTextView = findViewById(R.id.statusTextView);
-                        statusTextView.setText(String.format(getString(R.string.status_started_with_rate),
-                                result[0],
-                                humanReadableByteCountBin(result[1]),
-                                humanReadableByteCountBin(result[2])));
+                handler.post(() -> {
+                    if (state != NativeMachineState.STARTED) {
+                        return;
                     }
+                    long[] result = getRealtimeTransferRate();
+                    TextView statusTextView = findViewById(R.id.statusTextView);
+                    statusTextView.setText(String.format(getString(R.string.status_started_with_rate),
+                            result[0],
+                            humanReadableByteCountBin(result[1]),
+                            humanReadableByteCountBin(result[2])));
                 });
 
             }
