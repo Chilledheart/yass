@@ -2301,6 +2301,11 @@ if (ABSL_BUILD_TESTING)
   set(GMOCK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googlemock/include)
   set(GMOCK_MAIN_LIBRARY absl_gmock_main)
 endif()
+if (MSVC_CRT_LINKAGE STREQUAL "dynamic")
+  set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "")
+else()
+  set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "")
+endif()
 add_subdirectory(third_party/abseil-cpp EXCLUDE_FROM_ALL)
 
 set(SUPPORT_LIBS
