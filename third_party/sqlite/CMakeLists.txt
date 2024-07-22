@@ -281,8 +281,8 @@ set(sqlite_chromium_configuration_flags
 target_compile_definitions(sqlite PUBLIC ${sqlite_chromium_configuration_flags})
 
 if (APPLE)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework CoreFoundation -framework CoreServices")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework CoreFoundation -framework CoreServices")
+  target_link_libraries(sqlite PRIVATE -Wl,-framework,CoreFoundation)
+  target_link_libraries(sqlite PRIVATE -Wl,-framework,CoreServices)
 endif()
 
 if (ANDROID)
