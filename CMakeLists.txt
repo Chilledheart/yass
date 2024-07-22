@@ -1973,8 +1973,10 @@ else()
   if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID OR OHOS)
     include_directories(third_party/lss)
   endif()
-  if (APPLE AND COMPILER_CLANG)
-    link_libraries("-framework Foundation" "-framework SystemConfiguration")
+
+  # TODO use $<LINK_LIBRARY:FRAMEWORK,CoreFoundation> for cmake >= 3.24
+  if (APPLE)
+    link_libraries(-Wl,-framework,CoreFoundation)
   endif()
 endif()
 
@@ -4006,6 +4008,11 @@ if (USE_MIMALLOC)
   target_link_libraries(yass_core PUBLIC ${MIMALLOC_LIB})
 endif()
 
+if (APPLE)
+  target_link_libraries(yass_core PUBLIC -Wl,-framework,Foundation)
+  target_link_libraries(yass_core PUBLIC -Wl,-framework,SystemConfiguration)
+endif()
+
 target_include_directories(yass_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
@@ -4806,8 +4813,6 @@ if (GUI)
         # =======================
         # YassPacketTunnel extensions
         # =======================
-        find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
-
         set(PLUGIN_SRC
           src/ios/utils.h
           src/ios/utils.mm
@@ -4835,7 +4840,7 @@ if (GUI)
           ${CMAKE_CURRENT_SOURCE_DIR}/src
           ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
         target_compile_options(network-extension PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc --start-no-unused-arguments -fobjc-weak --end-no-unused-arguments)
-        target_link_libraries(network-extension PRIVATE ${NetworkExtension_LIBRARY})
+        target_link_libraries(network-extension PRIVATE -Wl,-framework,NetworkExtension)
         set_target_properties(network-extension PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
 
         set_target_properties(network-extension PROPERTIES
@@ -4890,7 +4895,7 @@ if (GUI)
         target_link_libraries(network-extension PRIVATE ${Security_LIBRARY})
         target_link_libraries(network-extension PRIVATE yass_cli_lib)
 
-        target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
+        target_link_libraries(${APP_NAME} PRIVATE -Wl,-framework,NetworkExtension)
     endif()
 
     if (NOT CMAKE_SKIP_INSTALL_RULES)
