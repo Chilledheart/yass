@@ -39,10 +39,11 @@ TEST(SSL_TEST, LoadSystemCa) {
   } else {
     GTEST_SKIP() << "skipped as system version is too low";
   }
-#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS) || !defined(HAVE_BUILTIN_CA_BUNDLE_CRT)
+#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_FREEBSD) || \
+    BUILDFLAG(IS_LINUX) || !defined(HAVE_BUILTIN_CA_BUNDLE_CRT)
   ASSERT_NE(result, 0);
 #else
-  // we don't test on openwrt
+  // we don't test on iOS
   GTEST_SKIP() << "skipped as system is not supported";
 #endif
 }

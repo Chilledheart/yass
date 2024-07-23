@@ -251,7 +251,7 @@ jobs:
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -nc
       - name: Run tests
         run: |
-          bwrap --die-with-parent --bind "${{ env.SDK_ROOT }}" / \
+          bwrap --die-with-parent --bind "$SDK_ROOT" / \
             --ro-bind /sys /sys \
             --ro-bind /etc/resolv.conf /etc/resolv.conf \
             --proc /proc --dev /dev \

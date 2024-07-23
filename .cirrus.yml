@@ -20,7 +20,7 @@ freebsd_task:
 
   pkginstall_script:
     - pkg update -f
-    - pkg install -y cmake ninja pkgconf perl5 go llvm17-lite git
+    - pkg install -y cmake ninja pkgconf perl5 go llvm17-lite git ca_root_nss
   submodules_script:
     # unshallow must come first otherwise submodule may be get unshallowed
     - git fetch --tags --unshallow
