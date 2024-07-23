@@ -3079,11 +3079,12 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
   endif()
 
   add_library(asio_ca_bundle_crt OBJECT ${ASIO_CA_BUNDLE_CRT_SRC})
-  target_compile_definitions(asio_ca_bundle_crt PUBLIC HAVE_BUILTIN_CA_BUNDLE_CRT=1)
   target_include_directories(asio_ca_bundle_crt PRIVATE third_party/ca-certificates)
 
   list(APPEND YASS_APP_FEATURES "ca-certificates 20240203.3.98")
-  target_link_libraries(asio PUBLIC asio_ca_bundle_crt)
+  # macro used in yass_test
+  target_compile_definitions(asio PUBLIC HAVE_BUILTIN_CA_BUNDLE_CRT=1)
+  target_sources(asio PRIVATE $<TARGET_OBJECTS:asio_ca_bundle_crt>)
 endif()
 
 #
@@ -3127,7 +3128,7 @@ endif()
 add_library(asio_supplementary_ca_bundle_crt OBJECT ${ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC})
 target_include_directories(asio_supplementary_ca_bundle_crt PRIVATE third_party/ca-certificates)
 
-target_link_libraries(asio PRIVATE asio_supplementary_ca_bundle_crt)
+target_sources(asio PRIVATE $<TARGET_OBJECTS:asio_supplementary_ca_bundle_crt>)
 
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
@@ -4226,6 +4227,7 @@ target_link_libraries(yass_cli_lib PUBLIC yass_net)
 if (CLI)
   add_executable(yass_cli
     src/cli/cli.cpp
+    $<TARGET_OBJECTS:yass_cli_nogui_lib>
   )
   minject_patch_exetuable(yass_cli)
   if (USE_LTO_CMAKE)
@@ -4251,10 +4253,7 @@ if (CLI)
   target_include_directories(yass_cli PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-  target_link_libraries(yass_cli PUBLIC
-    yass_cli_nogui_lib
-    yass_net
-    )
+  target_link_libraries(yass_cli PUBLIC yass_net)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -4286,6 +4285,7 @@ target_link_libraries(yass_server_lib PUBLIC yass_net)
 if (SERVER)
   add_executable(yass_server
     src/server/server.cpp
+    $<TARGET_OBJECTS:yass_server_lib>
     )
   minject_patch_exetuable(yass_server)
   if (USE_LTO_CMAKE)
@@ -4311,10 +4311,7 @@ if (SERVER)
   target_include_directories(yass_server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-  target_link_libraries(yass_server PUBLIC
-    yass_server_lib
-    yass_net
-    )
+  target_link_libraries(yass_server PUBLIC yass_net)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -4988,6 +4985,8 @@ if (BUILD_TESTS)
     src/net/dns_message_test.cpp
     src/net/doh_resolver_test.cpp
     src/net/dot_resolver_test.cpp
+    $<TARGET_OBJECTS:yass_cli_nogui_lib>
+    $<TARGET_OBJECTS:yass_server_lib>
     )
 
   if (IOS)
@@ -5022,8 +5021,7 @@ if (BUILD_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_test PUBLIC
-      yass_cli_nogui_lib
-      yass_server_lib
+      yass_net
       yass_gtest
       )
   if (WIN32)
@@ -5132,6 +5130,8 @@ endif()
 if (BUILD_BENCHMARKS)
   set(yass_benchmark_SOURCE
     src/ss_benchmark.cpp
+    $<TARGET_OBJECTS:yass_cli_nogui_lib>
+    $<TARGET_OBJECTS:yass_server_lib>
     )
   if (IOS)
     enable_testing()
@@ -5166,8 +5166,7 @@ if (BUILD_BENCHMARKS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_benchmark PUBLIC
-      yass_cli_nogui_lib
-      yass_server_lib
+      yass_net
       benchmark::benchmark
       )
   if (WIN32)

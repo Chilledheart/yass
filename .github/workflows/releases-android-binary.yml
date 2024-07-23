@@ -221,10 +221,9 @@ jobs:
       - name: Run tests (non x86, under qemu emulation)
         if: ${{ matrix.arch != 'x86' && matrix.arch != 'x64' }}
         run: |
-          # required by leveldb unittests
-          mkdir -p $SYSROOT/data/local/tmp
+          # TMPDIR is required by leveldb unittests
           qemu-${{ matrix.qemu_suffix }}-static -L $SYSROOT \
-            -E TMPDIR=$SYSROOT/data/local/tmp \
+            -E TMPDIR=$PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} \
             $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }}/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
