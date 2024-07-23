@@ -25,11 +25,17 @@ using namespace net::dns_message;
 static span<const uint8_t> CreateRequery(const char* name, int dnsclass, int type) {
   uint8_t* buf = nullptr;
   int buflen = 0;
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif  // defined(__clang__)
   EXPECT_EQ(ARES_SUCCESS, ares_create_query(name, dnsclass, type, 0, 0x1, &buf, &buflen, 0));
-  if (buflen == 0) {
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif  // defined(__clang__)
+  static uint8_t poolbuf[1500];
+  if (buflen == 0 || buflen > (int)sizeof(poolbuf)) {
     return {};
   }
-  static uint8_t poolbuf[1500];
   memcpy(poolbuf, buf, buflen);
   ares_free_string(buf);
   return span<const uint8_t>(poolbuf, static_cast<size_t>(buflen));
@@ -116,7 +122,13 @@ TEST(DnsMessageTest, AAndCnameResponseBytesCAresMatch) {
   struct hostent* host = nullptr;
   struct ares_addrttl info[2] = {};
   int count = std::size(info);
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif  // defined(__clang__)
   ASSERT_EQ(ARES_SUCCESS, ares_parse_a_reply(kResponseBytes, std::size(kResponseBytes), &host, info, &count));
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif  // defined(__clang__)
   ASSERT_EQ(2, count);
   ASSERT_EQ(25, info[0].ttl);
   ASSERT_EQ(25, info[1].ttl);
