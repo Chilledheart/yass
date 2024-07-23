@@ -400,12 +400,12 @@ void GetWindowsVersion(int* major, int* minor, int* build_number, int* os_type) 
   //   granular. We need to be able to detect different Windows 10 releases
   //   since they sometimes change behavior in ways that matter.
   // - There is no IsWindows11OrGreater() function yet.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   if (!GetVersionExW(&version_info)) {
     PLOG(WARNING) << "Interal error: GetVersionExW failed";
   }
-#pragma clang diagnostic pop
+#pragma GCC diagnostic pop
 
   *major = version_info.dwMajorVersion;
   *minor = version_info.dwMinorVersion;
