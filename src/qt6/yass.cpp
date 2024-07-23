@@ -30,6 +30,8 @@ namespace config {
 const ProgramType pType = YASS_CLIENT_GUI;
 }  // namespace config
 
+ABSL_FLAG(bool, background, false, "start up background");
+
 #ifdef _WIN32
 void YASSApp::commitData(QSessionManager& manager) {
   if (auto main = App()->main_window_.get()) {
@@ -183,6 +185,10 @@ bool YASSApp::Init() {
   main_window_ = std::make_unique<YASSWindow>();
   main_window_->show();
   main_window_->moveToCenter();
+
+  if (absl::GetFlag(FLAGS_background)) {
+    main_window_->hide();
+  }
 
   tray_icon_ = new TrayIcon(this);
   tray_icon_->show();
