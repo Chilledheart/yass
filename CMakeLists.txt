@@ -3735,10 +3735,6 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     add_compile_options(-Wno-alloc-size-larger-than)
   endif()
 
-  if (APPLE AND COMPILER_CLANG)
-    add_compile_options(-Wno-error=deprecated-declarations)
-  endif()
-
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
     add_compile_options(-Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds)
   endif()
