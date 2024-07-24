@@ -2105,7 +2105,7 @@ elseif (GUI)
 
     if (GUI AND USE_GTK4 AND GTK4_FOUND)
       set(GUI_FLAVOUR "gtk4")
-      set(GUI_OTHER_FLAGS -Wno-deprecated-declarations)
+      set(GUI_OTHER_FLAGS "")
 
       find_program(GLIB_COMPILE_RESOURCES glib-compile-resources HINTS "/usr/bin")
       if(${GLIB_COMPILE_RESOURCES} STREQUAL "GLIB_COMPILE_RESOURCES-NOTFOUND")
