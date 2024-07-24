@@ -1,3 +1,12 @@
+yass (1.12.0-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 128 dependents.
+  * gtk3: refine ui layout.
+  * qt5/qt6: refine ui layout.
+  * qt5/qt6: fix broken autostart feature.
+  * qt5/qt6: handle SIGINT signal properly.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 24 Jul 2024 11:24:09 +0800
 yass (1.11.4-1) UNRELEASED; urgency=medium
 
   * gui: add limit rate option.
