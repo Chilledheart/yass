@@ -173,11 +173,12 @@ YASSWindow::YASSWindow(GApplication* app) : app_(app), impl_(yass_window_new(YAS
 #undef XX
   };
 
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
   GtkComboBoxText* method = GTK_COMBO_BOX_TEXT(impl_->method);
-
   for (const char* method_name : method_names) {
     gtk_combo_box_text_append_text(method, method_name);
   }
+  G_GNUC_END_IGNORE_DEPRECATIONS
 
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart), Utils::GetAutoStart());
 
@@ -185,9 +186,11 @@ YASSWindow::YASSWindow(GApplication* app) : app_(app), impl_(yass_window_new(YAS
 
   gtk_entry_set_visibility(GTK_ENTRY(impl_->password), false);
 
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
   GtkStatusbar* status_bar = GTK_STATUSBAR(impl_->status_bar);
   gtk_statusbar_remove_all(status_bar, 0);
   gtk_statusbar_push(status_bar, 0, _("READY"));
+  G_GNUC_END_IGNORE_DEPRECATIONS
 
   LoadChanges();
 }
@@ -264,7 +267,9 @@ std::string YASSWindow::GetPassword() {
 }
 
 std::string YASSWindow::GetMethod() {
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
   gchar* active_method = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(impl_->method));
+  G_GNUC_END_IGNORE_DEPRECATIONS
 
   return make_unique_ptr_gfree(active_method).get();
 }
@@ -416,7 +421,9 @@ void YASSWindow::LoadChanges() {
       break;
   }
 
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
   gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->method), i);
+  G_GNUC_END_IGNORE_DEPRECATIONS
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_host), local_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_port), local_port_str.c_str());
@@ -432,8 +439,12 @@ void YASSWindow::UpdateStatusBar() {
     return;
   }
   last_status_msg_ = status_msg;
-  gtk_statusbar_remove_all(GTK_STATUSBAR(impl_->status_bar), 0);
-  gtk_statusbar_push(GTK_STATUSBAR(impl_->status_bar), 0, last_status_msg_.c_str());
+
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  GtkStatusbar* status_bar = GTK_STATUSBAR(impl_->status_bar);
+  gtk_statusbar_remove_all(status_bar, 0);
+  gtk_statusbar_push(status_bar, 0, last_status_msg_.c_str());
+  G_GNUC_END_IGNORE_DEPRECATIONS
 }
 
 void YASSWindow::OnClose() {

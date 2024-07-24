@@ -123,11 +123,15 @@ void OptionDialog::OnOkayButtonClicked() {
     return;
   }
   config::SaveConfig();
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
   gtk_dialog_response(GTK_DIALOG(impl_), GTK_RESPONSE_ACCEPT);
+  G_GNUC_END_IGNORE_DEPRECATIONS
 }
 
 void OptionDialog::OnCancelButtonClicked() {
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
   gtk_dialog_response(GTK_DIALOG(impl_), GTK_RESPONSE_CANCEL);
+  G_GNUC_END_IGNORE_DEPRECATIONS
 }
 
 void OptionDialog::run() {
