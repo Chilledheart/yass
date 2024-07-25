@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-09 09:56+0800\n"
+"POT-Creation-Date: 2024-07-25 13:13+0800\n"
 "PO-Revision-Date: 2023-09-15 11:28+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -18,63 +18,63 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: yass.cpp:301
+#: yass.cpp:302
 msgid "Connected with conns: "
 msgstr "已产生连接: "
 
-#: yass.cpp:303
+#: yass.cpp:304
 msgid "Connecting"
 msgstr "连接中"
 
-#: yass.cpp:305
+#: yass.cpp:306
 msgid "Failed to connect due to "
 msgstr "无法连接因为 "
 
-#: yass.cpp:307
+#: yass.cpp:308
 msgid "Disconnecting"
 msgstr "断开连接中"
 
-#: yass.cpp:309
+#: yass.cpp:310
 msgid "Disconnected with "
 msgstr "断开连接于服务器 "
 
-#: yass.cpp:420
+#: yass.cpp:421
 msgid "Last Change: "
 msgstr "最后改动: "
 
-#: yass.cpp:423
+#: yass.cpp:424
 msgid "Enabled Feature: "
 msgstr "启用功能: "
 
-#: yass.cpp:426
+#: yass.cpp:427
 msgid "GUI Variant: "
 msgstr "图形版本: "
 
-#: yass.cpp:435
+#: yass.cpp:436
 msgid "official-site"
 msgstr "官方网站"
 
-#: yass.cpp:441
+#: yass.cpp:442
 msgid "YASS Option"
 msgstr "YASS 选项"
 
-#: yass_window.cpp:190
+#: yass_window.cpp:192
 msgid "READY"
 msgstr "就绪"
 
-#: yass_window.cpp:314
+#: yass_window.cpp:319
 msgid " tx rate: "
 msgstr " 上传速率: "
 
-#: yass_window.cpp:317
+#: yass_window.cpp:322
 msgid " rx rate: "
 msgstr " 下载速率: "
 
-#: yass_window.cpp:352
+#: yass_window.cpp:357
 msgid "Start Failed"
 msgstr "启动失败"
 
-#: yass_window.cpp:353
+#: yass_window.cpp:358
 msgid "OK"
 msgstr "确认"
 
@@ -94,31 +94,31 @@ msgstr "退出"
 msgid "Option"
 msgstr "选项"
 
-#: option_dialog.ui:20
-msgid "TCP keep alive:"
-msgstr "TCP 保活:"
+#: option_dialog.ui:18
+msgid "TCP keep alive"
+msgstr "TCP 保活"
 
-#: option_dialog.ui:30
-msgid "The number of TCP keep-alive probes:"
-msgstr "TCP 保活测量数:"
+#: option_dialog.ui:28
+msgid "The number of TCP keep-alive probes"
+msgstr "TCP 保活测量数"
 
-#: option_dialog.ui:40
-msgid "TCP keep alive after idle:"
-msgstr "TCP 在闲置以后的保活次数:"
+#: option_dialog.ui:38
+msgid "TCP keep alive after idle"
+msgstr "TCP 在闲置以后的保活次数"
 
-#: option_dialog.ui:50
-msgid "TCP keep alive interval:"
-msgstr "TCP 保活间隔:"
+#: option_dialog.ui:48
+msgid "TCP keep alive interval"
+msgstr "TCP 保活间隔"
 
-#: option_dialog.ui:60
-msgid "Kyber post-quantum key agreement for TLS:"
-msgstr "TLS的Kyber后量子密钥协商:"
+#: option_dialog.ui:58
+msgid "Kyber post-quantum key agreement for TLS"
+msgstr "TLS的Kyber后量子密钥协商"
 
-#: option_dialog.ui:110
+#: option_dialog.ui:108
 msgid "Okay"
 msgstr "确认"
 
-#: option_dialog.ui:119
+#: option_dialog.ui:117
 msgid "Cancel"
 msgstr "取消"
 
@@ -126,66 +126,66 @@ msgstr "取消"
 msgid "Yet Another Shadow Socket"
 msgstr "YASS"
 
-#: yass_window.ui:31
-msgid "Server Host:"
-msgstr "服务器域名:"
+#: yass_window.ui:30
+msgid "Server Host"
+msgstr "服务器域名"
 
-#: yass_window.ui:41
-msgid "Server SNI:"
-msgstr "服务器名称指示:"
+#: yass_window.ui:40
+msgid "Server SNI"
+msgstr "服务器名称指示"
 
-#: yass_window.ui:51
-msgid "Server Port:"
-msgstr "服务器端口号:"
+#: yass_window.ui:50
+msgid "Server Port"
+msgstr "服务器端口号"
 
-#: yass_window.ui:61
-msgid "Username:"
-msgstr "用户名:"
+#: yass_window.ui:60
+msgid "Username"
+msgstr "用户名"
 
-#: yass_window.ui:71
-msgid "Password:"
-msgstr "密码:"
+#: yass_window.ui:70
+msgid "Password"
+msgstr "密码"
 
-#: yass_window.ui:81
-msgid "Cipher/Method:"
-msgstr "加密方式:"
+#: yass_window.ui:80
+msgid "Cipher/Method"
+msgstr "加密方式"
 
-#: yass_window.ui:91
-msgid "Local Host:"
-msgstr "本地域名:"
+#: yass_window.ui:90
+msgid "Local Host"
+msgstr "本地域名"
 
-#: yass_window.ui:101
-msgid "Local Port:"
-msgstr "本地端口号:"
+#: yass_window.ui:100
+msgid "Local Port"
+msgstr "本地端口号"
 
-#: yass_window.ui:111
-msgid "DNS over HTTPS URL:"
-msgstr "基于 HTTPS 的 DNS (DoH) URL:"
+#: yass_window.ui:110
+msgid "DNS over HTTPS URL"
+msgstr "基于 HTTPS 的 DNS (DoH) URL"
 
-#: yass_window.ui:121
-msgid "DNS over TLS Host:"
-msgstr "基于 TLS 的 DNS (DoT) 域名:"
+#: yass_window.ui:120
+msgid "DNS over TLS Host"
+msgstr "基于 TLS 的 DNS (DoT) 域名"
 
-#: yass_window.ui:131
-msgid "Limit Rate:"
-msgstr "限制速率:"
+#: yass_window.ui:130
+msgid "Limit Rate"
+msgstr "限制速率"
 
-#: yass_window.ui:141
-msgid "Timeout:"
-msgstr "超时时间:"
+#: yass_window.ui:140
+msgid "Timeout"
+msgstr "超时时间"
 
-#: yass_window.ui:151
-msgid "Auto Start:"
-msgstr "随系统自启动:"
+#: yass_window.ui:150
+msgid "Auto Start"
+msgstr "随系统自启动"
 
-#: yass_window.ui:161
-msgid "System Proxy:"
-msgstr "系统代理:"
+#: yass_window.ui:160
+msgid "System Proxy"
+msgstr "系统代理"
 
-#: yass_window.ui:283
+#: yass_window.ui:282
 msgid "Start"
 msgstr "启动"
 
-#: yass_window.ui:292
+#: yass_window.ui:291
 msgid "Stop"
 msgstr "停止"

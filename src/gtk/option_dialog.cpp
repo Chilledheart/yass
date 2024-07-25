@@ -57,7 +57,7 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
   gtk_widget_set_margin_right(GTK_WIDGET(grid), 12);
 #endif
   gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
-  gtk_grid_set_row_spacing(GTK_GRID(grid), 12);
+  gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
 
   okay_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(okay_button_, _("Okay"));

@@ -104,9 +104,11 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   start_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(start_button_, _("Start"));
+  gtk_widget_set_size_request(GTK_WIDGET(start_button_), 84, -1);
 
   stop_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(stop_button_, _("Stop"));
+  gtk_widget_set_size_request(GTK_WIDGET(stop_button_), 84, -1);
 
   auto start_callback = [](GtkButton* self, gpointer pointer) {
     YASSWindow* window = (YASSWindow*)pointer;
@@ -127,35 +129,69 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_grid_attach(grid, GTK_WIDGET(start_button_), 0, 2, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(stop_button_), 0, 7, 1, 1);
 
-  auto server_host_label_ = gtk_label_new(_("Server Host"));
-  auto server_sni_label_ = gtk_label_new(_("Server SNI"));
-  auto server_port_label_ = gtk_label_new(_("Server Port"));
-  auto username_label_ = gtk_label_new(_("Username"));
-  auto password_label_ = gtk_label_new(_("Password"));
-  auto method_label_ = gtk_label_new(_("Cipher/Method"));
-  auto local_host_label_ = gtk_label_new(_("Local Host"));
-  auto local_port_label_ = gtk_label_new(_("Local Port"));
-  auto doh_url_label_ = gtk_label_new(_("DNS over HTTPS URL"));
-  auto dot_host_label_ = gtk_label_new(_("DNS over TLS Host"));
-  auto limit_rate_label_ = gtk_label_new(_("Limit Rate"));
-  auto timeout_label_ = gtk_label_new(_("Timeout"));
-  auto autostart_label_ = gtk_label_new(_("Auto Start"));
-  auto systemproxy_label_ = gtk_label_new(_("System Proxy"));
+  auto server_host_label = gtk_label_new(_("Server Host"));
+  auto server_sni_label = gtk_label_new(_("Server SNI"));
+  auto server_port_label = gtk_label_new(_("Server Port"));
+  auto username_label = gtk_label_new(_("Username"));
+  auto password_label = gtk_label_new(_("Password"));
+  auto method_label = gtk_label_new(_("Cipher/Method"));
+  auto local_host_label = gtk_label_new(_("Local Host"));
+  auto local_port_label = gtk_label_new(_("Local Port"));
+  auto doh_url_label = gtk_label_new(_("DNS over HTTPS URL"));
+  auto dot_host_label = gtk_label_new(_("DNS over TLS Host"));
+  auto limit_rate_label = gtk_label_new(_("Limit Rate"));
+  auto timeout_label = gtk_label_new(_("Timeout"));
+  auto autostart_label = gtk_label_new(_("Auto Start"));
+  auto systemproxy_label = gtk_label_new(_("System Proxy"));
 
-  gtk_grid_attach(grid, GTK_WIDGET(server_host_label_), 1, 0, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(server_sni_label_), 1, 1, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(server_port_label_), 1, 2, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(username_label_), 1, 3, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(password_label_), 1, 4, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(method_label_), 1, 5, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(local_host_label_), 1, 6, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(local_port_label_), 1, 7, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(doh_url_label_), 1, 8, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(dot_host_label_), 1, 9, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(limit_rate_label_), 1, 10, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(timeout_label_), 1, 11, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(autostart_label_), 1, 12, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(systemproxy_label_), 1, 13, 1, 1);
+  // see https://stackoverflow.com/questions/24994255/how-to-left-align-a-gtk-label-when-its-width-is-set-by-gtksizegroup
+#if GTK_CHECK_VERSION(3, 16, 0)
+  gtk_label_set_xalign(GTK_LABEL(server_host_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(server_sni_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(server_port_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(username_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(password_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(method_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(local_host_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(local_port_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(doh_url_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(dot_host_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(limit_rate_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(timeout_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(autostart_label), 0.0);
+  gtk_label_set_xalign(GTK_LABEL(systemproxy_label), 0.0);
+#else
+  gtk_misc_set_alignment(GTK_MISC(server_host_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(server_host_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(server_sni_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(server_port_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(username_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(password_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(method_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(local_host_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(local_port_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(doh_url_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(dot_host_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(limit_rate_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(timeout_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(autostart_label), 0.0, 0.5);
+  gtk_misc_set_alignment(GTK_MISC(systemproxy_label), 0.0, 0.5);
+#endif
+
+  gtk_grid_attach(grid, GTK_WIDGET(server_host_label), 1, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_sni_label), 1, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(server_port_label), 1, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(username_label), 1, 3, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(password_label), 1, 4, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(method_label), 1, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(local_host_label), 1, 6, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(local_port_label), 1, 7, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(doh_url_label), 1, 8, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(dot_host_label), 1, 9, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(limit_rate_label), 1, 10, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(timeout_label), 1, 11, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(autostart_label), 1, 12, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(systemproxy_label), 1, 13, 1, 1);
 
   server_host_ = GTK_ENTRY(gtk_entry_new());
   server_sni_ = GTK_ENTRY(gtk_entry_new());
@@ -230,7 +266,7 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_widget_set_margin_right(GTK_WIDGET(grid), 12);
 #endif
   gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
-  gtk_grid_set_row_spacing(GTK_GRID(grid), 12);
+  gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
 
   gtk_box_pack_start(vbox, GTK_WIDGET(grid), true, false, 0);
 

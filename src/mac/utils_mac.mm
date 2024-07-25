@@ -374,8 +374,11 @@ CPUType GetCPUType() {
 
 std::string GetModelIdentifier() {
   std::string return_string;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   gurl_base::mac::ScopedIOObject<io_service_t> platform_expert(
       IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
+#pragma clang diagnostic pop
   if (platform_expert) {
     ScopedCFTypeRef<CFDataRef> model_data(static_cast<CFDataRef>(
         IORegistryEntryCreateCFProperty(platform_expert, CFSTR("model"), kCFAllocatorDefault, 0)));
@@ -414,8 +417,11 @@ std::string GetOSDisplayName() {
 }
 
 std::string GetPlatformSerialNumber() {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   gurl_base::mac::ScopedIOObject<io_service_t> expert_device(
       IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
+#pragma clang diagnostic pop
   if (!expert_device) {
     DLOG(ERROR) << "Error retrieving the machine serial number.";
     return std::string();
