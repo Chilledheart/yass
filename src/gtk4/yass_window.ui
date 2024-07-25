@@ -27,8 +27,8 @@
             <property name="row-homogeneous">true</property>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Server Host:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Server Host</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">0</property>
@@ -37,8 +37,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Server SNI:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Server SNI</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">1</property>
@@ -47,8 +47,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Server Port:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Server Port</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">2</property>
@@ -57,8 +57,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Username:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Username</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">3</property>
@@ -67,8 +67,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Password:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Password</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">4</property>
@@ -77,8 +77,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Cipher/Method:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Cipher/Method</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">5</property>
@@ -87,8 +87,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Local Host:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Local Host</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">6</property>
@@ -97,8 +97,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Local Port:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Local Port</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">7</property>
@@ -107,8 +107,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">DNS over HTTPS URL:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">DNS over HTTPS URL</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">8</property>
@@ -117,8 +117,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">DNS over TLS Host:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">DNS over TLS Host</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">9</property>
@@ -127,8 +127,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Limit Rate:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Limit Rate</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">10</property>
@@ -137,8 +137,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Timeout:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Timeout</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">11</property>
@@ -147,8 +147,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Auto Start:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Auto Start</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">12</property>
@@ -157,8 +157,8 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">System Proxy:</property>
-                <property name="xalign">1</property>
+                <property name="label" translatable="yes">System Proxy</property>
+                <property name="xalign">0.0</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">13</property>
