@@ -35,25 +35,29 @@ __CRT_UUID_DECL(TrayIcon, 0x4324603D, 0x4274, 0x47AA, 0xBA, 0xD5, 0x7C, 0xF6, 0x
 #endif
 #endif
 
-#define INITIAL_COLUMN_ONE_LEFT 20
-#define INITIAL_COLUMN_TWO_LEFT 120
-#define INITIAL_COLUMN_THREE_LEFT 240
-
+#define INITIAL_ROW_HEIGHT 12
 #define INITIAL_VERTICAL_HEIGHT 30
 
-#define INITIAL_BUTTON_WIDTH 75
+#define INITIAL_BUTTON_WIDTH 80
 #define INITIAL_BUTTON_HEIGHT 30
 
-#define INITIAL_LABEL_WIDTH 130
-#define INITIAL_LABEL_HEIGHT 25
-#define INITIAL_EDIT_WIDTH 220
-#define INITIAL_EDIT_HEIGHT 25
+#define INITIAL_LABEL_WIDTH 200
+#define INITIAL_LABEL_HEIGHT 24
+#define INITIAL_EDIT_WIDTH 160
+#define INITIAL_EDIT_HEIGHT 24
 #define INITIAL_STATUS_BAR_HEIGHT 20
+
+static_assert(INITIAL_LABEL_HEIGHT == INITIAL_EDIT_HEIGHT);
+
+#define INITIAL_COLUMN_ONE_LEFT 12
+#define INITIAL_COLUMN_TWO_LEFT (INITIAL_COLUMN_ONE_LEFT + INITIAL_BUTTON_WIDTH + 12)
+#define INITIAL_COLUMN_THREE_LEFT (INITIAL_COLUMN_TWO_LEFT + INITIAL_LABEL_WIDTH + 12)
 
 #define COLUMN_ONE_LEFT MulDiv(INITIAL_COLUMN_ONE_LEFT, uDpi, 96)
 #define COLUMN_TWO_LEFT MulDiv(INITIAL_COLUMN_TWO_LEFT, uDpi, 96)
 #define COLUMN_THREE_LEFT MulDiv(INITIAL_COLUMN_THREE_LEFT, uDpi, 96)
 
+#define ROW_HEIGHT MulDiv(INITIAL_ROW_HEIGHT, uDpi, 96)
 #define VERTICAL_HEIGHT MulDiv(INITIAL_VERTICAL_HEIGHT, uDpi, 96)
 
 #define BUTTON_WIDTH MulDiv(INITIAL_BUTTON_WIDTH, uDpi, 96)
@@ -841,124 +845,128 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
   // RIGHT Panel
   // Column 2
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 0;
   SetWindowPos(server_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 1;
   SetWindowPos(server_sni_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 2;
   SetWindowPos(server_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 3;
   SetWindowPos(username_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 4;
   SetWindowPos(password_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 5;
   SetWindowPos(method_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 6;
   SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 7;
   SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 8;
   SetWindowPos(doh_url_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 9;
   SetWindowPos(dot_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 10;
   SetWindowPos(limit_rate_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 12;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 11;
   SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 13;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 12;
   SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 14;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 13;
   SetWindowPos(systemproxy_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   // Column 3
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 0;
   SetWindowPos(server_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 1;
   SetWindowPos(server_sni_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 2;
   SetWindowPos(server_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 3;
   SetWindowPos(username_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 4;
   SetWindowPos(password_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
+  for (int i = 0, cnt = ComboBox_GetCount(method_combo_box_); i < cnt; ++i) {
+    ComboBox_SetItemHeight(method_combo_box_, i, EDIT_HEIGHT);
+  }
+
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 5;
   SetWindowPos(method_combo_box_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 6;
   SetWindowPos(local_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 7;
   SetWindowPos(local_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 8;
   SetWindowPos(doh_url_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 9;
   SetWindowPos(dot_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 10;
   SetWindowPos(limit_rate_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 12;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 11;
   SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 13;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 12;
   SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 14;
+  rect.top = client_rect.top + ROW_HEIGHT + VERTICAL_HEIGHT * 13;
   SetWindowPos(systemproxy_button_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 

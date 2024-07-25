@@ -266,7 +266,7 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_widget_set_margin_right(GTK_WIDGET(grid), 12);
 #endif
   gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
-  gtk_grid_set_row_spacing(GTK_GRID(grid), 12);
+  gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
 
   gtk_box_pack_start(vbox, GTK_WIDGET(grid), true, false, 0);
 

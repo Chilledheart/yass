@@ -165,7 +165,7 @@ BOOL CYassApp::InitInstance() {
   std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
-  RECT rect{0, 0, MULDIVDPI(530), MULDIVDPI(540)};
+  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(520)};
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
