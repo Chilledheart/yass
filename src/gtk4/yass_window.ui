@@ -281,6 +281,7 @@
             <child>
               <object class="GtkButton" id="start_button">
                 <property name="label" translatable="yes">Start</property>
+                <property name="width-request">84</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">2</property>
@@ -290,6 +291,7 @@
             <child>
               <object class="GtkButton" id="stop_button">
                 <property name="label" translatable="yes">Stop</property>
+                <property name="width-request">84</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">7</property>
