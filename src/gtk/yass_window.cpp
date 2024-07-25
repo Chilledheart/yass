@@ -104,9 +104,11 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   start_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(start_button_, _("Start"));
+  gtk_widget_set_size_request(GTK_WIDGET(start_button_), 84, -1);
 
   stop_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(stop_button_, _("Stop"));
+  gtk_widget_set_size_request(GTK_WIDGET(stop_button_), 84, -1);
 
   auto start_callback = [](GtkButton* self, gpointer pointer) {
     YASSWindow* window = (YASSWindow*)pointer;
