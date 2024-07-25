@@ -23,7 +23,7 @@
             <property name="margin-end">12</property>
             <property name="margin-top">12</property>
             <property name="margin-bottom">12</property>
-            <property name="row-spacing">12</property>
+            <property name="row-spacing">6</property>
             <property name="column-spacing">12</property>
             <property name="row-homogeneous">true</property>
             <child>
@@ -302,6 +302,10 @@
         </child>
         <child type="statusbar">
           <object class="GtkStatusbar" id="status_bar">
+            <property name="margin-start">10</property>
+            <property name="margin-end">10</property>
+            <property name="margin-top">6</property>
+            <property name="margin-bottom">6</property>
           </object>
         </child>
       </object>

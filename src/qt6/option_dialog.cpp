@@ -20,7 +20,8 @@ OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
 
   QGridLayout* grid = new QGridLayout;
   grid->setContentsMargins(12, 12, 12, 12);
-  grid->setSpacing(12);
+  grid->setHorizontalSpacing(12);
+  grid->setVerticalSpacing(6);
 
   auto tcp_keep_alive_label = new QLabel(tr("TCP keep alive"));
   auto tcp_keep_alive_cnt_label = new QLabel(tr("The number of TCP keep-alive probes"));

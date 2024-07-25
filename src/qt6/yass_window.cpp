@@ -67,7 +67,8 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
 
   QGridLayout* grid = new QGridLayout;
   grid->setContentsMargins(12, 12, 12, 12);
-  grid->setSpacing(12);
+  grid->setHorizontalSpacing(12);
+  grid->setVerticalSpacing(6);
 
   // Left (Column 0) << Grid << Vertical Box
 
