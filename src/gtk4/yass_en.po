@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-09 09:56+0800\n"
+"POT-Creation-Date: 2024-07-25 13:13+0800\n"
 "PO-Revision-Date: 2023-05-24 14:35+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -17,63 +17,63 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: yass.cpp:301
+#: yass.cpp:302
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
 
-#: yass.cpp:303
+#: yass.cpp:304
 msgid "Connecting"
 msgstr "Connecting"
 
-#: yass.cpp:305
+#: yass.cpp:306
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
 
-#: yass.cpp:307
+#: yass.cpp:308
 msgid "Disconnecting"
 msgstr "Disconnecting"
 
-#: yass.cpp:309
+#: yass.cpp:310
 msgid "Disconnected with "
 msgstr "Disconnected with "
 
-#: yass.cpp:420
+#: yass.cpp:421
 msgid "Last Change: "
 msgstr "Last Change: "
 
-#: yass.cpp:423
+#: yass.cpp:424
 msgid "Enabled Feature: "
 msgstr "Enabled Feature: "
 
-#: yass.cpp:426
+#: yass.cpp:427
 msgid "GUI Variant: "
 msgstr "GUI Variant: "
 
-#: yass.cpp:435
+#: yass.cpp:436
 msgid "official-site"
 msgstr "official-site"
 
-#: yass.cpp:441
+#: yass.cpp:442
 msgid "YASS Option"
 msgstr "YASS Option"
 
-#: yass_window.cpp:190
+#: yass_window.cpp:192
 msgid "READY"
 msgstr "READY"
 
-#: yass_window.cpp:314
+#: yass_window.cpp:319
 msgid " tx rate: "
 msgstr " tx rate: "
 
-#: yass_window.cpp:317
+#: yass_window.cpp:322
 msgid " rx rate: "
 msgstr " rx rate: "
 
-#: yass_window.cpp:352
+#: yass_window.cpp:357
 msgid "Start Failed"
 msgstr "Start Failed"
 
-#: yass_window.cpp:353
+#: yass_window.cpp:358
 msgid "OK"
 msgstr "OK"
 
@@ -93,31 +93,31 @@ msgstr "Quit"
 msgid "Option"
 msgstr "Option"
 
-#: option_dialog.ui:20
-msgid "TCP keep alive:"
-msgstr "TCP keep alive:"
+#: option_dialog.ui:18
+msgid "TCP keep alive"
+msgstr "TCP keep alive"
 
-#: option_dialog.ui:30
-msgid "The number of TCP keep-alive probes:"
-msgstr "The number of TCP keep-alive probes:"
+#: option_dialog.ui:28
+msgid "The number of TCP keep-alive probes"
+msgstr "The number of TCP keep-alive probes"
 
-#: option_dialog.ui:40
-msgid "TCP keep alive after idle:"
-msgstr "TCP keep alive after idle:"
+#: option_dialog.ui:38
+msgid "TCP keep alive after idle"
+msgstr "TCP keep alive after idle"
 
-#: option_dialog.ui:50
-msgid "TCP keep alive interval:"
-msgstr "TCP keep alive interval:"
+#: option_dialog.ui:48
+msgid "TCP keep alive interval"
+msgstr "TCP keep alive interval"
 
-#: option_dialog.ui:60
-msgid "Kyber post-quantum key agreement for TLS:"
-msgstr "Kyber post-quantum key agreement for TLS:"
+#: option_dialog.ui:58
+msgid "Kyber post-quantum key agreement for TLS"
+msgstr "Kyber post-quantum key agreement for TLS"
 
-#: option_dialog.ui:110
+#: option_dialog.ui:108
 msgid "Okay"
 msgstr "Okay"
 
-#: option_dialog.ui:119
+#: option_dialog.ui:117
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -125,66 +125,66 @@ msgstr "Cancel"
 msgid "Yet Another Shadow Socket"
 msgstr "Yet Another Shadow Socket"
 
-#: yass_window.ui:31
-msgid "Server Host:"
-msgstr "Server Host:"
+#: yass_window.ui:30
+msgid "Server Host"
+msgstr "Server Host"
 
-#: yass_window.ui:41
-msgid "Server SNI:"
-msgstr "Server SNI:"
+#: yass_window.ui:40
+msgid "Server SNI"
+msgstr "Server SNI"
 
-#: yass_window.ui:51
-msgid "Server Port:"
-msgstr "Server Port:"
+#: yass_window.ui:50
+msgid "Server Port"
+msgstr "Server Port"
 
-#: yass_window.ui:61
-msgid "Username:"
-msgstr "Username:"
+#: yass_window.ui:60
+msgid "Username"
+msgstr "Username"
 
-#: yass_window.ui:71
-msgid "Password:"
-msgstr "Password:"
+#: yass_window.ui:70
+msgid "Password"
+msgstr "Password"
 
-#: yass_window.ui:81
-msgid "Cipher/Method:"
-msgstr "Cipher/Method:"
+#: yass_window.ui:80
+msgid "Cipher/Method"
+msgstr "Cipher/Method"
 
-#: yass_window.ui:91
-msgid "Local Host:"
-msgstr "Local Host:"
+#: yass_window.ui:90
+msgid "Local Host"
+msgstr "Local Host"
 
-#: yass_window.ui:101
-msgid "Local Port:"
-msgstr "Local Port:"
+#: yass_window.ui:100
+msgid "Local Port"
+msgstr "Local Port"
 
-#: yass_window.ui:111
-msgid "DNS over HTTPS URL:"
-msgstr "DNS over HTTPS URL:"
+#: yass_window.ui:110
+msgid "DNS over HTTPS URL"
+msgstr "DNS over HTTPS URL"
 
-#: yass_window.ui:121
-msgid "DNS over TLS Host:"
-msgstr "DNS over TLS Host:"
+#: yass_window.ui:120
+msgid "DNS over TLS Host"
+msgstr "DNS over TLS Host"
 
-#: yass_window.ui:131
-msgid "Limit Rate:"
-msgstr "Limit Rate:"
+#: yass_window.ui:130
+msgid "Limit Rate"
+msgstr "Limit Rate"
 
-#: yass_window.ui:141
-msgid "Timeout:"
-msgstr "Timeout:"
+#: yass_window.ui:140
+msgid "Timeout"
+msgstr "Timeout"
 
-#: yass_window.ui:151
-msgid "Auto Start:"
-msgstr "Auto Start:"
+#: yass_window.ui:150
+msgid "Auto Start"
+msgstr "Auto Start"
 
-#: yass_window.ui:161
-msgid "System Proxy:"
-msgstr "System Proxy:"
+#: yass_window.ui:160
+msgid "System Proxy"
+msgstr "System Proxy"
 
-#: yass_window.ui:283
+#: yass_window.ui:282
 msgid "Start"
 msgstr "Start"
 
-#: yass_window.ui:292
+#: yass_window.ui:291
 msgid "Stop"
 msgstr "Stop"
