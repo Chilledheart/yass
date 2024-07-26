@@ -1,3 +1,13 @@
+yass (1.11.5-1) UNRELEASED; urgency=medium
+
+  * gtk3: refine ui layout.
+  * qt5/qt6: refine ui layout.
+  * qt5/qt6: fix broken autostart feature.
+  * qt5/qt6: handle SIGINT signal properly.
+  * ui: lower veritical spacing to 6 pixels.
+  * gtk4: close dialogs on signal SIGINT.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 26 Jul 2024 19:29:29 +0800
 yass (1.11.4-1) UNRELEASED; urgency=medium
 
   * gui: add limit rate option.
