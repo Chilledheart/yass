@@ -18,6 +18,7 @@ G_DECLARE_FINAL_TYPE(YASSGtkWindow, yass_window, YASSGtk, WINDOW, GtkApplication
 YASSGtkWindow* yass_window_new(YASSGtkApp* app);
 }
 
+class OptionDialog;
 class YASSWindow {
  public:
   YASSWindow(GApplication* app);
@@ -39,6 +40,17 @@ class YASSWindow {
   void OnStopButtonClicked();
   void OnAutoStartClicked();
   void OnSystemProxyClicked();
+
+ public:
+  void OnAbout();
+  void OnOption();
+
+  void OnAboutDialogClose();
+  void OnOptionDialogClose();
+
+ private:
+  GtkAboutDialog* about_dialog_ = nullptr;
+  OptionDialog* option_dialog_ = nullptr;
 
  public:
   std::string GetServerHost();

@@ -20,11 +20,8 @@
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
-#include "feature.h"
 #include "freedesktop/utils.hpp"
-#include "gtk4/option_dialog.hpp"
 #include "gtk4/yass_window.hpp"
-#include "gui_variant.h"
 #include "version.h"
 
 namespace config {
@@ -413,33 +410,9 @@ std::string YASSApp::SaveConfig() {
 }
 
 void YASSApp::OnAbout() {
-  GtkAboutDialog* about_dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
-  const char* artists[] = {"macosicons.com", nullptr};
-  gtk_about_dialog_set_artists(about_dialog, artists);
-  const char* authors[] = {YASS_APP_COMPANY_NAME, nullptr};
-  gtk_about_dialog_set_authors(about_dialog, authors);
-  std::string comments = _("Last Change: ");
-  comments += YASS_APP_LAST_CHANGE;
-  comments += "\n";
-  comments += _("Enabled Feature: ");
-  comments += YASS_APP_FEATURES;
-  comments += "\n";
-  comments += _("GUI Variant: ");
-  comments += YASS_GUI_FLAVOUR;
-  gtk_about_dialog_set_comments(about_dialog, comments.c_str());
-  gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
-  gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0_ONLY);
-  gtk_about_dialog_set_logo_icon_name(about_dialog, "yass");
-  gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
-  gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
-  gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
-  gtk_about_dialog_set_website_label(about_dialog, _("official-site"));
-
-  gtk_window_present(GTK_WINDOW(about_dialog));
+  main_window_->OnAbout();
 }
 
 void YASSApp::OnOption() {
-  auto dialog = new OptionDialog(_("YASS Option"), GTK_WINDOW(main_window_->impl()), true);
-
-  dialog->run();
+  main_window_->OnOption();
 }

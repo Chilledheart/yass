@@ -10,9 +10,12 @@
 
 #include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
+#include "feature.h"
 #include "freedesktop/utils.hpp"
 #include "gtk/utils.hpp"
+#include "gtk4/option_dialog.hpp"
 #include "gtk4/yass.hpp"
+#include "gui_variant.h"
 #include "version.h"
 
 #include <gtk/gtkwindow.h>
@@ -128,14 +131,11 @@ YASSGtkWindow* yass_window_new(YASSGtkApp* app) {
 }  // extern "C"
 
 YASSWindow::YASSWindow(GApplication* app) : app_(app), impl_(yass_window_new(YASSGtk_APP(app))) {
-  // forward to hide event
-  gtk_window_set_hide_on_close(GTK_WINDOW(impl_), TRUE);
-
-  auto hide_callback = [](GtkWidget* self, gpointer pointer) {
+  auto close_callback = [](GtkWindow* self, gpointer pointer) {
     YASSWindow* window = (YASSWindow*)pointer;
     window->OnClose();
   };
-  g_signal_connect(G_OBJECT(impl_), "hide", G_CALLBACK(*hide_callback), this);
+  g_signal_connect(G_OBJECT(impl_), "close-requet", G_CALLBACK(*close_callback), this);
 
   auto start_callback = [](GtkButton* self, gpointer pointer) {
     YASSWindow* window = (YASSWindow*)pointer;
@@ -208,6 +208,12 @@ void YASSWindow::present() {
 }
 
 void YASSWindow::close() {
+  if (about_dialog_) {
+    gtk_window_close(GTK_WINDOW(about_dialog_));
+  }
+  if (option_dialog_) {
+    option_dialog_->OnCancelButtonClicked();
+  }
   gtk_application_remove_window(GTK_APPLICATION(app_), GTK_WINDOW(impl_));
 }
 
@@ -244,6 +250,75 @@ void YASSWindow::OnAutoStartClicked() {
 
 void YASSWindow::OnSystemProxyClicked() {
   Utils::SetSystemProxy(gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->systemproxy)));
+}
+
+void YASSWindow::OnAbout() {
+  if (!about_dialog_) {
+    LOG(INFO) << "About Dialog new";
+    GtkAboutDialog* about_dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
+    const char* artists[] = {"macosicons.com", nullptr};
+    gtk_about_dialog_set_artists(about_dialog, artists);
+    const char* authors[] = {YASS_APP_COMPANY_NAME, nullptr};
+    gtk_about_dialog_set_authors(about_dialog, authors);
+    std::string comments = _("Last Change: ");
+    comments += YASS_APP_LAST_CHANGE;
+    comments += "\n";
+    comments += _("Enabled Feature: ");
+    comments += YASS_APP_FEATURES;
+    comments += "\n";
+    comments += _("GUI Variant: ");
+    comments += YASS_GUI_FLAVOUR;
+    gtk_about_dialog_set_comments(about_dialog, comments.c_str());
+    gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
+    gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0_ONLY);
+    gtk_about_dialog_set_logo_icon_name(about_dialog, "yass");
+    gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
+    gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
+    gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
+    gtk_about_dialog_set_website_label(about_dialog, _("official-site"));
+
+    auto close_callback = [](GtkWindow* self, gpointer pointer) {
+      YASSWindow* window = (YASSWindow*)pointer;
+      window->OnAboutDialogClose();
+    };
+    g_signal_connect(G_OBJECT(about_dialog), "close-request", G_CALLBACK(*close_callback), this);
+
+    about_dialog_ = about_dialog;
+  }
+
+  gtk_window_present(GTK_WINDOW(about_dialog_));
+}
+
+void YASSWindow::OnOption() {
+  if (!option_dialog_) {
+    LOG(INFO) << "Option Dialog new";
+    auto dialog = new OptionDialog(_("YASS Option"), GTK_WINDOW(impl_), true);
+
+    auto response_callback = [](GtkDialog* self, gint response_id, gpointer pointer) {
+      YASSWindow* window = (YASSWindow*)pointer;
+      window->OnOptionDialogClose();
+    };
+
+    g_signal_connect(dialog->impl_, "response", G_CALLBACK(*response_callback), this);
+
+    option_dialog_ = dialog;
+  }
+  option_dialog_->run();
+}
+
+void YASSWindow::OnAboutDialogClose() {
+  DCHECK(about_dialog_);
+  LOG(INFO) << "About Dialog closed";
+  gtk_window_destroy(GTK_WINDOW(about_dialog_));
+  about_dialog_ = nullptr;
+}
+
+void YASSWindow::OnOptionDialogClose() {
+  DCHECK(option_dialog_);
+  LOG(INFO) << "Option Dialog closed";
+
+  delete option_dialog_;
+  option_dialog_ = nullptr;
 }
 
 std::string YASSWindow::GetServerHost() {

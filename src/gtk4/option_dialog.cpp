@@ -102,13 +102,6 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
 
   g_signal_connect(G_OBJECT(impl_->cancel_button), "clicked", G_CALLBACK(*cancel_callback), this);
 
-  auto response_callback = [](GtkDialog* self, gint response_id, gpointer pointer) {
-    OptionDialog* window = (OptionDialog*)pointer;
-    delete window;
-  };
-
-  g_signal_connect(impl_, "response", G_CALLBACK(*response_callback), this);
-
   LoadChanges();
 
   gtk_widget_set_visible(GTK_WIDGET(impl_), true);
