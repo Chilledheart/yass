@@ -144,7 +144,8 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   auto autostart_label = gtk_label_new(_("Auto Start"));
   auto systemproxy_label = gtk_label_new(_("System Proxy"));
 
-  // see https://stackoverflow.com/questions/24994255/how-to-left-align-a-gtk-label-when-its-width-is-set-by-gtksizegroup
+  // see
+  // https://stackoverflow.com/questions/24994255/how-to-left-align-a-gtk-label-when-its-width-is-set-by-gtksizegroup
 #if GTK_CHECK_VERSION(3, 16, 0)
   gtk_label_set_xalign(GTK_LABEL(server_host_label), 0.0);
   gtk_label_set_xalign(GTK_LABEL(server_sni_label), 0.0);

@@ -30,6 +30,7 @@ class OptionDialog {
   bool OnSave();
 
  private:
+  friend class YASSWindow;
   OptionGtkDialog* impl_;
 };  // OptionDialog
 
