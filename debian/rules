@@ -13,6 +13,9 @@ export GOPROXY
 # In compat 13 and later, The variables HOME will be set to a writable directory
 export HOME=/tmp
 
+# mark as official build
+CMAKE_OPTIONS += -DOFFICIAL_BUILD=on
+
 CMAKE_OPTIONS += ${CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE}
 
 # this fix is required before debhelper 11.4

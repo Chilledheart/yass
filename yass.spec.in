@@ -200,7 +200,7 @@ for embedded devices and low end boxes.
 mkdir build
 cd build
 # old c-ares doesn't contain ares_getaddrinfo api
-%cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
+%cmake_alias -G Ninja -DOFFICIAL_BUILD=on -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on \
    -DUSE_QT6="%enable_use_qt6_opt" -DUSE_QT5="%enable_use_qt5_opt" \
    -DUSE_GTK4="%enable_use_gtk4_opt" -DGUI=on \

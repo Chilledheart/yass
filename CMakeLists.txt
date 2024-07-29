@@ -138,6 +138,13 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(YASS_APP_FEATURES)
 
+option(OFFICIAL_BUILD "Build with official build" OFF)
+
+if (OFFICIAL_BUILD)
+  list(APPEND YASS_APP_FEATURES "official-build")
+  add_definitions(-DOFFICIAL_BUILD)
+endif()
+
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
   # the CMake generators prefer gcc, even on Windows.
