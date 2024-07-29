@@ -790,6 +790,7 @@ func buildStageGenerateBuildScript() {
 			glog.Infof("Using compiler %s", _clangPath)
 		}
 	}
+	cmakeArgs = append(cmakeArgs, "-DOFFICIAL_BUILD=on")
 	cmakeArgs = append(cmakeArgs, "-DENABLE_LLD=on")
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
