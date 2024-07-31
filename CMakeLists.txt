@@ -3071,6 +3071,7 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
 
   if (WIN32 AND OS_AARCH64)
     enable_language(ASM)
+    # silence some unsed definitions' warnings
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
     endif()
@@ -3079,6 +3080,7 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
 
   if (OHOS OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     enable_language(ASM)
+    # silence some unsed definitions' warnings
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
     endif()
@@ -3091,9 +3093,6 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
 
   if (APPLE)
     enable_language(ASM)
-    if (COMPILER_CLANG)
-      set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
-    endif()
     set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.apple.s")
   endif()
 
@@ -3122,6 +3121,7 @@ endif()
 
 if (WIN32 AND OS_AARCH64)
   enable_language(ASM)
+  # silence some unsed definitions' warnings
   if (COMPILER_CLANG)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
   endif()
@@ -3130,6 +3130,7 @@ endif()
 
 if (OHOS OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   enable_language(ASM)
+  # silence some unsed definitions' warnings
   if (COMPILER_CLANG)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
   endif()
@@ -3142,9 +3143,6 @@ endif()
 
 if (APPLE)
   enable_language(ASM)
-  if (COMPILER_CLANG)
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
-  endif()
   set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.apple.s")
 endif()
 
@@ -3751,11 +3749,6 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   ## availability is newer than the deployment target.
   if (APPLE AND COMPILER_CLANG)
     add_compile_options(-Wunguarded-availability)
-  endif()
-
-  # this may happens
-  if (COMPILER_CLANG)
-    add_link_options(-Wno-unused-command-line-argument)
   endif()
 
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
