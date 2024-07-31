@@ -563,7 +563,7 @@ func getAndFixHarmonyLibunwind() {
 		glog.Fatalf("%v", err)
 	}
 	for _, entry := range entries {
-		if !strings.Contains(entry.Name(), "-ohos") {
+		if !strings.HasSuffix(entry.Name(), "-ohos") {
 			continue
 		}
 		if _, err = os.Lstat(filepath.Join(target_path, entry.Name())); err == nil {
@@ -613,10 +613,7 @@ func getAndFixLibunwind(source_path string, subdir string) {
 		}
 	}
 	for _, entry := range entries {
-		if subdir == "" && entry.Name() == "linux" {
-			continue
-		}
-		if subdir == "" && entry.Name() == "darwin" {
+		if subdir == "" && !strings.HasSuffix(entry.Name(), "-ohos") {
 			continue
 		}
 		if _, err = os.Lstat(filepath.Join(target_path, entry.Name())); err == nil {
