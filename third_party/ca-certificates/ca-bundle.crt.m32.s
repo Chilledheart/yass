@@ -13,4 +13,4 @@ _binary_ca_bundle_crt_start:
 _binary_ca_bundle_crt_end:
 .previous
 
-.include "cet.64.s"
+.include "cet.32.s"
