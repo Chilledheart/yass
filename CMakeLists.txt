@@ -510,6 +510,8 @@ option(ENABLE_LLD "Enable build with LLD" OFF)
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 
+cmake_dependent_option(USE_CET "Build with CET support" OFF LINUX OFF)
+
 cmake_dependent_option(USE_QT6
   "Build with Qt6 (GUI)" OFF
   "GUI AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
@@ -648,6 +650,16 @@ if (COMPILER_MSVC AND USE_LIBCXX)
 endif()
 
 include(config-ix)
+
+if (USE_CET)
+  if (COMPILER_CLANG)
+    add_compile_options(-fcf-protection=full)
+  elseif(COMPILER_GCC)
+    add_compile_options(-fcf-protection)
+  endif()
+  add_link_options(-Wl,-z,cet-report=error)
+  list(APPEND YASS_APP_FEATURES "cet")
+endif()
 
 # see "Announcement: ARC is default for Objective-C code"
 # https://groups.google.com/a/chromium.org/g/embedder-dev/c/13hNC6w2gGA?pli=1
@@ -3070,7 +3082,11 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
     endif()
-    set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.s")
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+      set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.m32.s")
+    else()
+      set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.s")
+    endif()
   endif()
 
   if (APPLE)
@@ -3117,7 +3133,11 @@ if (OHOS OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME S
   if (COMPILER_CLANG)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
   endif()
-  set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.s")
+  if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.m32.s")
+  else()
+    set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.s")
+  endif()
 endif()
 
 if (APPLE)
