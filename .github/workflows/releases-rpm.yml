@@ -90,6 +90,7 @@ jobs:
           # qt6 sits on epel repo, disabling
           # - container: 'centos9'
           #   gui_variant: qt6
+          #   use_cet: true
           # - container: 'fedora39'
           #   gui_variant: gtk3
           #   use_cet: true
