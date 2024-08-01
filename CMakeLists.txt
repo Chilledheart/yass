@@ -511,7 +511,7 @@ option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 
 cmake_dependent_option(USE_CET "Build with CET support" OFF
-  "LINUX; OS_X64 OR OS_X86" OFF)
+  "LINUX OR MSVC; OS_X64 OR OS_X86" OFF)
 
 cmake_dependent_option(USE_QT6
   "Build with Qt6 (GUI)" OFF
@@ -653,7 +653,11 @@ endif()
 include(config-ix)
 
 if (USE_CET)
-  if (COMPILER_CLANG)
+  if (MSVC)
+    # see https://reviews.llvm.org/D70606
+    add_link_options(/cetcompat)
+  elseif (COMPILER_CLANG)
+    # see https://reviews.llvm.org/D59780
     add_compile_options(-fcf-protection=full)
   elseif(COMPILER_GCC)
     add_compile_options(-fcf-protection)
