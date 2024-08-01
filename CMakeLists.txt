@@ -510,7 +510,8 @@ option(ENABLE_LLD "Enable build with LLD" OFF)
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 
-cmake_dependent_option(USE_CET "Build with CET support" OFF LINUX OFF)
+cmake_dependent_option(USE_CET "Build with CET support" OFF
+  "LINUX; OS_X64 OR OS_X86" OFF)
 
 cmake_dependent_option(USE_QT6
   "Build with Qt6 (GUI)" OFF
