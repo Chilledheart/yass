@@ -54,9 +54,11 @@ jobs:
           - distro: jammy
             arch: amd64
             gui_variant: gtk4
+            use_cet: true
           - distro: jammy
             arch: amd64
             gui_variant: qt6
+            use_cet: true
           - distro: sid
             arch: riscv64
             gui_variant: none
@@ -167,6 +169,10 @@ jobs:
           echo "DEB_BUILD_PROFILES=clang ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
+      - name: Set cet build profile
+        if: ${{ matrix.use_cet == true }}
+        run: |
+          echo "DEB_BUILD_PROFILES=cet ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
       - name: Fix schroot permissions (set store permissions for restore)
         run: |
           sudo mkdir -p /etc/schroot/chroot.d /var/lib/schroot/chroots
