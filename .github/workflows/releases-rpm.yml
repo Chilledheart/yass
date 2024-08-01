@@ -92,13 +92,16 @@ jobs:
           #   gui_variant: qt6
           # - container: 'fedora39'
           #   gui_variant: gtk3
+          #   use_cet: true
           # - container: 'fedora39'
           #   gui_variant: gtk4
+          #   use_cet: true
           # https://rpmfind.net/linux/rpm2html/search.php?query=glibc-devel&submit=Search+...&system=&arch=
           # glibc: 2.38 for fedora39
           # glibc: 2.39 for fedora40
           # - container: 'fedora39'
           #   gui_variant: qt6
+          #   use_cet: true
           # for opensuse users, you can use centos7's rpm packages
           # - container: 'opensuse15'
           #   gui_variant: gtk3
@@ -150,6 +153,11 @@ jobs:
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
           echo "USE_CLANG=1" >> $GITHUB_ENV
+      - name: Set cet option
+        if: ${{ matrix.use_cet == true }}
+        run: |
+          # use CET
+          echo "USE_CET=1" >> $GITHUB_ENV
       - name: Set c++ standard library environment
         run: |
           # use custom libc++

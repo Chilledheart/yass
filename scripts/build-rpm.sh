@@ -50,6 +50,7 @@ mv -fv yass.spec $HOME/rpmbuild/SPECS
 [ "a$USE_QT5" != "a" ] && rpm_options="--with=use_qt5 $rpm_options"
 [ "a$USE_GTK4" != "a" ] && rpm_options="--with=use_gtk4 $rpm_options"
 [ "a$USE_LIBCXX" != "a" ] && rpm_options="--with=use_libcxx $rpm_options"
+[ "a$USE_CET" != "a" ] && rpm_options="--with=use_cet $rpm_options"
 [ "a$USE_CLANG" != "a" ] && rpm_options="--with=toolchain_clang $rpm_options"
 rpm_options="--with=tests_dns $rpm_options"
 
