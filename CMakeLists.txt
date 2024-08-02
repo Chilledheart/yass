@@ -1828,6 +1828,11 @@ if (ANDROID)
   endif()
 endif()
 
+# make boringssl capable on FreeBSD
+if (FREEBSD AND OS_X86)
+  add_compile_options(-msse2)
+endif()
+
 # *****************************************************************************************
 #           Libc++ Library
 # *****************************************************************************************
