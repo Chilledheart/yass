@@ -116,17 +116,24 @@ def extract_pkg(pkg_url, pkg_sum, sysroot, is_zstd):
     os.unlink(pkg_name)
 
 def usage():
-  print("usage: ./install-sysroot-freebsd.py <abi>")
+  print("usage: ./install-sysroot-freebsd.py <abi> [arch]")
   sys.exit(-1)
 
 def main(args):
   if not args:
-    print("no abi specified, setting to freebsd 12")
+    print("no abi specified, setting to freebsd 12 amd64")
     abi = '12'
+    arch = 'amd64'
+  elif args and len(args) == 2 and str.isdecimal(args[0]) and args[1] in ['amd64', 'i386', 'aarch64']:
+    abi = args[0]
+    arch = args[1]
   elif args and len(args) == 1 and str.isdecimal(args[0]):
     abi = args[0]
+    arch = 'amd64'
   else:
     usage()
+
+  sys_arch = arch if arch != 'aarch64' else 'arm64'
 
   # not all tarbars exist in public sever
   if abi == '12':
@@ -136,14 +143,14 @@ def main(args):
     release = '3'
     is_zstd = False
   elif abi == '14':
-    release = '0'
+    release = '1'
     is_zstd = True
   else:
     usage()
   version = f'{abi}.{release}'
 
-  tmproot = os.path.abspath(f'freebsd-{abi}-tmp')
-  sysroot = os.path.abspath(f'freebsd-{abi}-toolchain')
+  tmproot = os.path.abspath(f'freebsd-{abi}-{arch}-tmp')
+  sysroot = os.path.abspath(f'freebsd-{abi}-{arch}-toolchain')
 
   if not os.path.isdir(tmproot):
     os.mkdir(tmproot)
@@ -156,11 +163,11 @@ def main(args):
 
   # extract include and shared libraries only
   print('Extracting sysroot (base)...')
-  download_url(f'{FREEBSD_MAIN_SITE}/amd64/{version}-RELEASE/base.txz', 'base.txz')
+  download_url(f'{FREEBSD_MAIN_SITE}/{sys_arch}/{version}-RELEASE/base.txz', 'base.txz')
   extract_tarfile('base.txz', sysroot, ['./usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'])
 
   print(f'Extracting sysroot (gtk3)...')
-  base_url = f'{FREEBSD_PKG_SITE}/FreeBSD%3A{abi}%3Aamd64/release_{release}'
+  base_url = f'{FREEBSD_PKG_SITE}/FreeBSD%3A{abi}%3A{arch}/release_{release}'
   download_url(f'{base_url}/packagesite.txz', 'packagesite.txz')
   extract_tarfile('packagesite.txz')
 

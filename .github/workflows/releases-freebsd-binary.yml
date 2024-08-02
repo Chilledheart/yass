@@ -44,6 +44,8 @@ jobs:
       matrix:
         arch:
         - 'amd64'
+        - 'aarch64'
+        - 'i386'
         abi:
         - '13'
         - '14'
@@ -78,8 +80,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            freebsd-${{ matrix.abi }}-toolchain
-          key: freebsd-${{ matrix.arch }}-${{ matrix.abi }}-14-0-and-13-3-v1
+            freebsd-${{ matrix.abi }}-${{ matrix.arch }}-toolchain
+          key: freebsd-${{ matrix.abi }}-${{ matrix.arch }}-14-1-and-13-3-v1
       - name: Build build tool
         run: |
           cd tools
@@ -92,7 +94,7 @@ jobs:
       - name: "Install dependency: sysroot"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          ./scripts/install-sysroot-freebsd.py ${{ matrix.abi }}
+          ./scripts/install-sysroot-freebsd.py ${{ matrix.abi }} ${{ matrix.arch }}
           rm -f *.txz *.xz
       - name: Populate depedencies
         run: |
@@ -108,7 +110,7 @@ jobs:
           rm -f *.tar.gz
       - name: Build TGZ packages
         run: |
-          ./tools/build --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-toolchain -build-benchmark -build-test
+          ./tools/build --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-${{ matrix.arch }}-toolchain -build-benchmark -build-test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
