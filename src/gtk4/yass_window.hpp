@@ -29,6 +29,7 @@ class YASSWindow {
  private:
   GApplication* app_;
   YASSGtkWindow* impl_;
+  bool close_requested_ = false;
   std::string last_status_msg_;
 
  public:
