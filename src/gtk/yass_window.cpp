@@ -46,7 +46,6 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   // vbox, hbox
   GtkBox* vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
   GtkGrid* grid = GTK_GRID(gtk_grid_new());
-  gtk_grid_set_row_homogeneous(grid, true);
 
   // gtkmm's MenuBar/Menu/MenuItem is binded to model
   GtkWidget* menubar;
