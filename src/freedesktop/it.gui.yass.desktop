@@ -2,7 +2,7 @@
 Type=Application
 Name=yass
 Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and low end boxes.
-Icon=yass
+Icon=it.gui.yass
 Exec=yass
 Terminal=false
 Categories=Network;GTK;Utility

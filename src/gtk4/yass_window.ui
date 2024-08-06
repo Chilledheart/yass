@@ -9,7 +9,7 @@
         <child type="end">
           <object class="GtkMenuButton" id="gears">
             <property name="direction">none</property>
-            <property name="icon-name">yass</property>
+            <property name="icon-name">it.gui.yass</property>
           </object>
         </child>
       </object>

@@ -85,3 +85,4 @@ local.properties
 /third_party/rust-ohos
 /i386-alpine320-sysroot
 /amd64-alpine320-sysroot
+*.flatpak

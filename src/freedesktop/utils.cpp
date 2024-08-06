@@ -27,7 +27,7 @@ static constexpr const std::string_view kAutoStartFileContent =
     "Name=yass\n"
     "Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and "
     "low end boxes.\n"
-    "Icon=yass\n"
+    "Icon=it.gui.yass\n"
     "Exec=\"%s\" --background\n"
     "Terminal=false\n"
     "Categories=Network;GTK;Utility\n";
