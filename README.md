@@ -29,6 +29,8 @@ we are following [chromium's release schedule](https://chromiumdash.appspot.com/
 - GTK4 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.12.1/yass-gtk4.lp155.x86_64.1.12.1.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.12.1/yass-gtk4-ubuntu-22.04-jammy_amd64.1.12.1.deb) (minimum requirement: opensuse leap 15.5, centos 9 or ubuntu 22.04)
 - Qt6 [download rpm](https://github.com/Chilledheart/yass/releases/download/1.12.1/yass-qt6.lp155.x86_64.1.12.1.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.12.1/yass-qt6-ubuntu-22.04-jammy_amd64.1.12.1.deb) (minimum requirement: opensuse leap 15.5, centos 9 with epel or ubuntu 22.04)
 
+- GTK4 (Archlinux) [download binary pkg file](https://repo.archlinuxcn.org/x86_64/yass-proxy-1.12.1-1-x86_64.pkg.tar.zst) (PGP Keys: `sudo pacman -S archlinuxcn-keyring`)
+
 [![aur yass-proxy-gtk3](https://img.shields.io/aur/version/yass-proxy-gtk3)](https://aur.archlinux.org/packages/yass-proxy-gtk3)
 [![aur yass-proxy-qt5](https://img.shields.io/aur/version/yass-proxy-qt5)](https://aur.archlinux.org/packages/yass-proxy-qt5)
 [![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
