@@ -4465,7 +4465,7 @@ if (GUI)
     elseif(GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5")
         file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/yass.qrc
              DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.png
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/it.gui.yass.png
              DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
         list(APPEND SRC_FILES
           src/qt6/yass_window.hpp
@@ -4933,7 +4933,7 @@ if (GUI)
           DESTINATION share/applications)
 
         install(FILES
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.png
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/it.gui.yass.png
           DESTINATION share/pixmaps)
 
         install(DIRECTORY

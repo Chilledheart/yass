@@ -253,15 +253,15 @@ update-desktop-database
 %dir /usr/share/pixmaps/
 %{_bindir}/yass
 %{_datadir}/applications/it.gui.yass.desktop
-%{_datadir}/pixmaps/yass.png
-%{_datadir}/icons/hicolor/16x16/apps/yass.png
-%{_datadir}/icons/hicolor/22x22/apps/yass.png
-%{_datadir}/icons/hicolor/24x24/apps/yass.png
-%{_datadir}/icons/hicolor/32x32/apps/yass.png
-%{_datadir}/icons/hicolor/48x48/apps/yass.png
-%{_datadir}/icons/hicolor/128x128/apps/yass.png
-%{_datadir}/icons/hicolor/256x256/apps/yass.png
-%{_datadir}/icons/hicolor/512x512/apps/yass.png
+%{_datadir}/pixmaps/it.gui.yass.png
+%{_datadir}/icons/hicolor/16x16/apps/it.gui.yass.png
+%{_datadir}/icons/hicolor/22x22/apps/it.gui.yass.png
+%{_datadir}/icons/hicolor/24x24/apps/it.gui.yass.png
+%{_datadir}/icons/hicolor/32x32/apps/it.gui.yass.png
+%{_datadir}/icons/hicolor/48x48/apps/it.gui.yass.png
+%{_datadir}/icons/hicolor/128x128/apps/it.gui.yass.png
+%{_datadir}/icons/hicolor/256x256/apps/it.gui.yass.png
+%{_datadir}/icons/hicolor/512x512/apps/it.gui.yass.png
 
 %package server
 Summary: Lightweight and Secure http/socks4/socks5 Proxy (Server Side)

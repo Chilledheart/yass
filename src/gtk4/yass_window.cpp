@@ -124,7 +124,7 @@ static void yass_window_class_init(YASSGtkWindowClass* cls) {
 YASSGtkWindow* yass_window_new(YASSGtkApp* app) {
   auto window = YASSGtk_WINDOW(g_object_new(yass_window_get_type(), "application", app, nullptr));
   gtk_window_set_resizable(GTK_WINDOW(window), false);
-  gtk_window_set_icon_name(GTK_WINDOW(window), "yass");
+  gtk_window_set_icon_name(GTK_WINDOW(window), "it.gui.yass");
   return window;
 }
 
@@ -274,7 +274,7 @@ void YASSWindow::OnAbout() {
     gtk_about_dialog_set_comments(about_dialog, comments.c_str());
     gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
     gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0_ONLY);
-    gtk_about_dialog_set_logo_icon_name(about_dialog, "yass");
+    gtk_about_dialog_set_logo_icon_name(about_dialog, "it.gui.yass");
     gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
     gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
     gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
