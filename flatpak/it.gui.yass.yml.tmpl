@@ -1,0 +1,26 @@
+id: it.gui.yass
+runtime: org.kde.Platform
+runtime-version: '5.15-23.08'
+sdk: org.kde.Sdk
+command: yass
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --filesystem=~/.yass
+modules:
+  - name: yass
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DUSE_QT5=on
+      - -DGUI=on
+      - -DCLI=off
+      - -DSERVER=off
+    sources:
+      - type: archive
+        url: file://PWD/yass-TAG_NAME.tar.bz2
+        sha256: SHA256
