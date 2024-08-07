@@ -11,7 +11,7 @@
 #include "qt6/yass_window.hpp"
 
 TrayIcon::TrayIcon(QObject* parent) : QSystemTrayIcon(parent) {
-  setIcon(QIcon(":/res/images/it.gui.yass.png"));
+  setIcon(QIcon(":/res/images/io.github.chilledheart.yass.png"));
 
   // create action
   QAction* show_action = new QAction(tr("Show"), this);

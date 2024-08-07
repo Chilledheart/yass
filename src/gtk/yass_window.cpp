@@ -28,7 +28,7 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
   gtk_window_set_resizable(GTK_WINDOW(impl_), false);
-  gtk_window_set_icon_name(GTK_WINDOW(impl_), "it.gui.yass");
+  gtk_window_set_icon_name(GTK_WINDOW(impl_), "io.github.chilledheart.yass");
 
   auto show_callback = [](GtkWidget* self, gpointer pointer) {
     YASSWindow* window = (YASSWindow*)pointer;
@@ -311,7 +311,7 @@ YASSWindow::~YASSWindow() {
 void YASSWindow::CreateStatusIcon() {
   // set try icon file
   G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-  tray_icon_ = gtk_status_icon_new_from_icon_name("it.gui.yass");
+  tray_icon_ = gtk_status_icon_new_from_icon_name("io.github.chilledheart.yass");
   G_GNUC_END_IGNORE_DEPRECATIONS
 
   // set popup menu for tray icon
@@ -368,7 +368,7 @@ void YASSWindow::CreateStatusIcon() {
 #ifdef HAVE_APP_INDICATOR
 void YASSWindow::CreateAppIndicator() {
   // set try icon file
-  tray_indicator_ = G_OBJECT(app_indicator_new("it.gui.yass", "it.gui.yass", APP_INDICATOR_CATEGORY_APPLICATION_STATUS));
+  tray_indicator_ = G_OBJECT(app_indicator_new("io.github.chilledheart.yass", "io.github.chilledheart.yass", APP_INDICATOR_CATEGORY_APPLICATION_STATUS));
   app_indicator_set_status(APP_INDICATOR(tray_indicator_), APP_INDICATOR_STATUS_ACTIVE);
 
   // set popup menu for tray icon
@@ -676,7 +676,7 @@ void YASSWindow::OnAbout() {
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0_ONLY);
-  gtk_about_dialog_set_logo_icon_name(about_dialog, "it.gui.yass");
+  gtk_about_dialog_set_logo_icon_name(about_dialog, "io.github.chilledheart.yass");
   gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
   gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
   gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);

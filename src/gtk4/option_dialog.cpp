@@ -53,7 +53,7 @@ static void option_dialog_dispose(GObject* object) {
 }
 
 static void option_dialog_class_init(OptionGtkDialogClass* cls) {
-  gtk_widget_class_set_template_from_resource(GTK_WIDGET_CLASS(cls), "/it/gui/yass/option_dialog.ui");
+  gtk_widget_class_set_template_from_resource(GTK_WIDGET_CLASS(cls), "/io/github/chilledheart/yass/option_dialog.ui");
 
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_keep_alive_check);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_keep_alive_cnt);

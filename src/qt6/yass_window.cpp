@@ -30,7 +30,7 @@
 #include "version.h"
 
 YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
-  setWindowIcon(QIcon::fromTheme("it.gui.yass", QIcon(":/res/images/it.gui.yass.png")));
+  setWindowIcon(QIcon::fromTheme("io.github.chilledheart.yass", QIcon(":/res/images/io.github.chilledheart.yass.png")));
   setWindowTitle(tr("YASS"));
 
   // Vertical Box

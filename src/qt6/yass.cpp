@@ -145,10 +145,10 @@ YASSApp::YASSApp(int& argc, char** argv) : QApplication(argc, argv) {
 
   setApplicationVersion(YASS_APP_TAG);
 #ifndef __APPLE__
-  setWindowIcon(QIcon::fromTheme("it.gui.yass", QIcon(":/res/images/it.gui.yass.png")));
+  setWindowIcon(QIcon::fromTheme("io.github.chilledheart.yass", QIcon(":/res/images/io.github.chilledheart.yass.png")));
 #endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
-  setDesktopFileName("it.gui.yass");
+  setDesktopFileName("io.github.chilledheart.yass");
 #endif
 }
 

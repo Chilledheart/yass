@@ -18,7 +18,7 @@ using namespace std::string_literals;
 
 using namespace yass;
 
-static constexpr const char kDefaultAutoStartName[] = "it.gui.yass";
+static constexpr const char kDefaultAutoStartName[] = "io.github.chilledheart.yass";
 
 static constexpr const std::string_view kAutoStartFileContent =
     "[Desktop Entry]\n"
@@ -27,7 +27,7 @@ static constexpr const std::string_view kAutoStartFileContent =
     "Name=yass\n"
     "Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and "
     "low end boxes.\n"
-    "Icon=it.gui.yass\n"
+    "Icon=io.github.chilledheart.yass\n"
     "Exec=\"%s\" --background\n"
     "Terminal=false\n"
     "Categories=Network;GTK;Utility\n";

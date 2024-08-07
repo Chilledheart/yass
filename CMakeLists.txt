@@ -4473,7 +4473,7 @@ if (GUI)
     elseif(GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5")
         file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/qt6/yass.qrc
              DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/it.gui.yass.png
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/io.github.chilledheart.yass.png
              DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
         list(APPEND SRC_FILES
           src/qt6/yass_window.hpp
@@ -4937,11 +4937,12 @@ if (GUI)
 
       if (GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5" OR GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
         install(FILES
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/it.gui.yass.desktop
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.desktop
+          RENAME io.github.chilledheart.yass.desktop
           DESTINATION share/applications)
 
         install(FILES
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/it.gui.yass.png
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/io.github.chilledheart.yass.png
           DESTINATION share/pixmaps)
 
         install(DIRECTORY

@@ -1,6 +1,6 @@
 usr/bin/yass
-usr/share/pixmaps/it.gui.yass.png
-usr/share/applications/it.gui.yass.desktop
-usr/share/icons/hicolor/*/apps/it.gui.yass.png
+usr/share/pixmaps/io.github.chilledheart.yass.png
+usr/share/applications/io.github.chilledheart.yass.desktop
+usr/share/icons/hicolor/*/apps/io.github.chilledheart.yass.png
 usr/share/locale/*/LC_MESSAGES/yass.mo
 usr/share/doc/yass/LICENSE
