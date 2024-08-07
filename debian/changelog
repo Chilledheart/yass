@@ -1,3 +1,9 @@
+yass (1.12.2-1) UNRELEASED; urgency=medium
+
+  * transfer: optimize rate limit's algorithm.
+  * replace app id.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 7 Aug 2024 10:55:31 +0800
 yass (1.12.1-1) UNRELEASED; urgency=medium
 
   * ui: lower veritical spacing to 6 pixels.
