@@ -24,6 +24,5 @@ modules:
       - -DCLI=off
       - -DSERVER=off
     sources:
-      - type: archive
-        url: file://PWD/yass-TAG_NAME.tar.bz2
-        sha256: SHA256
+      - type: dir
+        path: ../
