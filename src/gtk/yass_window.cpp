@@ -368,7 +368,8 @@ void YASSWindow::CreateStatusIcon() {
 #ifdef HAVE_APP_INDICATOR
 void YASSWindow::CreateAppIndicator() {
   // set try icon file
-  tray_indicator_ = G_OBJECT(app_indicator_new("io.github.chilledheart.yass", "io.github.chilledheart.yass", APP_INDICATOR_CATEGORY_APPLICATION_STATUS));
+  tray_indicator_ = G_OBJECT(app_indicator_new("io.github.chilledheart.yass", "io.github.chilledheart.yass",
+                                               APP_INDICATOR_CATEGORY_APPLICATION_STATUS));
   app_indicator_set_status(APP_INDICATOR(tray_indicator_), APP_INDICATOR_STATUS_ACTIVE);
 
   // set popup menu for tray icon
