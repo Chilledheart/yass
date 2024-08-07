@@ -58,7 +58,7 @@ static void yass_window_init(YASSGtkWindow* win) {
 
   gtk_widget_init_template(GTK_WIDGET(win));
 
-  builder = gtk_builder_new_from_resource("/io/github/chilleheart/yass/menu.ui");
+  builder = gtk_builder_new_from_resource("/io/github/chilledheart/yass/menu.ui");
   menu = G_MENU_MODEL(gtk_builder_get_object(builder, "menu"));
   gtk_menu_button_set_menu_model(GTK_MENU_BUTTON(win->gears), menu);
   g_object_unref(builder);
