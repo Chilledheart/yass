@@ -60,7 +60,6 @@ jobs:
         run: |
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           cd flatpak
-          make
           flatpak-builder --user --install-deps-from=flathub --disable-updates --force-clean --repo=repo builddir it.gui.yass.yml
           flatpak build-bundle repo yass.flatpak it.gui.yass --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
           cd ..
