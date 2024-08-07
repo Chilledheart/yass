@@ -11,6 +11,8 @@ finish-args:
   - --device=dri
   - --filesystem=~/.yass
   - --talk-name=org.kde.StatusNotifierWatcher
+  - --talk-name=com.canonical.indicator.application
+  - --talk-name=org.ayatana.indicator.application
 modules:
   - name: yass
     buildsystem: cmake-ninja
