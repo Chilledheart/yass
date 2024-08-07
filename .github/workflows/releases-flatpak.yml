@@ -60,8 +60,8 @@ jobs:
         run: |
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           cd flatpak
-          flatpak-builder --force-clean --user --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir it.gui.yass.yml
-          flatpak build-bundle repo yass.flatpak it.gui.yass --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+          flatpak-builder --force-clean --user --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir io.github.chilledheart.yass.yml
+          flatpak build-bundle repo yass.flatpak io.github.chilledheart.yass --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
           cd ..
           mv -fv flatpak/yass.flatpak yass-${{ github.event.release.tag_name }}.flatpak
       - name: Upload dist tarball (including debuginfo)

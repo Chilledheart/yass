@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/it/gui/yass">
+  <gresource prefix="/io/github/chilledheart/yass">
     <file preprocess="xml-stripblanks">menu.ui</file>
     <file preprocess="xml-stripblanks">yass_window.ui</file>
     <file preprocess="xml-stripblanks">option_dialog.ui</file>
