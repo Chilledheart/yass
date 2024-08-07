@@ -60,7 +60,7 @@ jobs:
         run: |
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           cd flatpak
-          flatpak-builder --user --install-deps-from=flathub --disable-updates --force-clean --repo=repo builddir it.gui.yass.yml
+          flatpak-builder --force-clean --user --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir it.gui.yass.yml
           flatpak build-bundle repo yass.flatpak it.gui.yass --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
           cd ..
           mv -fv flatpak/yass.flatpak yass-${{ github.event.release.tag_name }}.flatpak
