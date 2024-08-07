@@ -1,3 +1,8 @@
+yass (1.12.3-1) UNRELEASED; urgency=medium
+
+  * gtk4: fix crash.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 7 Aug 2024 11:43:24 +0800
 yass (1.12.2-1) UNRELEASED; urgency=medium
 
   * transfer: optimize rate limit's algorithm.
