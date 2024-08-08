@@ -73,8 +73,10 @@ Cipher http2 and https are NaïveProxy-compatible.
 
 See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
 
-### Android/iOS/macOS (M1/M2/M3 only) comes with VPN Service support
-Mobile users including macOS (M1/M2/M3) machines can use yass as VPN Service more than just Global Proxy.
+### Android/iOS/macOS (M1/M2/M3/M4 only) comes with VPN Service support
+Mobile users including macOS (M1/M2/M3/M4) machines can use yass as VPN Service more than pure Global Proxy Client.
+
+TBD: Spliting Tunnel Support (#954)
 
 ### More Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
