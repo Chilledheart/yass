@@ -529,6 +529,10 @@ cmake_dependent_option(USE_GTK3_APP_INDICATOR
   "Build with libappindicator3 (gtk3 only)" ON
   "GUI AND NOT USE_QT6 AND NOT USE_QT5 AND NOT USE_GTK4 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
+cmake_dependent_option(
+  INSTALL_FLATHUB_APPDATA "Build with flathub appdata" OFF
+  "GUI AND LINUX" OFF)
+
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html
 if (USE_OLD_SYSTEMD_SERVICE)
@@ -4982,6 +4986,17 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
   configure_file("LICENSE.cmake.in" "${LICENSE_FILE}" @ONLY)
   install(FILES "${LICENSE_FILE}" DESTINATION ${CMAKE_INSTALL_DOCDIR})
+endif()
+
+# *****************************************************************************************
+#           Source code: Flathub appdata part
+# *****************************************************************************************
+
+if (INSTALL_FLATHUB_APPDATA)
+  set(APPDATA_FILE "${CMAKE_CURRENT_BINARY_DIR}/io.github.chilledheart.yass.appdata.xml")
+  string(TIMESTAMP YASS_APP_TODAY "%Y-%m-%d")
+  configure_file("flatpak/io.github.chilledheart.yass.appdata.xml.cmake.in" "${APPDATA_FILE}" @ONLY)
+  install(FILES "${APPDATA_FILE}" DESTINATION share/appdata)
 endif()
 
 # *****************************************************************************************

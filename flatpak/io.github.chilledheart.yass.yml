@@ -19,6 +19,7 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DINSTALL_FLATHUB_APPDATA=on
       - -DUSE_QT5=on
       - -DGUI=on
       - -DCLI=off
