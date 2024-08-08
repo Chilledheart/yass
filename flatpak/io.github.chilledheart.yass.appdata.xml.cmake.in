@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>io.github.chilledheart.yass</id>
+  <name>YASS</name>
+  <developer id="info.letshack">
+    <name>Chilledheart</name>
+  </developer>
+  <developer_name>Chilledheart</developer_name>
+  <summary>Lightweight and efficient, socks/http forward proxy</summary>
+  <description>
+    <p>YASS is initiated as C++ rewrite of the outdated shadowsocks-libev package and provide the similar functionalities.
+    During the recent development, it also supports naiveproxy protocol which is more efficient protocol.
+    Compared with shadowsocks-libev, it not only contains the client cli command and server cli command,
+    but also it contains a qt5 graphical interface which is more friendly to the new users.</p>
+  </description>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0</project_license>
+  <url type="homepage">https://github.com/Chilledheart/yass</url>
+  <launchable type="desktop-id">io.github.chilledheart.yass.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://github.com/Chilledheart/yass/assets/54673341/4e2a2e47-43fb-402f-90c7-d2e033cc6a1d</image>
+      <caption>Main window</caption>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="@YASS_APP_TAG@" date="@YASS_APP_TODAY@" type="stable"/>
+  </releases>
+  <content_rating type="oars-1.1" />
+  <update_contact>keeyou-cn_at_outlook.com</update_contact>
+</component>
