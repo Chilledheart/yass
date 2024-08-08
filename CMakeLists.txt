@@ -1837,6 +1837,11 @@ if (FREEBSD AND OS_X86)
   add_compile_options(-msse2)
 endif()
 
+# make boringssl capable on aarch64
+if (LINUX AND OS_AARCH64)
+  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-march=armv8-a+crypto>)
+endif()
+
 # *****************************************************************************************
 #           Libc++ Library
 # *****************************************************************************************
