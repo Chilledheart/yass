@@ -40,6 +40,8 @@ jobs:
   flatpak-release:
     strategy:
       fail-fast: false
+      matrix:
+        arch: [x86_64]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -60,10 +62,10 @@ jobs:
         run: |
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           cd flatpak
-          flatpak-builder --force-clean --user --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir io.github.chilledheart.yass.yml
-          flatpak build-bundle repo yass.flatpak io.github.chilledheart.yass --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+          flatpak-builder --force-clean --user --arch ${{ matrix.arch }} --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir io.github.chilledheart.yass.yml
+          flatpak build-bundle repo yass-${{ matrix.arch }}.flatpak io.github.chilledheart.yass --arch ${{ matrix.arch }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
           cd ..
-          mv -fv flatpak/yass.flatpak yass-${{ github.event.release.tag_name }}.flatpak
+          mv -fv flatpak/yass-${{ matrix.arch }}.flatpak yass-${{ matrix.arch }}-${{ github.event.release.tag_name }}.flatpak
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
