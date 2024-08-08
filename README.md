@@ -47,7 +47,7 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
 ### Prebuilt binaries (Other platforms)
-- Flatpak (Qt5) [download flatpak][qt5_flatpak_url] (PS: _Flathub_ is incoming)
+- Flatpak (Qt5) [download x86_64 flatpak][qt5_flatpak_url] (PS: _Flathub_ is incoming)
 - Android [download 64-bit apk][android_64_apk_url] or [download 32-bit apk][android_32_apk_url] (require _Android 7.0_ or above)
 - iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
 - Windows [download 64-bit installer][windows_64_installer_url] (require [KB2999226] on _windows 7/8/8.1_) or [download 32-bit installer][windows_32_installer_url] (require [vc 2010 runtime][vs2010_x86] on _windows xp sp3_) or [download arm64 installer][windows_arm64_installer_url] (require _windows 10/11_)
@@ -147,7 +147,7 @@ Please visit [the pages site](https://letshack.info).
 [qt6_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-qt6.lp155.x86_64.1.12.3.rpm
 [qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-qt6-ubuntu-22.04-jammy_amd64.1.12.3.deb
 
-[qt5_flatpak_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-1.12.3.flatpak
+[qt5_flatpak_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-x86_64-1.12.3.flatpak
 [gtk4_arch_url]: https://repo.archlinuxcn.org/x86_64/yass-proxy-1.12.3-1-x86_64.pkg.tar.zst
 
 [cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-amd64-1.12.3.tgz
