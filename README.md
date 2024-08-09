@@ -57,7 +57,7 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 - Flatpak for Linux (Qt5) [download x86_64 flatpak][qt5_flatpak_x86_64_url]
 
-> ~~via [Flathub](https://flathub.org): `flatpak install --user io.github.chilledheart.yass`~~ (Not Available)
+> via [Flathub](https://flathub.org): `flatpak install --user io.github.chilledheart.yass`
 
 [![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)](https://flathub.org/apps/io.github.chilledheart.yass)
 ![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)
