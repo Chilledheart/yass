@@ -530,7 +530,7 @@ cmake_dependent_option(USE_GTK3_APP_INDICATOR
   "GUI AND NOT USE_QT6 AND NOT USE_QT5 AND NOT USE_GTK4 AND NOT WIN32 AND NOT APPLE AND NOT OHOS AND NOT ANDROID" OFF)
 
 cmake_dependent_option(
-  INSTALL_FLATHUB_APPDATA "Build with flathub appdata" OFF
+  INSTALL_FLATHUB_METAINFO "Build with flathub metainfo" OFF
   "GUI AND LINUX" OFF)
 
 # Dynamic users are supported from version 235
@@ -4992,11 +4992,11 @@ endif()
 #           Source code: Flathub appdata part
 # *****************************************************************************************
 
-if (INSTALL_FLATHUB_APPDATA)
-  set(APPDATA_FILE "${CMAKE_CURRENT_BINARY_DIR}/io.github.chilledheart.yass.appdata.xml")
+if (INSTALL_FLATHUB_METAINFO)
+  set(METAINFO_FILE "${CMAKE_CURRENT_BINARY_DIR}/io.github.chilledheart.yass.metainfo.xml")
   string(TIMESTAMP YASS_APP_TODAY "%Y-%m-%d")
-  configure_file("flatpak/io.github.chilledheart.yass.appdata.xml.cmake.in" "${APPDATA_FILE}" @ONLY)
-  install(FILES "${APPDATA_FILE}" DESTINATION share/appdata)
+  configure_file("flatpak/io.github.chilledheart.yass.metainfo.xml.cmake.in" "${METAINFO_FILE}" @ONLY)
+  install(FILES "${METAINFO_FILE}" DESTINATION share/metainfo)
 endif()
 
 # *****************************************************************************************
