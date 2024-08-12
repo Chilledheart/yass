@@ -730,7 +730,7 @@ protobuf_generate_cpp(quiche_protos_SRCS quiche_protos_HDRS ${quiche_protos})
 # TODO re-add quic code if http3 support is added
 add_library(quiche STATIC
   ${quiche_SRCS}
-  #${quiche_quic_SOURCES}
+  #${quiche_quic_SOURCES} #require zlib and protobuf
   ${quiche_nghttp2_SOURCES}
   #${quiche_protos_SRCS}
   )

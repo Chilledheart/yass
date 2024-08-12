@@ -499,7 +499,10 @@ option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
 cmake_dependent_option(
   USE_IOURING "Build with io uring support" OFF
   LINUX OFF)
-option(USE_SYSTEM_ZLIB "Build with system or vendered zlib" OFF)
+option(USE_ZLIB "Build with zlib (required by quic)" OFF)
+cmake_dependent_option(
+  USE_SYSTEM_ZLIB "Build with system or vendored zlib" OFF
+  USE_ZLIB OFF)
 option(USE_SYSTEM_JSON "Build with system or vendered json library" OFF)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source (linux only)" OFF)
@@ -3339,7 +3342,8 @@ add_protoc(protoc yass)
 if (USE_SYSTEM_ZLIB)
   find_package(PkgConfig)
   if (PKG_CONFIG_FOUND)
-    pkg_check_modules(ZLIB zlib)
+    # IMPORTED_TARGET require cmake 3.6
+    pkg_check_modules(ZLIB zlib IMPORTED_TARGET)
   endif()
   if(NOT ZLIB_FOUND)
     message(STATUS "System zlib not found, using bundled one")
@@ -3349,11 +3353,9 @@ endif()
 
 if (USE_SYSTEM_ZLIB)
   message(STATUS "Compiling with system zlib")
-  include_directories(${ZLIB_INCLUDE_DIRS})
-  link_directories(${ZLIB_LIBRARY_DIRS})
-  link_libraries(${ZLIB_LIBRARIES})
   list(APPEND YASS_APP_FEATURES "system zlib")
-else()
+  set(SUPPORT_LIBS PkgConfig::ZLIB ${SUPPORT_LIBS})
+elseif(USE_ZLIB)
   message(STATUS "Compiling with bundled zlib")
   add_subdirectory(third_party/zlib EXCLUDE_FROM_ALL)
   list(APPEND YASS_APP_FEATURES "zlib")

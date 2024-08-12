@@ -215,7 +215,7 @@ cd build
    -DCLI=on -DSERVER=on \
    -DUSE_OLD_SYSTEMD_SERVICE="%use_old_systemd_service" \
    -DUSE_TCMALLOC=on -DUSE_SYSTEM_TCMALLOC="%enable_system_gperftools_opt" \
-   -DUSE_SYSTEM_ZLIB=on \
+   -DUSE_ZLIB=on -DUSE_SYSTEM_ZLIB=on \
    -DUSE_SYSTEM_NGHTTP2="%enable_system_nghttp2_opt" \
    -DUSE_SYSTEM_MBEDTLS="%enable_system_mbedtls_opt" \
    -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
