@@ -44,11 +44,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Patch libcxx for gcc 14 support
-        run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../gcc14.patch
-          git clean -xfd
       - name: Patch libcxxabi for both of armel and armhf
         run: |
           cd third_party/libc++abi

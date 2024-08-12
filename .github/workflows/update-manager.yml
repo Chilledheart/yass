@@ -1,0 +1,39 @@
+name: Update manpage
+
+on:
+  push:
+    paths:
+      - 'doc/yass_cli.md'
+      - 'doc/yass_server.md'
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  update-manpage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Install ronn
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y ronn
+
+    - name: Generate yass_cli.1 and yass_server.1
+      run: |
+        ronn --roff doc/yass_cli.md
+        ronn --roff doc/yass_server.md
+
+    - name: Configure Git
+      run: |
+        git config --global user.name 'Keeyou'
+        git config --global user.email 'keeyou-cn@outlook.com'
+
+    - name: Commit and push if yass_cli.1 and yass_server.1 is updated
+      run: |
+        git add doc/yass_cli.1
+        git add doc/yass_server.1
+        git diff --staged --quiet || (git commit -m "Update manpages (automated commit)" && git push)

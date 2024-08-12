@@ -868,6 +868,9 @@ if(ASAN)
     add_link_options(-fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer)
   endif()
   add_definitions(-DADDRESS_SANITIZER)
+  if (NOT APPLE AND USE_LIBCXX)
+    add_definitions(-D_LIBCPP_INSTRUMENTED_WITH_ASAN)
+  endif()
   list(APPEND YASS_APP_FEATURES "asan")
 endif()
 
@@ -1837,6 +1840,11 @@ if (FREEBSD AND OS_X86)
   add_compile_options(-msse2)
 endif()
 
+# make boringssl capable on aarch64
+if (LINUX AND OS_AARCH64)
+  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-march=armv8-a+crypto>)
+endif()
+
 # *****************************************************************************************
 #           Libc++ Library
 # *****************************************************************************************
@@ -2335,6 +2343,11 @@ if (ABSL_BUILD_TESTING)
   set(GMOCK_LIBRARY absl_gmock)
   set(GMOCK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googlemock/include)
   set(GMOCK_MAIN_LIBRARY absl_gmock_main)
+endif()
+if (MSVC_CRT_LINKAGE STREQUAL "dynamic")
+  set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "")
+else()
+  set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "")
 endif()
 add_subdirectory(third_party/abseil-cpp EXCLUDE_FROM_ALL)
 
