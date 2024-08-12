@@ -277,16 +277,10 @@ jobs:
           key: ${{ runner.os }}-toolchain-arm64-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - uses: actions/setup-go@v5
         with:
-          go-version: '>=1.19.0'
-      - name: Cache golang
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build build tool
         run: |
           cd tools
