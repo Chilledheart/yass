@@ -77,15 +77,12 @@ jobs:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-msvc-dynamic-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang (tools only)
-        uses: actions/cache@v4
+      - uses: actions/setup-go@v5
         with:
-          path: |
-            %LocalAppData%\go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('tools/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-tools-
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build build tool
         run: |
           cd tools
@@ -179,15 +176,12 @@ jobs:
             third_party/wix311
             third_party/nsis
           key: ${{ runner.os }}-toolchain-nsis-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang
-        uses: actions/cache@v4
+      - uses: actions/setup-go@v5
         with:
-          path: |
-            %LocalAppData%\go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build build tool
         run: |
           cd tools

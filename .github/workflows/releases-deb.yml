@@ -97,15 +97,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang
-        uses: actions/cache@v4
-        with:
-          path: |
-            /tmp/.cache/go-build
-            /tmp/go/pkg/mod
-          key: ${{ runner.os }}-go-tmp-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-tmp-
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |

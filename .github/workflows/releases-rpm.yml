@@ -134,15 +134,12 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang
-        uses: actions/cache@v4
+      - uses: actions/setup-go@v5
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-docker-
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -214,15 +211,12 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang
-        uses: actions/cache@v4
+      - uses: actions/setup-go@v5
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-docker-
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Populate sysroot from docker image
         run: |
           docker pull ghcr.io/chilledheart/${{ matrix.container }}
