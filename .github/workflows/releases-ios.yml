@@ -75,7 +75,7 @@ jobs:
           # required by m1 runner
           # https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/install-rust.sh
           rm -rf $HOME/.cargo
-          brew install rustup-init
+          brew install rustup
           rustup-init -y --no-modify-path --default-toolchain=stable --profile=minimal
           source "$HOME/.cargo/env"
           ./scripts/setup-ios-rust.sh
