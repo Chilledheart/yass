@@ -24,8 +24,6 @@ namespace {
 class OpenSSLNetErrorLibSingleton {
  public:
   OpenSSLNetErrorLibSingleton() {
-    // CRYPTO_library_init may be safely called concurrently.
-    CRYPTO_library_init();
     // Allocate a new error library value for inserting net errors into
     // OpenSSL. This does not register any ERR_STRING_DATA for the errors, so
     // stringifying error codes through OpenSSL will return NULL.

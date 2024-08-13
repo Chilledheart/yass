@@ -94,8 +94,6 @@ int main(int argc, const char* argv[]) {
   CHECK_EQ(iResult, 0) << "WSAStartup failure";
 #endif
 
-  CRYPTO_library_init();
-
   // Start Io Context
   asio::io_context io_context;
   auto work_guard =

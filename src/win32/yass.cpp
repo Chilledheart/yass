@@ -107,8 +107,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
   CHECK_EQ(iResult, 0) << "WSAStartup failure";
 
-  CRYPTO_library_init();
-
   // TODO: transfer OutputDebugString to internal logging
 
   CYassApp app(hInstance);

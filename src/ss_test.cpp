@@ -833,8 +833,6 @@ int main(int argc, char** argv) {
   CHECK_EQ(iResult, 0) << "WSAStartup failure";
 #endif
 
-  CRYPTO_library_init();
-
 #ifdef HAVE_CURL
   curl_global_init(CURL_GLOBAL_ALL);
 #endif

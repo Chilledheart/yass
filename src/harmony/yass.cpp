@@ -1116,8 +1116,6 @@ static napi_value initRoutine(napi_env env, napi_callback_info info) {
 
   LOG(INFO) << "yass: init";
 
-  CRYPTO_library_init();
-
   config::ReadConfigFileAndArguments(0, nullptr);
 
   g_worker = std::make_unique<Worker>();

@@ -49,8 +49,6 @@ void Init(JNIEnv* env, jobject activity_obj) {
   CHECK(InitializeCrashpad(lib_path + "/libnative-lib.so"));
 #endif
 
-  CRYPTO_library_init();
-
   config::ReadConfigFileAndArguments(0, nullptr);
 
   // Create Main Worker after ReadConfig

@@ -21,12 +21,6 @@ static void DLogOpenSslErrors() {
   }
 #endif
 }
-static const EVP_AEAD* InitAndCall(const EVP_AEAD* (*aead_getter)()) {
-  // Ensure BoringSSL is initialized before calling |aead_getter|. In Chromium,
-  // the static initializer is disabled.
-  ::CRYPTO_library_init();
-  return aead_getter();
-}
 
 namespace crypto {
 
@@ -34,7 +28,7 @@ EvpAeadEncrypter::EvpAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
                                    size_t key_size,
                                    size_t auth_tag_size,
                                    size_t nonce_size)
-    : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size), aead_alg_(InitAndCall(aead_getter)) {
+    : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size), aead_alg_(aead_getter()) {
   DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
   DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
   DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
