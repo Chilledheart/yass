@@ -641,8 +641,6 @@ int main(int argc, char** argv) {
   CHECK_EQ(iResult, 0) << "WSAStartup failure";
 #endif
 
-  CRYPTO_library_init();
-
   if (absl::GetFlag(FLAGS_ipv6_mode)) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
   }

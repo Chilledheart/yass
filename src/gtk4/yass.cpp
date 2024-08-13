@@ -143,8 +143,6 @@ int main(int argc, const char** argv) {
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
 
-  CRYPTO_library_init();
-
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for
   // any remaining code. Most likely this is superfluous as gtk_init() ought

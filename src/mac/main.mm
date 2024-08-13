@@ -84,7 +84,5 @@ int main(int argc, const char** argv) {
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
 
-  CRYPTO_library_init();
-
   return NSApplicationMain(argc, argv);
 }

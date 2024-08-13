@@ -93,8 +93,6 @@ int main(int argc, const char** argv) {
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
 
-  CRYPTO_library_init();
-
   YASSApp program(argc, const_cast<char**>(argv));
 
   // call program init

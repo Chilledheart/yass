@@ -40,8 +40,6 @@ Worker::Worker()
   CHECK_EQ(iResult, 0) << "WSAStartup failure";
 #endif
 
-  CRYPTO_library_init();
-
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
 }
 
