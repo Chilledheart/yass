@@ -55,12 +55,12 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 [![Homebrew Cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
-- Flatpak for Linux (Qt5) [download x86_64 flatpak][qt5_flatpak_x86_64_url]
+- Flatpak for Linux (Qt5) [download flatpak][qt5_flatpak_x86_64_url] (unsandboxed edition) for _x86_64_ machine only.
 
-> via [Flathub](https://flathub.org): `flatpak install --user io.github.chilledheart.yass`
+> via [Flathub][flathub_url]: `flatpak install --user io.github.chilledheart.yass` (recommended, signed and sandboxed) for both of _x86_64_ and _aarch64_ machines
 
-[![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)](https://flathub.org/apps/io.github.chilledheart.yass)
-![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)
+[![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)][flathub_url]
+[![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)][flathub_url]
 
 See [Supporteded Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System) for more.
 
@@ -154,6 +154,7 @@ Please visit [the pages site](https://letshack.info).
 [qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-qt6-ubuntu-22.04-jammy_amd64.1.12.3.deb
 
 [qt5_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-x86_64-1.12.3.flatpak
+[flathub_url]: https://flathub.org/apps/io.github.chilledheart.yass
 [gtk4_arch_url]: https://repo.archlinuxcn.org/x86_64/yass-proxy-1.12.3-1-x86_64.pkg.tar.zst
 
 [cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-amd64-1.12.3.tgz
