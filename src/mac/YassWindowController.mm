@@ -17,7 +17,10 @@
 #import "mac/YassViewController.h"
 #include "mac/utils.h"
 
+static YassWindowController* __weak _instance;
+
 @interface YassWindowController ()
+- (void)toggleDisplayStatusInternal:(BOOL)enable;
 @end
 
 @implementation YassWindowController {
@@ -33,8 +36,14 @@
   BOOL hide_on_closed_;
 }
 
++ (YassWindowController* __weak)instance {
+  return _instance;
+}
+
 - (void)windowDidLoad {
   [super windowDidLoad];
+  _instance = self;
+
   [self refreshTimerExceeded];
 
   y_status_bar_item_ = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
@@ -45,7 +54,8 @@
   [y_status_bar_item_.button
       sendActionOn:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown | NSEventMaskOtherMouseDown];
 
-  status_bar_item_ = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+  BOOL enable_status_bar = absl::GetFlag(FLAGS_ui_display_realtime_status) ? TRUE : FALSE;
+  [self toggleDisplayStatusInternal:enable_status_bar];
 
   hide_on_closed_ = FALSE;
 }
@@ -77,6 +87,10 @@
 }
 
 - (void)UpdateStatusBar {
+  if (status_bar_item_ == nil) {
+    status_bar_text_ = nil;
+    return;
+  }
   NSString* next_status_bar_text = [self getStatusMessage];
   // prevent deep copy on unchanged title
   if ([next_status_bar_text isEqualToString:status_bar_text_]) {
@@ -131,33 +145,49 @@
                                                    repeats:NO];
 }
 
-- (void)OnStart:(YassViewController*)viewController {
+- (void)OnStart {
   YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
 
-  [appDelegate OnStart:viewController];
+  [appDelegate OnStart];
 }
 
-- (void)OnStop:(YassViewController*)viewController {
+- (void)OnStop {
   YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
-  [appDelegate OnStop:viewController withOption:FALSE];
+  [appDelegate OnStop:FALSE];
 }
 
 - (void)Started {
   [self UpdateStatusBar];
-  YassViewController* viewController = (YassViewController*)self.contentViewController;
+  YassViewController* viewController = [YassViewController instance];
   [viewController Started];
 }
 
 - (void)StartFailed {
   [self UpdateStatusBar];
-  YassViewController* viewController = (YassViewController*)self.contentViewController;
+  YassViewController* viewController = [YassViewController instance];
   [viewController StartFailed];
 }
 
 - (void)Stopped {
   [self UpdateStatusBar];
-  YassViewController* viewController = (YassViewController*)self.contentViewController;
+  YassViewController* viewController = [YassViewController instance];
   [viewController Stopped];
+}
+
+- (void)toggleDisplayStatus:(BOOL)enable {
+  [self toggleDisplayStatusInternal:enable];
+  absl::SetFlag(&FLAGS_ui_display_realtime_status, (enable == TRUE ? true : false));
+  config::SaveConfig();
+}
+
+- (void)toggleDisplayStatusInternal:(BOOL)enable {
+  if (enable && status_bar_item_ == nil) {
+    status_bar_item_ = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+    [self UpdateStatusBar];
+  } else if (enable == FALSE && status_bar_item_ != nil) {
+    status_bar_item_ = nil;
+    status_bar_text_ = nil;
+  }
 }
 
 @end

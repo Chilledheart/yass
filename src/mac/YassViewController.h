@@ -28,6 +28,9 @@
 @property(weak) IBOutlet NSTextField* timeout;
 @property(weak) IBOutlet NSButton* autoStart;
 @property(weak) IBOutlet NSButton* systemProxy;
+@property(weak) IBOutlet NSButton* displayStatus;
+
++ (YassViewController* __weak)instance;
 @end
 
 #endif  // YASS_MAC_VIEW_CONTROLLER

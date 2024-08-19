@@ -6,6 +6,7 @@
 
 #include <absl/flags/declare.h>
 #include <absl/strings/string_view.h>
+#include <base/compiler_specific.h>
 #include <stdint.h>
 #include <string>
 #include <string_view>
@@ -35,5 +36,9 @@ std::string AbslUnparseFlag(const CipherMethodFlag&);
 bool AbslParseFlag(absl::string_view text, RateFlag* flag, std::string* err);
 
 std::string AbslUnparseFlag(const RateFlag&);
+
+#if BUILDFLAG(IS_MAC)
+ABSL_DECLARE_FLAG(bool, ui_display_realtime_status);
+#endif
 
 #endif  // H_CONFIG_CONFIG_CORE
