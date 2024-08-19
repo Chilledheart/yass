@@ -17,6 +17,8 @@
 #include "mac/YassWindowController.h"
 #include "mac/utils.h"
 
+static YassViewController* __weak _instance;
+
 @interface YassViewController ()
 @end
 
@@ -24,8 +26,13 @@
   bool should_startup_at_app_load;
 }
 
++ (YassViewController* __weak)instance {
+  return _instance;
+}
+
 - (void)viewDidLoad {
   [super viewDidLoad];
+  _instance = self;
 
   [self.cipherMethod removeAllItems];
   NSString* methodStrings[] = {
@@ -101,6 +108,12 @@
   });
 }
 
+- (IBAction)OnDisplayStatusClicked:(id)sender {
+  YassWindowController* windowController = [YassWindowController instance];
+  bool enable = self.displayStatus.state == NSControlStateValueOn;
+  [windowController toggleDisplayStatus:enable];
+}
+
 - (void)OnStart {
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
@@ -118,16 +131,16 @@
   [self.limitRate setEnabled:FALSE];
   [self.timeout setEnabled:FALSE];
 
-  YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
-  [windowController OnStart:self];
+  YassWindowController* windowController = [YassWindowController instance];
+  [windowController OnStart];
 }
 
 - (void)OnStop {
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
 
-  YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
-  [windowController OnStop:self];
+  YassWindowController* windowController = [YassWindowController instance];
+  [windowController OnStop];
 }
 
 - (void)Started {
@@ -184,6 +197,9 @@
   self.dotHost.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_dot_host));
   self.limitRate.stringValue = SysUTF8ToNSString(std::string(absl::GetFlag(FLAGS_limit_rate)));
   self.timeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
+
+  BOOL enable_status_bar = absl::GetFlag(FLAGS_ui_display_realtime_status) ? TRUE : FALSE;
+  self.displayStatus.state = enable_status_bar ? NSControlStateValueOn : NSControlStateValueOff;
 }
 
 @end

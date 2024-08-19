@@ -22,7 +22,7 @@
 #include "version.h"
 
 @interface YassAppDelegate ()
-- (std::string)SaveConfig:(YassViewController*)viewController;
+- (std::string)SaveConfig;
 - (void)OnStarted;
 - (void)OnStartFailed:(std::string)error_msg;
 - (void)OnStopped;
@@ -44,7 +44,7 @@
 
 - (void)applicationWillTerminate:(NSNotification*)aNotification {
   LOG(WARNING) << "Application exiting";
-  [self OnStop:nil withOption:TRUE];
+  [self OnStop:TRUE];
 }
 
 - (BOOL)applicationSupportsSecureRestorableState:(NSApplication*)app {
@@ -116,9 +116,9 @@
   return SysUTF8ToNSString(ss.str());
 }
 
-- (void)OnStart:(YassViewController*)viewController {
+- (void)OnStart {
   state_ = STARTING;
-  auto err_msg = [self SaveConfig:viewController];
+  auto err_msg = [self SaveConfig];
   if (!err_msg.empty()) {
     [self OnStartFailed:err_msg];
     return;
@@ -147,7 +147,7 @@
   worker_.Start(std::move(callback));
 }
 
-- (void)OnStop:(YassViewController*)viewController withOption:(BOOL)quiet {
+- (void)OnStop:(BOOL)quiet {
   state_ = STOPPING;
 
   absl::AnyInvocable<void()> callback;
@@ -165,8 +165,7 @@
   state_ = STARTED;
   config::SaveConfig();
 
-  YassWindowController* windowController =
-      (YassWindowController*)NSApplication.sharedApplication.mainWindow.windowController;
+  YassWindowController* windowController = [YassWindowController instance];
   [windowController Started];
 }
 
@@ -174,8 +173,7 @@
   state_ = START_FAILED;
 
   error_msg_ = error_msg;
-  YassWindowController* windowController =
-      (YassWindowController*)NSApplication.sharedApplication.mainWindow.windowController;
+  YassWindowController* windowController = [YassWindowController instance];
   [windowController StartFailed];
   NSAlert* alert = [[NSAlert alloc] init];
   alert.messageText = @(error_msg.c_str());
@@ -186,12 +184,13 @@
 
 - (void)OnStopped {
   state_ = STOPPED;
-  YassWindowController* windowController =
-      (YassWindowController*)NSApplication.sharedApplication.mainWindow.windowController;
+  YassWindowController* windowController = [YassWindowController instance];
   [windowController Stopped];
 }
 
-- (std::string)SaveConfig:(YassViewController*)viewController {
+- (std::string)SaveConfig {
+  YassViewController* viewController = [YassViewController instance];
+
   auto server_host = SysNSStringToUTF8(viewController.serverHost.stringValue);
   auto server_sni = SysNSStringToUTF8(viewController.serverSNI.stringValue);
   auto server_port = SysNSStringToUTF8(viewController.serverPort.stringValue);

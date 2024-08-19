@@ -77,6 +77,10 @@ bool ReadConfig() {
   }
   config_impl->Read("tls13_early_data", &FLAGS_tls13_early_data);
 
+#if BUILDFLAG(IS_MAC)
+  config_impl->Read("ui_display_realtime_status", &FLAGS_ui_display_realtime_status);
+#endif
+
   /* close fields */
   config_impl->Close();
 
@@ -144,6 +148,10 @@ bool SaveConfig() {
     all_fields_written &= config_impl->Write("enable_post_quantum_kyber", FLAGS_enable_post_quantum_kyber);
   }
   all_fields_written &= config_impl->Write("tls13_early_data", FLAGS_tls13_early_data);
+
+#if BUILDFLAG(IS_MAC)
+  all_fields_written &= config_impl->Write("ui_display_realtime_status", FLAGS_ui_display_realtime_status);
+#endif
 
   all_fields_written &= config_impl->Close();
 

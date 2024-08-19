@@ -8,11 +8,14 @@
 
 @class YassViewController;
 @interface YassWindowController : NSWindowController <NSWindowDelegate>
-- (void)OnStart:(YassViewController*)viewController;
-- (void)OnStop:(YassViewController*)viewController;
+- (void)OnStart;
+- (void)OnStop;
 - (void)Started;
 - (void)StartFailed;
 - (void)Stopped;
+- (void)toggleDisplayStatus:(BOOL)enable;
+
++ (YassWindowController* __weak)instance;
 @end
 
 #endif  // YASS_MAC_WINDOW_CONTROLLER
