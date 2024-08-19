@@ -148,3 +148,7 @@ ABSL_FLAG(CipherMethodFlag, method, CipherMethodFlag(CRYPTO_DEFAULT), kCipherMet
 
 ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connections");
 ABSL_FLAG(RateFlag, limit_rate, RateFlag(0), "Limit transfer speed to RATE");
+
+#if BUILDFLAG(IS_MAC)
+ABSL_FLAG(bool, ui_display_realtime_status, true, "Display Realtime Status in Status Bar (UI)");
+#endif
