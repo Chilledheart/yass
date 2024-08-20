@@ -83,8 +83,7 @@
   NSStoryboard* storyboard = [NSStoryboard storyboardWithName:@"Main" bundle:nil];
   OptionViewController* optionViewController =
       (OptionViewController*)[storyboard instantiateControllerWithIdentifier:@"OptionViewController"];
-  YassViewController* viewController =
-      (YassViewController*)NSApplication.sharedApplication.mainWindow.contentViewController;
+  YassViewController* viewController = [YassViewController instance];
   [viewController presentViewControllerAsModalWindow:optionViewController];
 }
 

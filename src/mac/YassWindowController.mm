@@ -20,7 +20,7 @@
 static YassWindowController* __weak _instance;
 
 @interface YassWindowController ()
-- (void)toggleDisplayStatusInternal:(BOOL)enable;
+- (void)toggleDisplayStatusInternal:(bool)enable;
 @end
 
 @implementation YassWindowController {
@@ -54,7 +54,7 @@ static YassWindowController* __weak _instance;
   [y_status_bar_item_.button
       sendActionOn:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown | NSEventMaskOtherMouseDown];
 
-  BOOL enable_status_bar = absl::GetFlag(FLAGS_ui_display_realtime_status) ? TRUE : FALSE;
+  bool enable_status_bar = absl::GetFlag(FLAGS_ui_display_realtime_status);
   [self toggleDisplayStatusInternal:enable_status_bar];
 
   hide_on_closed_ = FALSE;
@@ -174,17 +174,17 @@ static YassWindowController* __weak _instance;
   [viewController Stopped];
 }
 
-- (void)toggleDisplayStatus:(BOOL)enable {
+- (void)toggleDisplayStatus:(bool)enable {
   [self toggleDisplayStatusInternal:enable];
-  absl::SetFlag(&FLAGS_ui_display_realtime_status, (enable == TRUE ? true : false));
+  absl::SetFlag(&FLAGS_ui_display_realtime_status, enable);
   config::SaveConfig();
 }
 
-- (void)toggleDisplayStatusInternal:(BOOL)enable {
+- (void)toggleDisplayStatusInternal:(bool)enable {
   if (enable && status_bar_item_ == nil) {
     status_bar_item_ = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [self UpdateStatusBar];
-  } else if (enable == FALSE && status_bar_item_ != nil) {
+  } else if (!enable && status_bar_item_ != nil) {
     status_bar_item_ = nil;
     status_bar_text_ = nil;
   }
