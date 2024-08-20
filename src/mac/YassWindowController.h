@@ -13,7 +13,7 @@
 - (void)Started;
 - (void)StartFailed;
 - (void)Stopped;
-- (void)toggleDisplayStatus:(BOOL)enable;
+- (void)toggleDisplayStatus:(bool)enable;
 
 + (YassWindowController* __weak)instance;
 @end
