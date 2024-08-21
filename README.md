@@ -14,7 +14,7 @@ yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/
 Because we are reusing chromium's network stack directly,
 we are following [chromium's release schedule](https://chromiumdash.appspot.com/schedule) and delivering new versions based on its beta branch.
 
-- [Latest M129's Release (1.12.x)](https://github.com/Chilledheart/yass/releases/tag/1.13.0) will become Stable since _Sep 17, 2024_.
+- [Latest M129's Release (1.13.x)](https://github.com/Chilledheart/yass/releases/tag/1.13.0) will become Stable since _Sep 17, 2024_.
 - [Latest M128's Release (1.12.x)](https://github.com/Chilledheart/yass/releases/tag/1.12.3) has become Stable since _Aug 20, 2024_ (Extended Support).
 - [Latest M127's Release (1.11.x)](https://github.com/Chilledheart/yass/releases/tag/1.11.5) has become Stable since _Jul 23, 2024_
 - [Latest M126's Release (1.10.x)](https://github.com/Chilledheart/yass/releases/tag/1.10.7) has become Stable since _Jun 11, 2024_ (Extended Support)
