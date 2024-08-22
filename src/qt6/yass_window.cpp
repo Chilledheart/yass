@@ -147,10 +147,15 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
 
   autostart_ = new QCheckBox;
   systemproxy_ = new QCheckBox;
+#ifdef FLATHUB_BUILD
+  autostart_->setEnabled(false);
+  systemproxy_->setEnabled(false);
+#else
   autostart_->setChecked(Utils::GetAutoStart());
   systemproxy_->setChecked(Utils::GetSystemProxy());
   connect(autostart_, &QPushButton::clicked, this, &YASSWindow::OnAutoStartClicked);
   connect(systemproxy_, &QPushButton::clicked, this, &YASSWindow::OnSystemProxyClicked);
+#endif
 
   grid->addWidget(server_host_, 0, 2);
   grid->addWidget(server_sni_, 1, 2);

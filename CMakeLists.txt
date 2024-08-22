@@ -545,6 +545,15 @@ if (FLATPAK_BUILD)
   add_definitions(-DFLATPAK_BUILD)
 endif()
 
+cmake_dependent_option(
+  FLATHUB_BUILD "Build with flathub build" OFF
+  "GUI AND LINUX" OFF)
+
+if (FLATHUB_BUILD)
+  list(APPEND YASS_APP_FEATURES "flathub-build")
+  add_definitions(-DFLATHUB_BUILD)
+endif()
+
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html
 if (USE_OLD_SYSTEMD_SERVICE)
