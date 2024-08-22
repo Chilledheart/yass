@@ -100,19 +100,7 @@ See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usa
 
 ## Extra Features (Limited)
 
-### SOCKS cipher Support
-Experimental socks4/socks4a/socks5/socks5h cipher support is added for both of CLI and GUI.
-
-### DoH (DNS over HTTPS) and DoT (DNS over TLS) Support
-Experimental DoH and DoT support is added for both of CLI and GUI.
-
-### Supplementary Support for ISRG Root X2 and ISRG Root X1 ca which is missing on some machines
-These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
-
-### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
-These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
-
-### Specify TCP Congestion Algorithm (Command Line only)
+### Specify TCP Congestion Algorithm (Linux only, Command Line only)
 Pass `--congestion_algorithm algo` to command line.
 Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux only).
 See more at manpage [_tcp(7)_](https://linux.die.net/man/7/tcp)
