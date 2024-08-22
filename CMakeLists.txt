@@ -2518,7 +2518,7 @@ elseif (USE_TCMALLOC AND WIN32)
     ${SUPPORT_LIBS}
     )
 
-  install(TARGETS tcmalloc_minimal RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(TARGETS tcmalloc_minimal RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
   # patching manually, see tcmalloc's README_windows.txt
   if (MSVC)
@@ -2651,7 +2651,7 @@ elseif(USE_MIMALLOC AND WIN32)
   add_library(mimalloc_override OBJECT src/mimalloc.cc)
   target_link_libraries(mimalloc_override PRIVATE mimalloc)
 
-  install(TARGETS mimalloc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(TARGETS mimalloc RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
   # On windows, link and copy the mimalloc redirection dll too.
   if(CMAKE_SIZEOF_VOID_P EQUAL 4)
@@ -2659,7 +2659,8 @@ elseif(USE_MIMALLOC AND WIN32)
   else()
     set(MIMALLOC_REDIRECT_SUFFIX "")
   endif()
-  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/mimalloc/bin/mimalloc-redirect${MIMALLOC_REDIRECT_SUFFIX}.dll" DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/mimalloc/bin/mimalloc-redirect${MIMALLOC_REDIRECT_SUFFIX}.dll"
+    DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
   set(SUPPORT_LIBS
     ${SUPPORT_LIBS}
@@ -2743,7 +2744,7 @@ if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic" AND NOT ALLOW_XP AND ${CMAKE_BU
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
 
-  install(FILES "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION "${CMAKE_INSTALL_BINDIR}")
 endif()
 
 if (IOS)
@@ -4293,14 +4294,14 @@ if (CLI)
   target_link_libraries(yass_cli PUBLIC yass_net)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
-    install(TARGETS yass_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES doc/yass_cli.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1/)
+    install(TARGETS yass_cli RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(FILES doc/yass_cli.1 DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
     # TODO add freebsd rc files
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
-      install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
+      install(FILES yass.json.sample RENAME config.json DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/yass")
       install(FILES yass${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass.service DESTINATION lib/systemd/system)
 
-      install(FILES yass-redir.json.sample RENAME redir.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
+      install(FILES yass-redir.json.sample RENAME redir.json DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/yass")
       install(FILES yass-redir${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass-redir.service DESTINATION lib/systemd/system)
     endif()
   endif()
@@ -4351,10 +4352,10 @@ if (SERVER)
   target_link_libraries(yass_server PUBLIC yass_net)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
-    install(TARGETS yass_server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES doc/yass_server.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1/)
+    install(TARGETS yass_server RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(FILES doc/yass_server.1 DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
-      install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
+      install(FILES yass-server.json.sample RENAME server.json DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/yass")
       install(FILES yass-server${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass-server.service DESTINATION lib/systemd/system)
     endif()
   endif()
@@ -4587,7 +4588,7 @@ if (GUI)
       endif()
       # dummy place holder
       install(FILES src/qt6/yass.placeholder.mo
-        DESTINATION share/locale/en/LC_MESSAGES
+        DESTINATION "${CMAKE_INSTALL_LOCALEDIR}/en/LC_MESSAGES"
         RENAME yass.mo)
     else()
       add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
@@ -4943,18 +4944,18 @@ if (GUI)
     if (NOT CMAKE_SKIP_INSTALL_RULES)
       # installable, except on macOS when marked as MACOSX_BUNDLE
       if (NOT APPLE)
-        install(TARGETS ${APP_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+        install(TARGETS ${APP_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
       endif()
 
       if (GUI_FLAVOUR STREQUAL "qt6" OR GUI_FLAVOUR STREQUAL "qt5" OR GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
         install(FILES
           ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/yass.desktop
           RENAME io.github.chilledheart.yass.desktop
-          DESTINATION share/applications)
+          DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
 
         install(FILES
           ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/io.github.chilledheart.yass.png
-          DESTINATION share/pixmaps)
+          DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pixmaps")
 
         install(DIRECTORY
           ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/16x16
@@ -4965,7 +4966,7 @@ if (GUI)
           ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/128x128
           ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/256x256
           ${CMAKE_CURRENT_SOURCE_DIR}/src/freedesktop/icons/512x512
-          DESTINATION share/icons/hicolor)
+          DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor")
       endif()
     endif()
 endif()
@@ -5000,7 +5001,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
 
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
   configure_file("LICENSE.cmake.in" "${LICENSE_FILE}" @ONLY)
-  install(FILES "${LICENSE_FILE}" DESTINATION ${CMAKE_INSTALL_DOCDIR})
+  install(FILES "${LICENSE_FILE}" DESTINATION "${CMAKE_INSTALL_DOCDIR}")
 endif()
 
 # *****************************************************************************************
@@ -5011,7 +5012,7 @@ if (INSTALL_FLATHUB_METAINFO)
   set(METAINFO_FILE "${CMAKE_CURRENT_BINARY_DIR}/io.github.chilledheart.yass.metainfo.xml")
   string(TIMESTAMP YASS_APP_TODAY "%Y-%m-%d")
   configure_file("flatpak/io.github.chilledheart.yass.metainfo.xml.cmake.in" "${METAINFO_FILE}" @ONLY)
-  install(FILES "${METAINFO_FILE}" DESTINATION share/metainfo)
+  install(FILES "${METAINFO_FILE}" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/metainfo")
 endif()
 
 # *****************************************************************************************

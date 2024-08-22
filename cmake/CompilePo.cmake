@@ -6,6 +6,6 @@ function(create_po_target domain_name lang po_file)
      )
   set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/${domain_name}_${lang}.gmo" PROPERTIES GENERATED true)
   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${domain_name}_${lang}.gmo"
-    DESTINATION share/locale/${lang}/LC_MESSAGES
+    DESTINATION "${CMAKE_INSTALL_LOCALEDIR}/${lang}/LC_MESSAGES"
     RENAME ${domain_name}.mo)
 endfunction()
