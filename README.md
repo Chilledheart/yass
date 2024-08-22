@@ -88,6 +88,16 @@ TBD: Spliting Tunnel Support (#954)
 ### More Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
 
+## Server side support (outside this project)
+
+See [Setup forwardproxy caddy service](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#setup-forwardproxy-caddy-service) for more.
+
+See [Window sizes for large bandwidth](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#window-sizes-for-large-bandwidth) for more.
+
+See [Use BBR Congestion Control](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#use-bbr-congestion-control) for more.
+
+See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#chatgpt-capable-caddy-server) for more.
+
 ## Extra Features (Limited)
 
 ### SOCKS cipher Support
@@ -110,12 +120,6 @@ See more at manpage [_tcp(7)_](https://linux.die.net/man/7/tcp)
 ### Use custom CA (Command Line only)
 Pass `--certificate_chain_file file` to command line.
 Use custom certificate chain provided by _file_ to verify server's certificate.
-
-### Use server Side Support (Commmand Line only)
-All ciphers supported by client are also supported by `yass_server`.
-See more at manpage _yass_server(1)_
-
-See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
 
 ## Sponsor Me
 Please visit [the pages site](https://letshack.info).
