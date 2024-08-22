@@ -9,7 +9,7 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --device=dri
-  - --filesystem=~/.yass
+  - --filesystem=~/.yass:create
   - --talk-name=org.kde.StatusNotifierWatcher
   - --talk-name=com.canonical.indicator.application
   - --talk-name=org.ayatana.indicator.application
@@ -24,6 +24,7 @@ finish-args:
   - --env=GSETTINGS_BACKEND=dconf
   # For KDE proxy resolution (KDE5/KDE6 only)
   - --filesystem=xdg-config/kioslaverc
+  - --filesystem=~/.config/kioslaverc
 modules:
   - name: dconf
     buildsystem: meson

@@ -145,11 +145,6 @@ if (OFFICIAL_BUILD)
   add_definitions(-DOFFICIAL_BUILD)
 endif()
 
-if (FLATPAK_BUILD)
-  list(APPEND YASS_APP_FEATURES "flatpak-build")
-  add_definitions(-DFLATPAK_BUILD)
-endif()
-
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
   # the CMake generators prefer gcc, even on Windows.
@@ -544,6 +539,20 @@ cmake_dependent_option(
 cmake_dependent_option(
   FLATPAK_BUILD "Build with flatpak support" OFF
   "GUI AND LINUX" OFF)
+
+if (FLATPAK_BUILD)
+  list(APPEND YASS_APP_FEATURES "flatpak-build")
+  add_definitions(-DFLATPAK_BUILD)
+endif()
+
+cmake_dependent_option(
+  FLATHUB_BUILD "Build with flathub build" OFF
+  "GUI AND LINUX" OFF)
+
+if (FLATHUB_BUILD)
+  list(APPEND YASS_APP_FEATURES "flathub-build")
+  add_definitions(-DFLATHUB_BUILD)
+endif()
 
 # Dynamic users are supported from version 235
 # see https://0pointer.net/blog/dynamic-users-with-systemd.html

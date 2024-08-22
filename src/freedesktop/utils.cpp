@@ -12,6 +12,9 @@
 
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
+#include <base/posix/eintr_wrapper.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <string_view>
 
 using namespace std::string_literals;
@@ -95,6 +98,59 @@ std::string GetKDESessionVersion() {
   return kde_session_ptr ? std::string(kde_session_ptr) : "5"s;
 #endif
 }
+
+#ifdef FLATPAK_BUILD
+bool copyFileInplace(const std::string& src_file, const std::string& dst_file) {
+  bool ret = false;
+  int src_fd = open(src_file.c_str(), O_RDONLY);
+  int dst_fd = open(dst_file.c_str(), O_WRONLY | O_TRUNC | O_CREAT, 0644);
+  if (src_fd == -1) {
+    PLOG(WARNING) << "copyFile: source file " << src_file << " does not exist";
+    goto done;
+  }
+  if (dst_fd == -1) {
+    PLOG(WARNING) << "copyFile: dest file " << dst_file << " cannot be created";
+    goto done;
+  }
+  while (true) {
+    char buf[4096];
+    ssize_t r = HANDLE_EINTR(read(src_fd, buf, sizeof(buf)));
+    if (r < 0) {
+      PLOG(WARNING) << "copyFile: read error, src file: " << src_file;
+      break;
+    }
+    if (r == 0) {
+      VLOG(2) << "copyFile: read eof from file: " << src_file;
+      ret = true;
+      break;
+    }
+    VLOG(2) << "copyFile: read chunk from file: " << src_file << " with " << r << " bytes";
+    ssize_t w = HANDLE_EINTR(write(dst_fd, buf, r));
+    if (w < 0) {
+      PLOG(WARNING) << "copyFile: write error, dest file: " << dst_file;
+      break;
+    }
+    if (w < r) {
+      PLOG(WARNING) << "copyFile: paritial write, dest file: " << dst_file << " written " << w << " in " << r
+                    << " bytes ";
+      break;
+    }
+    VLOG(2) << "copyFile: written chunk to file: " << dst_file << " with " << w << " bytes";
+  }
+
+done:
+  if (src_fd != -1) {
+    close(src_fd);
+  }
+  if (dst_fd != -1) {
+    close(dst_fd);
+  }
+  if (ret) {
+    VLOG(1) << "copyFile: copied successfully from file: " << src_file << " to file: " << dst_file;
+  }
+  return ret;
+}
+#endif
 }  // namespace
 
 bool Utils::GetAutoStart() {
@@ -325,10 +381,10 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
 
   const std::string kde_session_version = GetKDESessionVersion();
   const std::string kreadconfig = absl::StrCat("kreadconfig"s, kde_session_version);
-  const std::string config_dir = GetConfigDir();
+  const std::string config_file = absl::StrCat(GetConfigDir(), "/kioslaverc");
   std::string output, _;
-  std::vector<std::string> params = {
-      kreadconfig, "--file"s, config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s, "ProxyType"s};
+  std::vector<std::string> params = {kreadconfig,       "--file"s, config_file, "--group"s,
+                                     "Proxy Settings"s, "--key"s,  "ProxyType"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -338,7 +394,7 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
   }
   *enabled = output == "1"s;
 
-  params = {kreadconfig, "--file"s, config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s, "httpProxy"s};
+  params = {kreadconfig, "--file"s, config_file, "--group"s, "Proxy Settings"s, "--key"s, "httpProxy"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -348,8 +404,7 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
   }
   *server_addr = output;
 
-  params = {kreadconfig, "--file"s,    config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s,
-            "--key"s,    "NoProxyFor"s};
+  params = {kreadconfig, "--file"s, config_file, "--group"s, "Proxy Settings"s, "--key"s, "NoProxyFor"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -365,11 +420,23 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
 bool SetSystemProxy_KDE(bool enable, const std::string& server_addr, const std::string& bypass_addr) {
   const std::string kde_session_version = GetKDESessionVersion();
   const std::string kwriteconfig = absl::StrCat("kwriteconfig"s, kde_session_version);
-  const std::string config_dir = GetConfigDir();
+
+  const std::string origin_config_file = absl::StrCat(GetConfigDir(), "/kioslaverc");
+#ifdef FLATPAK_BUILD
+  const std::string config_file = absl::StrCat(ExpandUser("~/.yass"), "/kioslaverc");
+#else
+  const std::string config_file = origin_config_file;
+#endif
   std::string _;
-  std::vector<std::string> params = {kwriteconfig, "--file"s,           config_dir + "/kioslaverc"s,
-                                     "--group"s,   "Proxy Settings"s,   "--key"s,
-                                     "ProxyType"s, enable ? "1"s : "0"s};
+
+#ifdef FLATPAK_BUILD
+  if (!copyFileInplace(origin_config_file, config_file)) {
+    return false;
+  }
+#endif
+
+  std::vector<std::string> params = {kwriteconfig,      "--file"s, config_file,  "--group"s,
+                                     "Proxy Settings"s, "--key"s,  "ProxyType"s, enable ? "1"s : "0"s};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
@@ -382,18 +449,30 @@ bool SetSystemProxy_KDE(bool enable, const std::string& server_addr, const std::
   };
 
   for (std::string_view protocol : kProtocol) {
-    params = {kwriteconfig,      "--file"s, config_dir + "/kioslaverc"s, "--group"s,
-              "Proxy Settings"s, "--key"s,  std::string(protocol),       server_addr};
+    params = {kwriteconfig,      "--file"s, config_file,           "--group"s,
+              "Proxy Settings"s, "--key"s,  std::string(protocol), server_addr};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
     }
   }
 
-  params = {kwriteconfig,  "--file"s,  config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s,
-            "NoProxyFor"s, bypass_addr};
+  params = {kwriteconfig, "--file"s, config_file, "--group"s, "Proxy Settings"s, "--key"s, "NoProxyFor"s, bypass_addr};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
+
+#ifdef FLATPAK_BUILD
+  // FIXME for KDE, system proxy might not work as expected
+  // if config file ~/.config/kioslaverc is not created before app starts
+
+  if (!copyFileInplace(config_file, origin_config_file)) {
+    return false;
+  }
+
+  if (unlink((config_file).c_str()) < 0) {
+    PLOG(INFO) << "Failed to remove temporary config file: " << config_file;
+  }
+#endif
 
   params = {"dbus-send"s, "--type=signal"s, "/KIO/Scheduler"s, "org.kde.KIO.Scheduler.reparseSlaveConfiguration"s,
             "string:''"s};
