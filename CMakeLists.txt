@@ -145,11 +145,6 @@ if (OFFICIAL_BUILD)
   add_definitions(-DOFFICIAL_BUILD)
 endif()
 
-if (FLATPAK_BUILD)
-  list(APPEND YASS_APP_FEATURES "flatpak-build")
-  add_definitions(-DFLATPAK_BUILD)
-endif()
-
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
   # the CMake generators prefer gcc, even on Windows.
@@ -539,10 +534,6 @@ cmake_dependent_option(USE_GTK3_APP_INDICATOR
 
 cmake_dependent_option(
   INSTALL_FLATHUB_METAINFO "Build with flathub metainfo" OFF
-  "GUI AND LINUX" OFF)
-
-cmake_dependent_option(
-  FLATPAK_BUILD "Build with flatpak support" OFF
   "GUI AND LINUX" OFF)
 
 # Dynamic users are supported from version 235

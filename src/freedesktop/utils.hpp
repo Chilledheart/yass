@@ -14,7 +14,6 @@ class Utils {
   static bool GetSystemProxy();
   static bool SetSystemProxy(bool on);
   static std::string GetLocalAddr();
-  static std::string GetLocalAddrKDE();
 };
 
 bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* server_port, std::string* bypass_addr);
