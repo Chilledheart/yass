@@ -20,6 +20,19 @@ using namespace yass;
 
 static constexpr const char kDefaultAutoStartName[] = "io.github.chilledheart.yass";
 
+#ifdef FLATPAK_BUILD
+static constexpr const std::string_view kAutoStartFileContent =
+    "[Desktop Entry]\n"
+    "Type=Application\n"
+    "Name=yass\n"
+    "Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and "
+    "low end boxes.\n"
+    "Icon=io.github.chilledheart.yass\n"
+    "Exec=/usr/bin/flatpak run --command=yass io.github.chilledheart.yass --background\n"
+    "Terminal=false\n"
+    "Categories=Network;GTK;Utility\n"
+    "X-Flatpak=io.github.chilledheart.yass\n";
+#else
 static constexpr const std::string_view kAutoStartFileContent =
     "[Desktop Entry]\n"
     "Version=1.0\n"
@@ -31,6 +44,7 @@ static constexpr const std::string_view kAutoStartFileContent =
     "Exec=\"%s\" --background\n"
     "Terminal=false\n"
     "Categories=Network;GTK;Utility\n";
+#endif
 
 namespace {
 
@@ -48,6 +62,19 @@ std::string GetConfigDir() {
   return config_dir;
 }
 
+// https://github.com/qt/qtbase/blob/7fe1198f6edb40de2299272c7523d85d7486598b/src/corelib/io/qstandardpaths_unix.cpp#L201
+std::string GetDataDir() {
+  const char* data_dir_ptr = getenv("XDG_DATA_HOME");
+  std::string data_dir;
+  // spec says relative paths should be ignored
+  if (data_dir_ptr == nullptr || data_dir_ptr[0] != '/') {
+    data_dir = ExpandUser("~/.local/share");
+  } else {
+    data_dir = data_dir_ptr;
+  }
+  return data_dir;
+}
+
 std::string GetAutostartDirectory() {
   return absl::StrCat(GetConfigDir(), "/", "autostart");
 }
@@ -61,8 +88,12 @@ bool IsKDE() {
 // see https://userbase.kde.org/KDE_System_Administration/Environment_Variables
 std::string GetKDESessionVersion() {
   DCHECK(IsKDE());
+#ifdef FLATPAK_BUILD
+  return "5"s;
+#else
   const char* kde_session_ptr = getenv("KDE_SESSION_VERSION");
   return kde_session_ptr ? std::string(kde_session_ptr) : "5"s;
+#endif
 }
 }  // namespace
 
@@ -89,9 +120,13 @@ void Utils::EnableAutoStart(bool on) {
     }
 
     // write to target
+#ifdef FLATPAK_BUILD
+    auto desktop_entry = std::string(kAutoStartFileContent);
+#else
     std::string executable_path = "yass"s;
     GetExecutablePath(&executable_path);
     std::string desktop_entry = absl::StrFormat(kAutoStartFileContent, executable_path);
+#endif
     if (!WriteFileWithBuffer(autostart_desktop_path, desktop_entry)) {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
@@ -101,7 +136,7 @@ void Utils::EnableAutoStart(bool on) {
 
   // Update Desktop Database
   std::string _;
-  std::vector<std::string> params = {"update-desktop-database"s, ExpandUser("~/.local/share/applications"s)};
+  std::vector<std::string> params = {"update-desktop-database"s, absl::StrCat(GetDataDir(), "/applications"s)};
   if (ExecuteProcess(params, &_, &_) != 0) {
     PLOG(WARNING) << "update-desktop-database failed";
   } else {
@@ -116,7 +151,7 @@ bool Utils::GetSystemProxy() {
     if (!QuerySystemProxy_KDE(&enabled, &server_addr, &bypass_addr)) {
       return false;
     }
-    return enabled && server_addr == GetLocalAddr();
+    return enabled && (server_addr == GetLocalAddrKDE() || server_addr == GetLocalAddr());
   }
   bool enabled;
   std::string server_host, server_port, bypass_addr;
@@ -169,6 +204,28 @@ std::string Utils::GetLocalAddr() {
       local_host = "127.0.0.1"s;
     }
     ss << "http://" << local_host << ":" << local_port;
+  }
+  return ss.str();
+}
+
+std::string Utils::GetLocalAddrKDE() {
+  std::ostringstream ss;
+  auto local_host = absl::GetFlag(FLAGS_local_host);
+  auto local_port = absl::GetFlag(FLAGS_local_port);
+
+  asio::error_code ec;
+  auto addr = asio::ip::make_address(local_host.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address && addr.is_v6()) {
+    if (addr.is_unspecified()) {
+      local_host = "::1"s;
+    }
+    ss << "http://[" << local_host << "] " << local_port;
+  } else {
+    if (host_is_ip_address && addr.is_unspecified()) {
+      local_host = "127.0.0.1"s;
+    }
+    ss << "http://" << local_host << " " << local_port;
   }
   return ss.str();
 }
