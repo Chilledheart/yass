@@ -18,6 +18,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
+      - -DOFFICIAL_BUILD=on
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DINSTALL_FLATHUB_METAINFO=on
       - -DUSE_ZLIB=on
