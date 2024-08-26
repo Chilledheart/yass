@@ -6,6 +6,7 @@
 #include <gtk/gtk.h>
 
 #include <string>
+#include <vector>
 
 extern "C" {
 #define OPTION_DIALOG_TYPE (option_dialog_get_type())
@@ -32,6 +33,7 @@ class OptionDialog {
  private:
   friend class YASSWindow;
   OptionGtkDialog* impl_;
+  std::vector<std::string> algorithms_;
 };  // OptionDialog
 
 #endif  // OPTION_DIALOG_H

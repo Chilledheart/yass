@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-25 13:13+0800\n"
+"POT-Creation-Date: 2024-08-26 14:25+0800\n"
 "PO-Revision-Date: 2023-05-24 14:35+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -17,63 +17,63 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: yass.cpp:302
+#: yass.cpp:297
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
 
-#: yass.cpp:304
+#: yass.cpp:299
 msgid "Connecting"
 msgstr "Connecting"
 
-#: yass.cpp:306
+#: yass.cpp:301
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
 
-#: yass.cpp:308
+#: yass.cpp:303
 msgid "Disconnecting"
 msgstr "Disconnecting"
 
-#: yass.cpp:310
+#: yass.cpp:305
 msgid "Disconnected with "
 msgstr "Disconnected with "
 
-#: yass.cpp:421
-msgid "Last Change: "
-msgstr "Last Change: "
-
-#: yass.cpp:424
-msgid "Enabled Feature: "
-msgstr "Enabled Feature: "
-
-#: yass.cpp:427
-msgid "GUI Variant: "
-msgstr "GUI Variant: "
-
-#: yass.cpp:436
-msgid "official-site"
-msgstr "official-site"
-
-#: yass.cpp:442
-msgid "YASS Option"
-msgstr "YASS Option"
-
-#: yass_window.cpp:192
+#: yass_window.cpp:193
 msgid "READY"
 msgstr "READY"
 
-#: yass_window.cpp:319
+#: yass_window.cpp:266
+msgid "Last Change: "
+msgstr "Last Change: "
+
+#: yass_window.cpp:269
+msgid "Enabled Feature: "
+msgstr "Enabled Feature: "
+
+#: yass_window.cpp:272
+msgid "GUI Variant: "
+msgstr "GUI Variant: "
+
+#: yass_window.cpp:281
+msgid "official-site"
+msgstr "official-site"
+
+#: yass_window.cpp:298
+msgid "YASS Option"
+msgstr "YASS Option"
+
+#: yass_window.cpp:397
 msgid " tx rate: "
 msgstr " tx rate: "
 
-#: yass_window.cpp:322
+#: yass_window.cpp:400
 msgid " rx rate: "
 msgstr " rx rate: "
 
-#: yass_window.cpp:357
+#: yass_window.cpp:435
 msgid "Start Failed"
 msgstr "Start Failed"
 
-#: yass_window.cpp:358
+#: yass_window.cpp:436
 msgid "OK"
 msgstr "OK"
 
@@ -113,11 +113,15 @@ msgstr "TCP keep alive interval"
 msgid "Kyber post-quantum key agreement for TLS"
 msgstr "Kyber post-quantum key agreement for TLS"
 
-#: option_dialog.ui:108
+#: option_dialog.ui:68
+msgid "TCP Congestion Algorithm"
+msgstr "TCP Congestion Algorithm"
+
+#: option_dialog.ui:126
 msgid "Okay"
 msgstr "Okay"
 
-#: option_dialog.ui:117
+#: option_dialog.ui:135
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -185,6 +189,6 @@ msgstr "System Proxy"
 msgid "Start"
 msgstr "Start"
 
-#: yass_window.ui:291
+#: yass_window.ui:292
 msgid "Stop"
 msgstr "Stop"

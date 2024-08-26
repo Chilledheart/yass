@@ -35,6 +35,10 @@
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
+    <message>
+        <source>TCP Congestion Algorithm</source>
+        <translation>TCP 拥塞算法</translation>
+    </message>
 </context>
 <context>
     <name>TrayIcon</name>
