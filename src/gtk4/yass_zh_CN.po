@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-25 13:13+0800\n"
+"POT-Creation-Date: 2024-08-26 14:25+0800\n"
 "PO-Revision-Date: 2023-09-15 11:28+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -18,63 +18,63 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: yass.cpp:302
+#: yass.cpp:297
 msgid "Connected with conns: "
 msgstr "已产生连接: "
 
-#: yass.cpp:304
+#: yass.cpp:299
 msgid "Connecting"
 msgstr "连接中"
 
-#: yass.cpp:306
+#: yass.cpp:301
 msgid "Failed to connect due to "
 msgstr "无法连接因为 "
 
-#: yass.cpp:308
+#: yass.cpp:303
 msgid "Disconnecting"
 msgstr "断开连接中"
 
-#: yass.cpp:310
+#: yass.cpp:305
 msgid "Disconnected with "
 msgstr "断开连接于服务器 "
 
-#: yass.cpp:421
-msgid "Last Change: "
-msgstr "最后改动: "
-
-#: yass.cpp:424
-msgid "Enabled Feature: "
-msgstr "启用功能: "
-
-#: yass.cpp:427
-msgid "GUI Variant: "
-msgstr "图形版本: "
-
-#: yass.cpp:436
-msgid "official-site"
-msgstr "官方网站"
-
-#: yass.cpp:442
-msgid "YASS Option"
-msgstr "YASS 选项"
-
-#: yass_window.cpp:192
+#: yass_window.cpp:193
 msgid "READY"
 msgstr "就绪"
 
-#: yass_window.cpp:319
+#: yass_window.cpp:266
+msgid "Last Change: "
+msgstr "最后改动: "
+
+#: yass_window.cpp:269
+msgid "Enabled Feature: "
+msgstr "启用功能: "
+
+#: yass_window.cpp:272
+msgid "GUI Variant: "
+msgstr "图形版本: "
+
+#: yass_window.cpp:281
+msgid "official-site"
+msgstr "官方网站"
+
+#: yass_window.cpp:298
+msgid "YASS Option"
+msgstr "YASS 选项"
+
+#: yass_window.cpp:397
 msgid " tx rate: "
 msgstr " 上传速率: "
 
-#: yass_window.cpp:322
+#: yass_window.cpp:400
 msgid " rx rate: "
 msgstr " 下载速率: "
 
-#: yass_window.cpp:357
+#: yass_window.cpp:435
 msgid "Start Failed"
 msgstr "启动失败"
 
-#: yass_window.cpp:358
+#: yass_window.cpp:436
 msgid "OK"
 msgstr "确认"
 
@@ -114,11 +114,15 @@ msgstr "TCP 保活间隔"
 msgid "Kyber post-quantum key agreement for TLS"
 msgstr "TLS的Kyber后量子密钥协商"
 
-#: option_dialog.ui:108
+#: option_dialog.ui:68
+msgid "TCP Congestion Algorithm"
+msgstr "TCP 拥塞算法"
+
+#: option_dialog.ui:126
 msgid "Okay"
 msgstr "确认"
 
-#: option_dialog.ui:117
+#: option_dialog.ui:135
 msgid "Cancel"
 msgstr "取消"
 
@@ -186,6 +190,6 @@ msgstr "系统代理"
 msgid "Start"
 msgstr "启动"
 
-#: yass_window.ui:291
+#: yass_window.ui:292
 msgid "Stop"
 msgstr "停止"

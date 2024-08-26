@@ -49,9 +49,6 @@ bool ReadConfig() {
   config_impl->Read("fast_open", &FLAGS_tcp_fastopen);
   config_impl->Read("fast_open_connect", &FLAGS_tcp_fastopen_connect);
 
-#ifdef __linux__
-  config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
-#endif
   config_impl->Read("doh_url", &FLAGS_doh_url);
   config_impl->Read("dot_host", &FLAGS_dot_host);
   config_impl->Read("connect_timeout", &FLAGS_connect_timeout);
@@ -62,6 +59,7 @@ bool ReadConfig() {
   config_impl->Read("tcp_keep_alive_cnt", &FLAGS_tcp_keep_alive_cnt);
   config_impl->Read("tcp_keep_alive_idle_timeout", &FLAGS_tcp_keep_alive_idle_timeout);
   config_impl->Read("tcp_keep_alive_interval", &FLAGS_tcp_keep_alive_interval);
+  config_impl->Read("tcp_congestion_algorithm", &FLAGS_tcp_congestion_algorithm);
 
   /* optional tls fields */
   config_impl->Read("cacert", &FLAGS_cacert);
@@ -121,9 +119,6 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("fast_open", FLAGS_tcp_fastopen);
   all_fields_written &= config_impl->Write("fast_open_connect", FLAGS_tcp_fastopen_connect);
   static_cast<void>(config_impl->Delete("threads"));
-#ifdef __linux__
-  all_fields_written &= config_impl->Write("congestion_algorithm", FLAGS_congestion_algorithm);
-#endif
   all_fields_written &= config_impl->Write("doh_url", FLAGS_doh_url);
   all_fields_written &= config_impl->Write("dot_host", FLAGS_dot_host);
   all_fields_written &= config_impl->Write("timeout", FLAGS_connect_timeout);
@@ -135,6 +130,7 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("tcp_keep_alive_cnt", FLAGS_tcp_keep_alive_cnt);
   all_fields_written &= config_impl->Write("tcp_keep_alive_idle_timeout", FLAGS_tcp_keep_alive_idle_timeout);
   all_fields_written &= config_impl->Write("tcp_keep_alive_interval", FLAGS_tcp_keep_alive_interval);
+  all_fields_written &= config_impl->Write("tcp_congestion_algorithm", FLAGS_tcp_congestion_algorithm);
 
   all_fields_written &= config_impl->Write("cacert", FLAGS_cacert);
   all_fields_written &= config_impl->Write("capath", FLAGS_capath);

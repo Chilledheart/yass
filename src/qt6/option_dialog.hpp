@@ -5,7 +5,11 @@
 
 #include <QDialog>
 
+#include <string>
+#include <vector>
+
 class QCheckBox;
+class QComboBox;
 class QLineEdit;
 class QPushButton;
 class OptionDialog : public QDialog {
@@ -27,6 +31,8 @@ class OptionDialog : public QDialog {
   QLineEdit* tcp_keep_alive_idle_timeout_;
   QLineEdit* tcp_keep_alive_interval_;
   QCheckBox* enable_post_quantum_kyber_;
+  QComboBox* tcp_congestion_algorithm_;
+  std::vector<std::string> algorithms_;
 
   QPushButton* okay_button_;
   QPushButton* cancel_button_;
