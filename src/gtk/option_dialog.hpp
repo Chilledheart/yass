@@ -6,6 +6,7 @@
 #include <gtk/gtk.h>
 
 #include <string>
+#include <vector>
 
 class OptionDialog {
  public:
@@ -26,6 +27,8 @@ class OptionDialog {
   GtkEntry* tcp_keep_alive_idle_timeout_;
   GtkEntry* tcp_keep_alive_interval_;
   GtkCheckButton* enable_post_quantum_kyber_;
+  GtkComboBoxText* tcp_congestion_algorithm_;
+  std::vector<std::string> algorithms_;
 
   GtkButton* okay_button_;
   GtkButton* cancel_button_;

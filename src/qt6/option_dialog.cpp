@@ -4,6 +4,7 @@
 
 #include <absl/flags/flag.h>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QGridLayout>
 #include <QIntValidator>
 #include <QLabel>
@@ -13,6 +14,7 @@
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "net/network.hpp"
 
 OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
   setWindowTitle(tr("YASS Option"));
@@ -29,12 +31,14 @@ OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
   auto tcp_keep_alive_interval_label = new QLabel(tr("TCP keep alive interval"));
 
   auto enable_post_quantum_kyber_label = new QLabel(tr("Kyber post-quantum key agreement for TLS"));
+  auto tcp_congestion_algorithm_label = new QLabel(tr("TCP Congestion Algorithm"));
 
   grid->addWidget(tcp_keep_alive_label, 0, 0);
   grid->addWidget(tcp_keep_alive_cnt_label, 1, 0);
   grid->addWidget(tcp_keep_alive_idle_timeout_label, 2, 0);
   grid->addWidget(tcp_keep_alive_interval_label, 3, 0);
   grid->addWidget(enable_post_quantum_kyber_label, 4, 0);
+  grid->addWidget(tcp_congestion_algorithm_label, 5, 0);
 
   tcp_keep_alive_ = new QCheckBox;
   tcp_keep_alive_cnt_ = new QLineEdit;
@@ -44,12 +48,20 @@ OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
   tcp_keep_alive_interval_ = new QLineEdit;
   tcp_keep_alive_interval_->setValidator(new QIntValidator(0, INT32_MAX, this));
   enable_post_quantum_kyber_ = new QCheckBox;
+  tcp_congestion_algorithm_ = new QComboBox;
+
+  algorithms_ = net::GetTCPAvailableCongestionAlgorithms();
+
+  for (const auto& algorithm : algorithms_) {
+    tcp_congestion_algorithm_->addItem(algorithm.c_str());
+  }
 
   grid->addWidget(tcp_keep_alive_, 0, 1);
   grid->addWidget(tcp_keep_alive_cnt_, 1, 1);
   grid->addWidget(tcp_keep_alive_idle_timeout_, 2, 1);
   grid->addWidget(tcp_keep_alive_interval_, 3, 1);
   grid->addWidget(enable_post_quantum_kyber_, 4, 1);
+  grid->addWidget(tcp_congestion_algorithm_, 5, 1);
 
   okay_button_ = new QPushButton(tr("Okay"));
   connect(okay_button_, &QPushButton::clicked, this, &OptionDialog::OnOkayButtonClicked);
@@ -57,8 +69,8 @@ OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
   cancel_button_ = new QPushButton(tr("Cancel"));
   connect(cancel_button_, &QPushButton::clicked, this, &OptionDialog::OnCancelButtonClicked);
 
-  grid->addWidget(okay_button_, 5, 0);
-  grid->addWidget(cancel_button_, 5, 1);
+  grid->addWidget(okay_button_, 6, 0);
+  grid->addWidget(cancel_button_, 6, 1);
 
   setLayout(grid);
 
@@ -89,6 +101,20 @@ void OptionDialog::LoadChanges() {
       QString::fromUtf8(tcp_keep_alive_interval_str.c_str(), tcp_keep_alive_interval_str.size()));
 
   enable_post_quantum_kyber_->setChecked(absl::GetFlag(FLAGS_enable_post_quantum_kyber));
+
+  auto algorithm = absl::GetFlag(FLAGS_tcp_congestion_algorithm);
+  unsigned int i;
+  for (i = 0; i < std::size(algorithms_); ++i) {
+    if (algorithm == algorithms_[i])
+      break;
+  }
+
+  // first is unset
+  if (i == std::size(algorithms_)) {
+    i = 0;
+  }
+
+  tcp_congestion_algorithm_->setCurrentIndex(i);
 }
 
 bool OptionDialog::OnSave() {
@@ -111,6 +137,11 @@ bool OptionDialog::OnSave() {
   absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval.value());
 
   absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber);
+
+  int i = tcp_congestion_algorithm_->currentIndex();
+  DCHECK_GE(i, 0);
+  DCHECK_LE(i, (int)algorithms_.size());
+  absl::SetFlag(&FLAGS_tcp_congestion_algorithm, algorithms_[i]);
 
   return true;
 }

@@ -15,6 +15,7 @@
 #endif
 
 #include <absl/flags/flag.h>
+#include <absl/strings/str_split.h>
 #include <cerrno>
 #include <string_view>
 #include "config/config_network.hpp"
@@ -44,9 +45,9 @@ void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::er
 
 #ifdef __linux__
 static void PrintTcpAllowedCongestionControls() {
-  constexpr std::string_view kAllowedCongestionControl = "/proc/sys/net/ipv4/tcp_allowed_congestion_control";
+  const std::string procfs = "/proc/sys/net/ipv4/tcp_allowed_congestion_control";
   uint8_t buf[256];
-  auto ret = ReadFileToBuffer(std::string(kAllowedCongestionControl), make_span(buf));
+  auto ret = ReadFileToBuffer(procfs, buf);
   if (ret < 0) {
     return;
   }
@@ -54,11 +55,32 @@ static void PrintTcpAllowedCongestionControls() {
 }
 #endif
 
+std::vector<std::string> GetTCPAvailableCongestionAlgorithms() {
+  std::vector<std::string> ret;
+  ret.push_back(std::string());  // unspec
+#ifdef __linux__
+  uint8_t buf[4096];
+  const std::string procfs = "/proc/sys/net/ipv4/tcp_available_congestion_control";
+  ssize_t bytes = ReadFileToBuffer(procfs, buf);
+  if (bytes > 0 && bytes < (ssize_t)sizeof(buf)) {
+    std::string_view sbuf = std::string_view((const char*)buf, bytes);
+    LOG(INFO) << "Available TCP Congestion Algorithms: " << sbuf;
+    auto algorithms = absl::StrSplit(sbuf, absl::ByAnyChar(" \n\t\r"));
+    for (const auto& algorithm : algorithms) {
+      if (!algorithm.empty()) {
+        ret.push_back(std::string(algorithm));
+      }
+    }
+  }
+#endif
+  return ret;
+}
+
 void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
 #ifdef __linux__
-  const std::string new_algo = absl::GetFlag(FLAGS_congestion_algorithm);
+  const std::string new_algo = absl::GetFlag(FLAGS_tcp_congestion_algorithm);
   if (new_algo.empty()) {
     return;
   }
@@ -70,7 +92,7 @@ void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     PLOG(WARNING) << "TCP_CONGESTION is not supported on this platform";
     LOG(WARNING) << "Ignore congestion algorithm settings";
-    absl::SetFlag(&FLAGS_congestion_algorithm, std::string());
+    absl::SetFlag(&FLAGS_tcp_congestion_algorithm, std::string());
     return;
   }
   if (ret < 0) {
@@ -88,7 +110,7 @@ void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::
     PrintTcpAllowedCongestionControls();
     LOG(WARNING) << "Please load the algorithm kernel module before use!";
     LOG(WARNING) << "Ignore congestion algorithm settings";
-    absl::SetFlag(&FLAGS_congestion_algorithm, std::string());
+    absl::SetFlag(&FLAGS_tcp_congestion_algorithm, std::string());
     return;
   }
   VLOG(2) << "Previous congestion algorithm: " << old_algo;

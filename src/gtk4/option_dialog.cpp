@@ -9,6 +9,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "gtk/utils.hpp"
+#include "net/network.hpp"
 
 extern "C" {
 
@@ -20,6 +21,7 @@ struct _OptionGtkDialog {
   GtkWidget* tcp_keep_alive_idle_timeout;
   GtkWidget* tcp_keep_alive_interval;
   GtkWidget* enable_post_quantum_kyber;
+  GtkWidget* tcp_congestion_algorithm;
 
   GtkWidget* okay_button;
   GtkWidget* cancel_button;
@@ -44,6 +46,7 @@ static void option_dialog_dispose(GObject* object) {
   gtk_widget_unparent(dialog->tcp_keep_alive_idle_timeout);
   gtk_widget_unparent(dialog->tcp_keep_alive_interval);
   gtk_widget_unparent(dialog->enable_post_quantum_kyber);
+  gtk_widget_unparent(dialog->tcp_congestion_algorithm);
 
   gtk_widget_unparent(dialog->okay_button);
   gtk_widget_unparent(dialog->cancel_button);
@@ -60,6 +63,7 @@ static void option_dialog_class_init(OptionGtkDialogClass* cls) {
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_keep_alive_idle_timeout);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_keep_alive_interval);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, enable_post_quantum_kyber);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, tcp_congestion_algorithm);
 
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, okay_button);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), OptionGtkDialog, cancel_button);
@@ -88,6 +92,14 @@ OptionGtkDialog* option_dialog_new(const gchar* title, GtkWindow* parent, GtkDia
 
 OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool modal)
     : impl_(option_dialog_new(title.c_str(), parent, modal ? GTK_DIALOG_MODAL : GTK_DIALOG_DESTROY_WITH_PARENT)) {
+  algorithms_ = net::GetTCPAvailableCongestionAlgorithms();
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  GtkComboBoxText* tcp_congestion_algorithm = GTK_COMBO_BOX_TEXT(impl_->tcp_congestion_algorithm);
+  for (const auto& algorithm : algorithms_) {
+    gtk_combo_box_text_append_text(tcp_congestion_algorithm, algorithm.c_str());
+  }
+  G_GNUC_END_IGNORE_DEPRECATIONS
+
   auto okay_callback = [](GtkButton* self, gpointer pointer) {
     OptionDialog* window = (OptionDialog*)pointer;
     window->OnOkayButtonClicked();
@@ -142,6 +154,21 @@ void OptionDialog::LoadChanges() {
 
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->enable_post_quantum_kyber),
                               absl::GetFlag(FLAGS_enable_post_quantum_kyber));
+
+  auto algorithm = absl::GetFlag(FLAGS_tcp_congestion_algorithm);
+  unsigned int i;
+  for (i = 0; i < std::size(algorithms_); ++i) {
+    if (algorithm == algorithms_[i])
+      break;
+  }
+
+  // first is unset
+  if (i == std::size(algorithms_)) {
+    i = 0;
+  }
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->tcp_congestion_algorithm), i);
+  G_GNUC_END_IGNORE_DEPRECATIONS
 }
 
 bool OptionDialog::OnSave() {
@@ -165,5 +192,14 @@ bool OptionDialog::OnSave() {
   absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval.value());
 
   absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber);
+
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  gchar* algorithm_cstr = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(impl_->tcp_congestion_algorithm));
+  G_GNUC_END_IGNORE_DEPRECATIONS
+  if (algorithm_cstr == nullptr || std::string_view(algorithm_cstr).empty()) {
+    absl::SetFlag(&FLAGS_tcp_congestion_algorithm, std::string());
+  } else {
+    absl::SetFlag(&FLAGS_tcp_congestion_algorithm, algorithm_cstr);
+  }
   return true;
 }

@@ -8,11 +8,16 @@
 #include <malloc.h>
 #endif
 
+#include <string>
+#include <vector>
+
 #include "net/asio.hpp"
 
 namespace net {
 
 void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code&);
+
+std::vector<std::string> GetTCPAvailableCongestionAlgorithms();
 
 void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code&);
 
