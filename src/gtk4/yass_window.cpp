@@ -132,9 +132,11 @@ YASSGtkWindow* yass_window_new(YASSGtkApp* app) {
 
 YASSWindow::YASSWindow(GApplication* app) : app_(app), impl_(yass_window_new(YASSGtk_APP(app))) {
   auto close_callback = [](GtkWindow* self, gpointer pointer) {
+    LOG(INFO) << "close-request event received";
     YASSWindow* window = (YASSWindow*)pointer;
     window->close_requested_ = true;
-    window->OnClose();
+    window->close();
+    gtk_window_destroy(GTK_WINDOW(window->impl_));
   };
   g_signal_connect(G_OBJECT(impl_), "close-request", G_CALLBACK(*close_callback), this);
 
