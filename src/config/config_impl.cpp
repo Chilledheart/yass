@@ -121,6 +121,36 @@ bool ConfigImpl::Close() {
   return ret;
 }
 
+template <>
+bool ConfigImpl::HasKey<std::string>(const std::string& key) {
+  return HasKeyStringImpl(key);
+}
+
+template <>
+bool ConfigImpl::HasKey<bool>(const std::string& key) {
+  return HasKeyBoolImpl(key);
+}
+
+template <>
+bool ConfigImpl::HasKey<uint32_t>(const std::string& key) {
+  return HasKeyUint32Impl(key);
+}
+
+template <>
+bool ConfigImpl::HasKey<uint64_t>(const std::string& key) {
+  return HasKeyUint64Impl(key);
+}
+
+template <>
+bool ConfigImpl::HasKey<int32_t>(const std::string& key) {
+  return HasKeyInt32Impl(key);
+}
+
+template <>
+bool ConfigImpl::HasKey<int64_t>(const std::string& key) {
+  return HasKeyInt64Impl(key);
+}
+
 template <typename T>
 bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value, bool is_masked) {
   // Use an int instead of a bool to guarantee that a non-zero value has

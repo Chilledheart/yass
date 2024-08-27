@@ -40,6 +40,12 @@ class ConfigImpl {
   /// Close the ConfigTree, useful to flush the ConfigTree into persistent media
   bool Close();
 
+  /// Test the key from ConfigTree
+  ///
+  /// \param key the key value
+  template <typename T>
+  bool HasKey(const std::string& key);
+
   /// Read the key from ConfigTree
   ///
   /// \param key the key value
@@ -69,6 +75,36 @@ class ConfigImpl {
 
   /// Close the ConfigTree, useful to flush the ConfigTree into persistent media
   virtual bool CloseImpl() = 0;
+
+  /// Test the key from ConfigTree
+  ///
+  /// \param key the key value
+  virtual bool HasKeyStringImpl(const std::string& key) = 0;
+
+  /// Test the key from ConfigTree
+  ///
+  /// \param key the key value
+  virtual bool HasKeyBoolImpl(const std::string& key) = 0;
+
+  /// Test the key from ConfigTree
+  ///
+  /// \param key the key value
+  virtual bool HasKeyUint32Impl(const std::string& key) = 0;
+
+  /// Test the key from ConfigTree
+  ///
+  /// \param key the key value
+  virtual bool HasKeyUint64Impl(const std::string& key) = 0;
+
+  /// Test the key from ConfigTree
+  ///
+  /// \param key the key value
+  virtual bool HasKeyInt32Impl(const std::string& key) = 0;
+
+  /// Test the key from ConfigTree
+  ///
+  /// \param key the key value
+  virtual bool HasKeyInt64Impl(const std::string& key) = 0;
 
   /// Read the key from ConfigTree
   ///

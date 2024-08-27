@@ -69,6 +69,8 @@ TEST_F(ConfigTest, RWBool) {
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_TRUE(config_impl->HasKey<bool>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<std::string>(test_key));
   EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_bool));
   ASSERT_TRUE(config_impl->Close());
 
@@ -77,6 +79,11 @@ TEST_F(ConfigTest, RWBool) {
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
   EXPECT_TRUE(config_impl->Delete(test_key));
+  ASSERT_TRUE(config_impl->Close());
+
+  config_impl = config::ConfigImpl::Create();
+  ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_FALSE(config_impl->HasKey<bool>(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
@@ -95,6 +102,9 @@ TEST_F(ConfigTest, RWInt32) {
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_TRUE(config_impl->HasKey<int32_t>(test_key));
+  EXPECT_TRUE(config_impl->HasKey<int64_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<std::string>(test_key));
   EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_signed_val));
   ASSERT_TRUE(config_impl->Close());
 
@@ -103,6 +113,12 @@ TEST_F(ConfigTest, RWInt32) {
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
   EXPECT_TRUE(config_impl->Delete(test_key));
+  ASSERT_TRUE(config_impl->Close());
+
+  config_impl = config::ConfigImpl::Create();
+  ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_FALSE(config_impl->HasKey<int32_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<int64_t>(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
@@ -121,6 +137,9 @@ TEST_F(ConfigTest, RWUint32) {
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_TRUE(config_impl->HasKey<uint32_t>(test_key));
+  EXPECT_TRUE(config_impl->HasKey<uint64_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<std::string>(test_key));
   EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_unsigned_val));
   ASSERT_TRUE(config_impl->Close());
 
@@ -129,6 +148,12 @@ TEST_F(ConfigTest, RWUint32) {
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
   EXPECT_TRUE(config_impl->Delete(test_key));
+  ASSERT_TRUE(config_impl->Close());
+
+  config_impl = config::ConfigImpl::Create();
+  ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_FALSE(config_impl->HasKey<uint32_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<uint64_t>(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
@@ -147,6 +172,8 @@ TEST_F(ConfigTest, RWInt64) {
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_TRUE(config_impl->HasKey<int64_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<std::string>(test_key));
   EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_signed_64val));
   ASSERT_TRUE(config_impl->Close());
 
@@ -155,6 +182,11 @@ TEST_F(ConfigTest, RWInt64) {
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
   EXPECT_TRUE(config_impl->Delete(test_key));
+  ASSERT_TRUE(config_impl->Close());
+
+  config_impl = config::ConfigImpl::Create();
+  ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_FALSE(config_impl->HasKey<int64_t>(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
@@ -173,6 +205,8 @@ TEST_F(ConfigTest, RWUint64) {
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_TRUE(config_impl->HasKey<uint64_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<std::string>(test_key));
   EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_unsigned_64val));
   ASSERT_TRUE(config_impl->Close());
 
@@ -181,6 +215,11 @@ TEST_F(ConfigTest, RWUint64) {
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
   EXPECT_TRUE(config_impl->Delete(test_key));
+  ASSERT_TRUE(config_impl->Close());
+
+  config_impl = config::ConfigImpl::Create();
+  ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_FALSE(config_impl->HasKey<uint64_t>(test_key));
   ASSERT_TRUE(config_impl->Close());
 }
 
@@ -199,6 +238,12 @@ TEST_F(ConfigTest, RWString) {
 
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_TRUE(config_impl->HasKey<std::string>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<bool>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<uint32_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<uint64_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<int32_t>(test_key));
+  EXPECT_FALSE(config_impl->HasKey<int64_t>(test_key));
   EXPECT_TRUE(config_impl->Read(test_key, &FLAGS_test_string));
   ASSERT_TRUE(config_impl->Close());
 
@@ -207,5 +252,10 @@ TEST_F(ConfigTest, RWString) {
   config_impl = config::ConfigImpl::Create();
   ASSERT_TRUE(config_impl->Open(true));
   EXPECT_TRUE(config_impl->Delete(test_key));
+  ASSERT_TRUE(config_impl->Close());
+
+  config_impl = config::ConfigImpl::Create();
+  ASSERT_TRUE(config_impl->Open(false));
+  EXPECT_FALSE(config_impl->HasKey<std::string>(test_key));
   ASSERT_TRUE(config_impl->Close());
 }

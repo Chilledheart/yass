@@ -96,6 +96,26 @@ class ConfigImplLocal : public ConfigImpl {
     return true;
   }
 
+  bool HasKeyStringImpl(const std::string& key) override { return root_.contains(key) && root_[key].is_string(); }
+
+  bool HasKeyBoolImpl(const std::string& key) override { return root_.contains(key) && root_[key].is_boolean(); }
+
+  bool HasKeyUint32Impl(const std::string& key) override {
+    return root_.contains(key) && root_[key].is_number_unsigned() && root_[key].is_number_integer();
+  }
+
+  bool HasKeyUint64Impl(const std::string& key) override {
+    return root_.contains(key) && root_[key].is_number_unsigned() && root_[key].is_number_integer();
+  }
+
+  bool HasKeyInt32Impl(const std::string& key) override {
+    return root_.contains(key) && root_[key].is_number_integer();
+  }
+
+  bool HasKeyInt64Impl(const std::string& key) override {
+    return root_.contains(key) && root_[key].is_number_integer();
+  }
+
   bool ReadImpl(const std::string& key, std::string* value) override {
     if (root_.contains(key) && root_[key].is_string()) {
       *value = root_[key].get<std::string>();
