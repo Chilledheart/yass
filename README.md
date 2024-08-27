@@ -98,14 +98,9 @@ See [Use BBR Congestion Control](https://github.com/Chilledheart/yass/wiki/Usage
 
 See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#chatgpt-capable-caddy-server) for more.
 
-## Extra Features (Limited)
+## Extra Features (Command Line only)
 
-### Specify TCP Congestion Algorithm (Linux only, Command Line only)
-Pass `--congestion_algorithm algo` to command line.
-Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux only).
-See more at manpage [_tcp(7)_](https://linux.die.net/man/7/tcp)
-
-### Use custom CA (Command Line only)
+### Use custom CA certificate file
 Pass `--certificate_chain_file file` to command line.
 Use custom certificate chain provided by _file_ to verify server's certificate.
 
