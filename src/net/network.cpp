@@ -19,7 +19,9 @@
 #include <cerrno>
 #include <string_view>
 #include "config/config_network.hpp"
+#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
+#include "core/span.hpp"
 #include "core/utils.hpp"
 
 namespace net {
@@ -43,34 +45,25 @@ void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::er
 #endif  // SO_REUSEPORT
 }
 
-#ifdef __linux__
-static void PrintTcpAllowedCongestionControls() {
-  const std::string procfs = "/proc/sys/net/ipv4/tcp_allowed_congestion_control";
-  uint8_t buf[256];
-  auto ret = ReadFileToBuffer(procfs, buf);
-  if (ret < 0) {
-    return;
-  }
-  LOG(WARNING) << "Allowed Congestion Control: " << std::string_view((const char*)buf, ret);
-}
-#endif
-
 std::vector<std::string> GetTCPAvailableCongestionAlgorithms() {
   std::vector<std::string> ret;
   ret.push_back(std::string());  // unspec
-#ifdef __linux__
-  uint8_t buf[4096];
+#if BUILDFLAG(IS_LINUX)
+  char buf[4096] = {};
   const std::string procfs = "/proc/sys/net/ipv4/tcp_available_congestion_control";
-  ssize_t bytes = ReadFileToBuffer(procfs, buf);
-  if (bytes > 0 && bytes < (ssize_t)sizeof(buf)) {
-    std::string_view sbuf = std::string_view((const char*)buf, bytes);
-    LOG(INFO) << "Available TCP Congestion Algorithms: " << sbuf;
+  ssize_t bytes = ReadFileToBuffer(procfs, as_writable_bytes(make_span(buf)));
+  if (bytes > 0) {
+    std::string_view sbuf = std::string_view(buf, bytes);
+    LOG(INFO) << "tcp congestion: available algorithms: " << sbuf;
     auto algorithms = absl::StrSplit(sbuf, absl::ByAnyChar(" \n\t\r"));
     for (const auto& algorithm : algorithms) {
       if (!algorithm.empty()) {
         ret.push_back(std::string(algorithm));
       }
     }
+  } else {
+    PLOG(WARNING) << "tcp congestion: failed to open procfs file";
+    LOG(WARNING) << "tcp congestion: make sure option CONFIG_TCP_CONG_ADVANCED is supported";
   }
 #endif
   return ret;
@@ -79,49 +72,62 @@ std::vector<std::string> GetTCPAvailableCongestionAlgorithms() {
 void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
-#ifdef __linux__
+#if BUILDFLAG(IS_LINUX)
   const std::string new_algo = absl::GetFlag(FLAGS_tcp_congestion_algorithm);
   if (new_algo.empty()) {
+    VLOG(2) << "tcp congestion: default settings";
     return;
   }
+  VLOG(2) << "tcp congestion: requested congestion algorithm: " << new_algo;
   int fd = handle;
   /* manually enable congestion algorithm */
   char buf[256] = {};
   socklen_t len = sizeof(buf);
   int ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    PLOG(WARNING) << "TCP_CONGESTION is not supported on this platform";
-    LOG(WARNING) << "Ignore congestion algorithm settings";
+    PLOG(WARNING) << "tcp congestion: not supported";
+    LOG(WARNING) << "tcp congestion: ignore congestion algorithm settings: " << new_algo;
     absl::SetFlag(&FLAGS_tcp_congestion_algorithm, std::string());
     return;
   }
   if (ret < 0) {
+    PLOG(WARNING) << "tcp congestion: getsockopt failed";
     ec = asio::error_code(errno, asio::error::get_system_category());
     return;
   }
-  const std::string old_algo = std::string(buf);
+  const std::string old_algo(buf);  // cannot use len
+  VLOG(2) << "tcp congestion: previous congestion algorithm: " << old_algo;
   if (old_algo == new_algo) {
+    VLOG(2) << "tcp congestion: current settings are already applied";
     return;
   }
   ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, new_algo.c_str(), new_algo.size());
   if (ret < 0) {
+    PLOG(WARNING) << "tcp congestion: request algorithm " << new_algo << " is not supported";
     ec = asio::error_code(errno, asio::error::get_system_category());
-    PLOG(WARNING) << "TCP Congestion algorithm \"" << new_algo << "\" is not supported on this platform";
-    PrintTcpAllowedCongestionControls();
-    LOG(WARNING) << "Please load the algorithm kernel module before use!";
-    LOG(WARNING) << "Ignore congestion algorithm settings";
+    (void)GetTCPAvailableCongestionAlgorithms();
+    LOG(WARNING) << "tcp congestion: please load the specific kernel module before use!";
+    LOG(WARNING) << "tcp congestion: such as modprobe tcp_" << new_algo;
+    LOG(WARNING) << "tcp congestion: ignore congestion algorithm settings: " << new_algo;
     absl::SetFlag(&FLAGS_tcp_congestion_algorithm, std::string());
     return;
   }
-  VLOG(2) << "Previous congestion algorithm: " << old_algo;
-  VLOG(2) << "Changed congestion algorithm to " << new_algo;
   len = sizeof(buf);
   ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0) {
+    PLOG(WARNING) << "tcp congestion: getsockopt failed";
     ec = asio::error_code(errno, asio::error::get_system_category());
     return;
   }
-  VLOG(2) << "Current congestion algorithm: " << buf;
+  const std::string curr_algo(buf);  // cannot use len
+  VLOG(2) << "tcp congestion: current congestion algorithm: " << curr_algo;
+  if (curr_algo != new_algo) {
+    LOG(WARNING) << "tcp congestion: current congestion algorithm not matched: " << curr_algo
+                 << " requested: " << new_algo;
+    LOG(WARNING) << "tcp congestion: ignore congestion algorithm settings: " << new_algo;
+    absl::SetFlag(&FLAGS_tcp_congestion_algorithm, std::string());
+    return;
+  }
 #endif
 }
 
