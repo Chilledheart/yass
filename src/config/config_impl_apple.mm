@@ -22,8 +22,14 @@ using namespace gurl_base::apple;
 
 // Because a suite manages the defaults of a specified app group, a suite name
 // must be distinct from your app’s main bundle identifier.
-static const char* kYassSuiteName = "it.gui.yass.suite";
-static const char* kYassKeyName = "YASSConfiguration";
+// stored at ~/Library/Preferences/it.gui.yass.suite.plist
+// TODO Allow to override it
+static constexpr const char kYassSuiteName[] = "it.gui.yass.suite";
+static constexpr const char kYassKeyName[] = "YASSConfiguration";
+
+// assert memory safe for CFDictionaryGetValueIfPresent calls
+static_assert(sizeof(CFNumberRef) == sizeof(CFStringRef));
+static_assert(sizeof(CFBooleanRef) == sizeof(CFStringRef));
 
 namespace config {
 
