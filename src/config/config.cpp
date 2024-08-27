@@ -59,6 +59,10 @@ bool ReadConfig() {
   config_impl->Read("tcp_keep_alive_cnt", &FLAGS_tcp_keep_alive_cnt);
   config_impl->Read("tcp_keep_alive_idle_timeout", &FLAGS_tcp_keep_alive_idle_timeout);
   config_impl->Read("tcp_keep_alive_interval", &FLAGS_tcp_keep_alive_interval);
+  /* deprecated option: congestion_algorithm */
+  if (config_impl->HasKey<std::string>("congestion_algorithm")) {
+    config_impl->Read("congestion_algorithm", &FLAGS_tcp_congestion_algorithm);
+  }
   config_impl->Read("tcp_congestion_algorithm", &FLAGS_tcp_congestion_algorithm);
 
   /* optional tls fields */
@@ -130,6 +134,8 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("tcp_keep_alive_cnt", FLAGS_tcp_keep_alive_cnt);
   all_fields_written &= config_impl->Write("tcp_keep_alive_idle_timeout", FLAGS_tcp_keep_alive_idle_timeout);
   all_fields_written &= config_impl->Write("tcp_keep_alive_interval", FLAGS_tcp_keep_alive_interval);
+  /* remove deprecated option: congestion_algorithm */
+  static_cast<void>(config_impl->Delete("congestion_algorithm"));
   all_fields_written &= config_impl->Write("tcp_congestion_algorithm", FLAGS_tcp_congestion_algorithm);
 
   all_fields_written &= config_impl->Write("cacert", FLAGS_cacert);
