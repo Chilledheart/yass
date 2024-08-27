@@ -95,7 +95,9 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   std::cerr << "using option from file: " << configfile << std::endl;
   return std::make_unique<ConfigImplLocal>(configfile);
 #else
-  const char* const configfile = "~/.yass/config.json";
+  // TODO Allow to override it
+  // TODO support XDG_CONFIG_HOME? (freedesktop)
+  static constexpr const std::string_view configfile = "~/.yass/config.json";
   std::cerr << "using option from file: " << configfile << std::endl;
   return std::make_unique<ConfigImplLocal>(configfile);
 #endif

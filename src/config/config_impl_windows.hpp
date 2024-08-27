@@ -16,7 +16,8 @@
 
 #include "core/utils.hpp"
 
-#define DEFAULT_CONFIG_KEY L"SOFTWARE\\YetAnotherShadowSocket"
+// TODO Allow to override it
+static constexpr const wchar_t kYassSubkeyName[] = L"SOFTWARE\\YetAnotherShadowSocket";
 
 namespace {
 
@@ -94,7 +95,7 @@ class ConfigImplWindows : public ConfigImpl {
     dontread_ = dontread;
 
     DWORD disposition;
-    const wchar_t* subkey = DEFAULT_CONFIG_KEY;  // Allow to override it ?
+    constexpr const wchar_t* subkey = kYassSubkeyName;
     // KEY_WOW64_64KEY: Indicates that an application on 32-bit Windows should:
     // Access a 64-bit key from either a 32-bit or 64-bit application.
     // Background: The registry in 64-bit versions of Windows is divided into
