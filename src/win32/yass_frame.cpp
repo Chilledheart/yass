@@ -1075,7 +1075,7 @@ void CYassFrame::OnCheckedSystemProxyButtonClicked() {
 
 void CYassFrame::OnAppOption() {
   DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_OPTIONBOX), m_hWnd, &CYassFrame::OnAppOptionMessage,
-                  reinterpret_cast<LPARAM>(this));
+                  reinterpret_cast<LPARAM>(m_hInstance));
 }
 
 // static
@@ -1085,6 +1085,10 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message, WPARAM 
 
   switch (message) {
     case WM_INITDIALOG: {
+      // set window's icon
+      auto hIcon = LoadIconW(reinterpret_cast<HINSTANCE>(lParam), MAKEINTRESOURCEW(IDI_APPICON));
+      SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+      DestroyIcon(hIcon);
       SetWindowLongPtrW(hDlg, GWLP_USERDATA, lParam);
       // extra initialization to all fields
       auto tcp_keep_alive = absl::GetFlag(FLAGS_tcp_keep_alive);
@@ -1131,15 +1135,22 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message, WPARAM 
 }
 
 void CYassFrame::OnAppAbout() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_ABOUTBOX), m_hWnd, &CYassFrame::OnAppAboutMessage, 0L);
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_ABOUTBOX), m_hWnd, &CYassFrame::OnAppAboutMessage,
+                  reinterpret_cast<LPARAM>(m_hInstance));
 }
 
 // static
 INT_PTR CALLBACK CYassFrame::OnAppAboutMessage(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
   UNREFERENCED_PARAMETER(lParam);
   switch (message) {
-    case WM_INITDIALOG:
+    case WM_INITDIALOG: {
+      // set window's icon
+      auto hIcon = LoadIconW(reinterpret_cast<HINSTANCE>(lParam), MAKEINTRESOURCEW(IDI_APPICON));
+      SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+      DestroyIcon(hIcon);
+      SetWindowLongPtrW(hDlg, GWLP_USERDATA, lParam);
       return static_cast<INT_PTR>(TRUE);
+    }
     case WM_COMMAND:
       if (LOWORD(wParam) == IDOK) {
         EndDialog(hDlg, LOWORD(wParam));
