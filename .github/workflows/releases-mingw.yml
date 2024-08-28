@@ -63,7 +63,7 @@ jobs:
           key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v1
       - name: "Download dependency: clang (chocolatey)"
         run: |
-          REM choco upgrade -y llvm --version=18.1.6
+          REM choco upgrade -y llvm --version=18.1.8
           clang -v
       - name: "Download dependency: mingw64"
         if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
