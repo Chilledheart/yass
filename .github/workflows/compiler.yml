@@ -162,8 +162,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            third_party/llvm-mingw-20240518-ucrt-ubuntu-20.04-x86_64
-          key: ${{ runner.os }}-mingw64-third_party-llvm-20240518-ucrt
+            third_party/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64
+          key: ${{ runner.os }}-mingw64-third_party-llvm-20240619-ucrt
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v4
@@ -196,8 +196,8 @@ jobs:
         if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
-          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240518/llvm-mingw-20240518-ucrt-ubuntu-20.04-x86_64.tar.xz
-          tar -xf llvm-mingw-20240518-ucrt-ubuntu-20.04-x86_64.tar.xz
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
           rm -vf llvm-mingw-*.xz
           popd
       - name: "Download dependency: curl"
@@ -243,7 +243,7 @@ jobs:
       - name: Build
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
-            --clang-path $PWD/third_party/llvm-mingw-20240518-ucrt-ubuntu-20.04-x86_64 -no-packaging \
+            --clang-path $PWD/third_party/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64 -no-packaging \
             ${{ env.BUILD_OPTIONS }}
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
