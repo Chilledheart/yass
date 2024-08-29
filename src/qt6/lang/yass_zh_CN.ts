@@ -82,7 +82,7 @@
     <name>YASSWindow</name>
     <message>
         <source>YASS</source>
-        <translation>YASS</translation>
+        <translation>YASS (Yet Another Shadow Socket)</translation>
     </message>
     <message>
         <source>Start</source>
