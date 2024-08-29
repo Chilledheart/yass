@@ -25,7 +25,7 @@ extern "C" void app_indicator_uninit();
 #endif
 
 YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
-  gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
+  gtk_window_set_title(GTK_WINDOW(impl_), _("Yet Another Shadow Socket"));
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
   gtk_window_set_resizable(GTK_WINDOW(impl_), false);
   gtk_window_set_icon_name(GTK_WINDOW(impl_), "io.github.chilledheart.yass");
