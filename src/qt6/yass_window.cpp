@@ -41,21 +41,21 @@ YASSWindow::YASSWindow(QWidget* parent) : QMainWindow(parent) {
 
   // MenuBar << Vertical Box
   //
-  QAction* option_action = new QAction(tr("Option"), this);
+  QAction* option_action = new QAction(tr("&Option..."), this);
   connect(option_action, &QAction::triggered, this, &YASSWindow::OnOption);
 
-  QAction* exit_action = new QAction(tr("Exit"), this);
+  QAction* exit_action = new QAction(tr("E&xit"), this);
   connect(exit_action, &QAction::triggered, this, [&]() { App()->quit(); });
 
-  QMenu* menu = new QMenu(tr("File"));
+  QMenu* menu = new QMenu(tr("&File"));
   menu->addAction(option_action);
   menu->addSeparator();
   menu->addAction(exit_action);
 
-  QAction* about_action = new QAction(tr("About"), this);
+  QAction* about_action = new QAction(tr("&About..."), this);
   connect(about_action, &QAction::triggered, this, &YASSWindow::OnAbout);
 
-  QMenu* help_menu = new QMenu(tr("Help"));
+  QMenu* help_menu = new QMenu(tr("&Help"));
   help_menu->addAction(about_action);
 
   QMenuBar* menubar = new QMenuBar;
