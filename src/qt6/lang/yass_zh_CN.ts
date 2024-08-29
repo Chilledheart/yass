@@ -43,23 +43,16 @@
 <context>
     <name>TrayIcon</name>
     <message>
-        <source>Option</source>
-        <translatorcomment>选项</translatorcomment>
-        <translation>选项</translation>
+        <source>&amp;Show</source>
+        <translation>唤醒 (&amp;S)</translation>
     </message>
     <message>
-        <source>Exit</source>
-        <translatorcomment>退出</translatorcomment>
-        <translation>退出</translation>
+        <source>&amp;Option...</source>
+        <translation>选项 (&amp;O)...</translation>
     </message>
     <message>
-        <source>File</source>
-        <translatorcomment>File</translatorcomment>
-        <translation>文件</translation>
-    </message>
-    <message>
-        <source>Show</source>
-        <translation>唤醒</translation>
+        <source>E&amp;xit</source>
+        <translation>退出 (&amp;X)</translation>
     </message>
 </context>
 <context>
@@ -90,26 +83,6 @@
     <message>
         <source>YASS</source>
         <translation>YASS</translation>
-    </message>
-    <message>
-        <source>Option</source>
-        <translation>选项</translation>
-    </message>
-    <message>
-        <source>Exit</source>
-        <translation>退出</translation>
-    </message>
-    <message>
-        <source>File</source>
-        <translation>文件</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation>关于</translation>
-    </message>
-    <message>
-        <source>Help</source>
-        <translation>帮助</translation>
     </message>
     <message>
         <source>Start</source>
@@ -227,6 +200,26 @@
     <message>
         <source>GUI Variant: </source>
         <translation>图形版本: </translation>
+    </message>
+    <message>
+        <source>&amp;Option...</source>
+        <translation>选项 (&amp;O)...</translation>
+    </message>
+    <message>
+        <source>E&amp;xit</source>
+        <translation>退出 (&amp;X)</translation>
+    </message>
+    <message>
+        <source>&amp;File</source>
+        <translation>文件 (&amp;F)</translation>
+    </message>
+    <message>
+        <source>&amp;Help</source>
+        <translation>帮助 (&amp;H)</translation>
+    </message>
+    <message>
+        <source>&amp;About...</source>
+        <translation>关于 (&amp;A)...</translation>
     </message>
 </context>
 </TS>

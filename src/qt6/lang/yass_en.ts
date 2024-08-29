@@ -43,19 +43,15 @@
 <context>
     <name>TrayIcon</name>
     <message>
-        <source>Option</source>
+        <source>&amp;Show</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Exit</source>
+        <source>&amp;Option...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>File</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Show</source>
+        <source>E&amp;xit</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -86,26 +82,6 @@
     <name>YASSWindow</name>
     <message>
         <source>YASS</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Option</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Exit</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>File</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -222,6 +198,26 @@
     </message>
     <message>
         <source>GUI Variant: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&amp;Option...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>E&amp;xit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&amp;File</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&amp;Help</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&amp;About...</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

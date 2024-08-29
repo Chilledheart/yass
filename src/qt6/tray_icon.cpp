@@ -14,16 +14,16 @@ TrayIcon::TrayIcon(QObject* parent) : QSystemTrayIcon(parent) {
   setIcon(QIcon(":/res/images/io.github.chilledheart.yass.png"));
 
   // create action
-  QAction* show_action = new QAction(tr("Show"), this);
+  QAction* show_action = new QAction(tr("&Show"), this);
   connect(show_action, &QAction::triggered, this, &TrayIcon::OnShow);
 
-  QAction* option_action = new QAction(tr("Option"), this);
+  QAction* option_action = new QAction(tr("&Option..."), this);
   connect(option_action, &QAction::triggered, this, &TrayIcon::OnOption);
 
-  QAction* exit_action = new QAction(tr("Exit"), this);
+  QAction* exit_action = new QAction(tr("E&xit"), this);
   connect(exit_action, &QAction::triggered, this, [&]() { App()->quit(); });
 
-  QMenu* menu = new QMenu(tr("File"));
+  QMenu* menu = new QMenu;
   menu->addAction(show_action);
   menu->addAction(option_action);
   menu->addSeparator();
