@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-26 14:25+0800\n"
+"POT-Creation-Date: 2024-08-29 10:56+0800\n"
 "PO-Revision-Date: 2023-05-24 14:35+0800\n"
 "Last-Translator: Chilledheart <keeyou-cn@outlook.com>\n"
 "Language-Team: Chilledheart <keeyou-cn@outlook.com>\n"
@@ -37,53 +37,53 @@ msgstr "Disconnecting"
 msgid "Disconnected with "
 msgstr "Disconnected with "
 
-#: yass_window.cpp:193
+#: yass_window.cpp:195
 msgid "READY"
 msgstr "READY"
 
-#: yass_window.cpp:266
+#: yass_window.cpp:268
 msgid "Last Change: "
 msgstr "Last Change: "
 
-#: yass_window.cpp:269
+#: yass_window.cpp:271
 msgid "Enabled Feature: "
 msgstr "Enabled Feature: "
 
-#: yass_window.cpp:272
+#: yass_window.cpp:274
 msgid "GUI Variant: "
 msgstr "GUI Variant: "
 
-#: yass_window.cpp:281
+#: yass_window.cpp:283
 msgid "official-site"
 msgstr "official-site"
 
-#: yass_window.cpp:298
+#: yass_window.cpp:300
 msgid "YASS Option"
 msgstr "YASS Option"
 
-#: yass_window.cpp:397
+#: yass_window.cpp:399
 msgid " tx rate: "
 msgstr " tx rate: "
 
-#: yass_window.cpp:400
+#: yass_window.cpp:402
 msgid " rx rate: "
 msgstr " rx rate: "
 
-#: yass_window.cpp:435
+#: yass_window.cpp:437
 msgid "Start Failed"
 msgstr "Start Failed"
 
-#: yass_window.cpp:436
+#: yass_window.cpp:438
 msgid "OK"
 msgstr "OK"
 
 #: menu.ui:6
-msgid "_Option"
-msgstr "Option"
+msgid "_Option..."
+msgstr ""
 
 #: menu.ui:12
-msgid "_About"
-msgstr "About"
+msgid "_About..."
+msgstr ""
 
 #: menu.ui:18
 msgid "_Quit"
@@ -127,7 +127,7 @@ msgstr "Cancel"
 
 #: yass_window.ui:4
 msgid "Yet Another Shadow Socket"
-msgstr "Yet Another Shadow Socket"
+msgstr "YASS (Yet Another Shadow Socket)"
 
 #: yass_window.ui:30
 msgid "Server Host"
