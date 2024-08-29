@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1">
+<TS version="2.1" language="en_US">
 <context>
     <name>OptionDialog</name>
     <message>
@@ -80,10 +80,6 @@
 </context>
 <context>
     <name>YASSWindow</name>
-    <message>
-        <source>YASS</source>
-        <translation type="unfinished"></translation>
-    </message>
     <message>
         <source>Start</source>
         <translation type="unfinished"></translation>
@@ -219,6 +215,10 @@
     <message>
         <source>&amp;About...</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>YASS</source>
+        <translation>YASS (Yet Another Shadow Socket)</translation>
     </message>
 </context>
 </TS>
