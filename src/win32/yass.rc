@@ -91,15 +91,15 @@ END
 STRINGTABLE PRELOAD DISCARDABLE
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 BEGIN
-    IDS_ABOUTBOX            "&About...\tCtrl-A"
-    IDS_OPTIONBOX           "&Option...\tCtrl-O"
+    IDS_ABOUTBOX            "&About..."
+    IDS_OPTIONBOX           "&Option..."
 END
 
 STRINGTABLE PRELOAD DISCARDABLE
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
-    IDS_ABOUTBOX            "关于... (&A)"
-    IDS_OPTIONBOX           "选项... (&O)"
+    IDS_ABOUTBOX            "关于 (&A)..."
+    IDS_OPTIONBOX           "选项 (&O)..."
 END
 
 STRINGTABLE PRELOAD DISCARDABLE
@@ -138,13 +138,13 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Options...\tCtrl+O",          ID_APP_OPTION
+        MENUITEM "&Options...",                  ID_APP_OPTION
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                        ID_APP_EXIT
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About YASS",ID_APP_ABOUT
+        MENUITEM "&About YASS...",               ID_APP_ABOUT
     END
 END
 
@@ -153,13 +153,13 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
     POPUP "文件 (&F)"
     BEGIN
-        MENUITEM "选项... (&O)",                 ID_APP_OPTION
+        MENUITEM "选项 (&O)...",                 ID_APP_OPTION
         MENUITEM SEPARATOR
-        MENUITEM "退出 (&x)",                    ID_APP_EXIT
+        MENUITEM "退出 (&X)",                    ID_APP_EXIT
     END
     POPUP "帮助 (&H)"
     BEGIN
-        MENUITEM "关于 YASS (&A)",                ID_APP_ABOUT
+        MENUITEM "关于 YASS (&A)...",            ID_APP_ABOUT
     END
 END
 
@@ -168,7 +168,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 BEGIN
     POPUP ""
     BEGIN
-        MENUITEM "&Options...\tCtrl+O",          ID_APP_OPTION
+        MENUITEM "&Options...",                  ID_APP_OPTION
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                        ID_APP_EXIT
     END
@@ -179,9 +179,9 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
     POPUP ""
     BEGIN
-        MENUITEM "选项... (&O)",          ID_APP_OPTION
+        MENUITEM "选项 (&O)...",                 ID_APP_OPTION
         MENUITEM SEPARATOR
-        MENUITEM "退出 (&X)",                        ID_APP_EXIT
+        MENUITEM "退出 (&X)",                    ID_APP_EXIT
     END
 END
 
