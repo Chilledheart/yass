@@ -175,7 +175,7 @@ jobs:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
-          key: ${{ runner.os }}-22.04-schroot-${{ matrix.distro }}-${{ matrix.arch }}-mix-v0
+          key: ${{ runner.os }}-22.04-schroot-${{ matrix.distro }}-${{ matrix.arch }}-mix-v0-cmake-3-28-6
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
@@ -264,9 +264,9 @@ jobs:
       - name: Populate dependencie (cmake, overwrite)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.5/cmake-3.28.5-linux-x86_64.tar.gz
+          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
-            tar -C /usr/local --strip-components=1 -xf cmake-3.28.5-linux-x86_64.tar.gz
+            tar -C /usr/local --strip-components=1 -xf cmake-3.28.6-linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             cmake --version
           rm -f *.tar.gz
