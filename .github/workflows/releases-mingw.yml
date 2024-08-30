@@ -80,7 +80,7 @@ jobs:
           "C:\Program Files\NASM\nasm" --version
       - name: "Download dependency: cmake (chocolatey)"
         run: |
-          REM choco install -y cmake.portable --version=3.28.5
+          REM choco install -y cmake.portable --version=3.28.6
           cmake --version
       - name: "Download dependency: ninja (chocolatey)"
         run: |

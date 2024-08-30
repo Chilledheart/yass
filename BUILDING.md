@@ -16,7 +16,7 @@ Run the following command in ADMINISTRATIVE shell:
 choco install 7zip.install
 choco install git.install
 choco install strawberryperl --version=5.38.2.2
-choco install cmake.portable --version=3.28.5
+choco install cmake.portable --version=3.28.6
 choco install ninja
 choco install golang
 ```
