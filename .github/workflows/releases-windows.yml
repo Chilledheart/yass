@@ -76,7 +76,7 @@ jobs:
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-msvc-dynamic-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-msvc-dynamic-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-stripped
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.20.0'
