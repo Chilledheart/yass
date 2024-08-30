@@ -65,16 +65,36 @@ fi
 case "$ARCH" in
   Darwin)
     WITH_OS_DEFAULT="mac"
+    BIN_SUFFIX=""
     ;;
   Linux)
     WITH_OS_DEFAULT="linux"
+    BIN_SUFFIX=""
     ;;
   Windows)
     WITH_OS_DEFAULT="win"
+    BIN_SUFFIX=".exe"
     ;;
 esac
 
 WITH_OS=${WITH_OS:-${WITH_OS_DEFAULT}}
+OBJCOPY="$PWD/llvm-build/Release+Asserts/bin/llvm-objcopy"
+
+# strip debug symbols (ignore msvc build which generating pdbs already)
+function strip_binary {
+if [ "$WITH_OS" = "win" ]; then
+  echo 'omit calling llvm-objcopy on msvc binary'
+  return
+fi
+
+local bin_dir="$(dirname $1)"
+local bin_name="$(basename $1)"
+pushd "$bin_dir"
+"$OBJCOPY" --only-keep-debug "${bin_name}" "${bin_name}.dbg"
+"$OBJCOPY" --strip-debug "${bin_name}"
+"$OBJCOPY" --add-gnu-debuglink="${bin_name}.dbg" "${bin_name}"
+popd
+}
 
 if [ "$WITH_OS" ]; then
   flags="$flags
@@ -201,3 +221,4 @@ mkdir -p "$bin_out"
 echo "$bin_flags" > "$bin_out/args.gn"
 gn gen "$bin_out" --script-executable="$PYTHON" --export-compile-comman
 ninja -C "$bin_out" crashpad_handler
+strip_binary "${bin_out}/crashpad_handler${BIN_SUFFIX}"

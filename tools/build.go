@@ -1620,30 +1620,10 @@ func postStateStripBinaries() {
 		cmdRun([]string{objcopy, "--strip-debug", getAppName()}, false)
 		// to add a link to the debugging info into the stripped executable.
 		cmdRun([]string{objcopy, "--add-gnu-debuglink=" + getAppName() + ".dbg", getAppName()}, false)
-
-		// strip crashpad_handler as well if any
-		hasCrashpad := true
-		crashpadPath := "crashpad_handler"
-		if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
-			hasCrashpad = false
-		}
-		if hasCrashpad {
-			cmdRun([]string{objcopy, "--strip-debug", crashpadPath}, false)
-		}
 	} else if systemNameFlag == "darwin" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
 		cmdRun([]string{"strip", "-S", "-x", "-v", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME)}, false)
-
-		// strip crashpad_handler as well if any
-		hasCrashpad := true
-		crashpadPath := filepath.Join(getAppName(), "Contents", "Resources", "crashpad_handler")
-		if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
-			hasCrashpad = false
-		}
-		if hasCrashpad {
-			cmdRun([]string{"strip", "-S", "-x", "-v", crashpadPath}, false)
-		}
 	} else if systemNameFlag == "ios" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
@@ -2236,9 +2216,18 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "ios" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".ipa")
 	}
-	hasCrashpad := true
+	hasCrashpadExe := true
 	if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
-		hasCrashpad = false
+		hasCrashpadExe = false
+	}
+	hasCrashpadPdb := true
+	if _, err := os.Stat("crashpad_handler.pdb"); errors.Is(err, os.ErrNotExist) {
+		hasCrashpadPdb = false
+	}
+
+	hasCrashpadDbg := true
+	if _, err := os.Stat("crashpad_handler.dbg"); errors.Is(err, os.ErrNotExist) {
+		hasCrashpadDbg = false
 	}
 
 	msiArchive := fmt.Sprintf(archiveFormat, APPNAME, "", ".msi")
@@ -2274,7 +2263,7 @@ func postStateArchives() map[string][]string {
 		paths = append(paths, fmt.Sprintf("../doc/%s.1", APPNAME))
 	}
 	// copying dependent crashpad handler if any
-	if hasCrashpad {
+	if hasCrashpadExe {
 		paths = append(paths, "crashpad_handler.exe")
 	}
 
@@ -2292,7 +2281,7 @@ func postStateArchives() map[string][]string {
 	// error CNDL0265 : The Platform attribute has an invalid value arm64.
 	// Possible values are x86, x64, or ia64.
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
-		generateMsi(msiArchive, dllPaths, licensePaths, hasCrashpad)
+		generateMsi(msiArchive, dllPaths, licensePaths, hasCrashpadExe)
 		archives[msiArchive] = []string{msiArchive}
 	}
 	// nsis installer
@@ -2304,16 +2293,29 @@ func postStateArchives() map[string][]string {
 	}
 	// debuginfo file
 	if systemNameFlag == "windows" {
-		archiveFiles(debugArchive, archivePrefix, []string{APPNAME + ".pdb"})
 		dbgPaths = append(dbgPaths, APPNAME+".pdb")
+		if hasCrashpadPdb {
+			dbgPaths = append(dbgPaths, "crashpad_handler.pdb")
+		}
+		archiveFiles(debugArchive, archivePrefix, dbgPaths)
 	} else if systemNameFlag == "mingw" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
-		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
-		dbgPaths = append(dbgPaths, APPNAME+".dbg")
+		dbgPaths = append(dbgPaths, getAppName() + ".dbg")
+		if hasCrashpadDbg {
+			dbgPaths = append(dbgPaths, "crashpad_handler.dbg")
+		}
+		archiveFiles(debugArchive, archivePrefix, dbgPaths)
 	} else if systemNameFlag == "android" {
-		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
-		dbgPaths = append(dbgPaths, APPNAME+".dbg")
+		dbgPaths = append(dbgPaths, getAppName() + ".dbg")
+		if hasCrashpadDbg {
+			dbgPaths = append(dbgPaths, "crashpad_handler.dbg")
+		}
+		archiveFiles(debugArchive, archivePrefix, dbgPaths)
 	} else if systemNameFlag == "darwin" {
-		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})
+		dbgPaths = append(dbgPaths, getAppName() + ".dSYM")
+		if hasCrashpadDbg {
+			dbgPaths = append(dbgPaths, "crashpad_handler.dbg")
+		}
+		archiveFiles(debugArchive, archivePrefix, dbgPaths)
 	} else if systemNameFlag == "ios" {
 		cmdRun([]string{"rm", "-rf", getAppName() + ".dSYM"}, true)
 		buildSubdir := cmakeBuildTypeFlag + "-iphoneos"
