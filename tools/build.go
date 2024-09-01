@@ -912,6 +912,9 @@ func buildStageGenerateBuildScript() {
 
 	if systemNameFlag == "darwin" {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_OSX_DEPLOYMENT_TARGET=%s", macosxVersionMinFlag))
+		// macos from 15 doesn't like custom dns resolver such as c-ares
+		// because it need permission to access local dns server
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
 		if macosxUniversalBuildFlag {
 			cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
 		} else {
