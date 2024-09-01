@@ -1,3 +1,10 @@
+yass (1.13.1-1) UNRELEASED; urgency=medium
+
+  * ui: add tcp congestion algorithm in option dialog.
+  * qt: update windows title and shortcuts in menu.
+  * gtk: update windows title.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 1 Sep 2024 14:29:10 +0800
 yass (1.13.0-1) UNRELEASED; urgency=medium
 
   * bump to chromium 129 dependents.
