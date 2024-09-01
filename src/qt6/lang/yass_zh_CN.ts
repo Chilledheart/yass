@@ -81,10 +81,6 @@
 <context>
     <name>YASSWindow</name>
     <message>
-        <source>YASS</source>
-        <translation>YASS (Yet Another Shadow Socket)</translation>
-    </message>
-    <message>
         <source>Start</source>
         <translation>启动</translation>
     </message>
@@ -146,8 +142,7 @@
     </message>
     <message>
         <source>READY</source>
-        <translatorcomment>就绪</translatorcomment>
-        <translation></translation>
+        <translation>就绪</translation>
     </message>
     <message>
         <source> tx rate: </source>
@@ -220,6 +215,10 @@
     <message>
         <source>&amp;About...</source>
         <translation>关于 (&amp;A)...</translation>
+    </message>
+    <message>
+        <source>YASS</source>
+        <translation>YASS (Yet Another Shadow Socket)</translation>
     </message>
 </context>
 </TS>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">YASS</string>
     <string name="title_home">Home</string>
@@ -13,11 +12,11 @@
     <string name="status_started">已产生连接: 0</string>
     <string name="status_stopping">断开连接中</string>
     <string name="status_starting">连接中</string>
+    <string name="status_started_with_rate">已产生连接:  %d  上传速率:  %s 下载速率:  %s</string>
     <string name="button_start">启动</string>
     <string name="button_stop">停止</string>
-    <string name="status_started_with_rate">已产生连接:  %d  上传速率:  %s 下载速率:  %s</string>
     <string name="status_ready">就绪</string>
-    <string name="label_timeout">超时时间</string>
+    <string name="label_timeout" >超时时间</string>
     <string name="status_current_ip_address">本地IP地址: %s:%d</string>
     <string name="status_started_with_error_msg">无法连接因为 %s</string>
     <string name="label_server_sni">服务器名称指示</string>

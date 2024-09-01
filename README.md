@@ -65,6 +65,16 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 See [Supporteded Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System) for more.
 
+### Contribute your translation (i18n)
+
+Please submit translations via Transifex: https://app.transifex.com/yetanothershadowsocket/yetanothershadowsocket
+
+Steps:
+
+1. Create a free account on Transifex (https://www.transifex.com/).
+2. Send a request to join the language translation.
+3. After accepted by the project maintainer, then you can translate online.
+
 ### Build from Source
 Take a look at [build instructions](BUILDING.md) and [packaging instructions](PACKAGING.md).
 
