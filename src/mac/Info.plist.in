@@ -62,5 +62,7 @@
     <false/>
     <key>LSBackgroundOnly</key>
     <false/>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>${MACOSX_BUNDLE_BUNDLE_NAME} uses the local network to access DNS servers on your WiFi network.</string>
 </dict>
 </plist>
