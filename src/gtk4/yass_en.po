@@ -79,11 +79,11 @@ msgstr "OK"
 
 #: menu.ui:6
 msgid "_Option..."
-msgstr ""
+msgstr "_Option..."
 
 #: menu.ui:12
 msgid "_About..."
-msgstr ""
+msgstr "_About..."
 
 #: menu.ui:18
 msgid "_Quit"
