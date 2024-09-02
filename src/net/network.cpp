@@ -47,7 +47,7 @@ void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::er
 
 std::vector<std::string> GetTCPAvailableCongestionAlgorithms() {
   std::vector<std::string> ret;
-  ret.push_back(std::string());  // unspec
+  ret.emplace_back();  // unspec
 #if BUILDFLAG(IS_LINUX)
   char buf[4096] = {};
   const std::string procfs = "/proc/sys/net/ipv4/tcp_available_congestion_control";
@@ -58,7 +58,7 @@ std::vector<std::string> GetTCPAvailableCongestionAlgorithms() {
     auto algorithms = absl::StrSplit(sbuf, absl::ByAnyChar(" \n\t\r"));
     for (const auto& algorithm : algorithms) {
       if (!algorithm.empty()) {
-        ret.push_back(std::string(algorithm));
+        ret.emplace_back(algorithm);
       }
     }
   } else {
