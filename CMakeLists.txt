@@ -467,7 +467,7 @@ cmake_dependent_option(
 option(USE_ICF "Build with ICF" OFF)
 option(USE_CURL "Build with libcurl (test only)" ON)
 
-option(USE_CARES "Build with c-ares" ON)
+option(USE_CARES "Build with c-ares" OFF)
 cmake_dependent_option(
   USE_SYSTEM_CARES "Build with system or vendored c-ares" OFF
   USE_CARES OFF)

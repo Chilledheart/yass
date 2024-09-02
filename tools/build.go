@@ -884,6 +884,7 @@ func buildStageGenerateBuildScript() {
 			glog.Fatalf("%v", err)
 		}
 
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "ON"))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DMSVC_CRT_LINKAGE=%s", msvcCrtLinkageFlag))
 		if msvcAllowXpFlag {
 			cmakeArgs = append(cmakeArgs, "-DALLOW_XP=ON")
@@ -912,9 +913,6 @@ func buildStageGenerateBuildScript() {
 
 	if systemNameFlag == "darwin" {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_OSX_DEPLOYMENT_TARGET=%s", macosxVersionMinFlag))
-		// macos from 15 doesn't like custom dns resolver such as c-ares
-		// because it need permission to access local dns server
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
 		if macosxUniversalBuildFlag {
 			cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
 		} else {
@@ -951,6 +949,8 @@ func buildStageGenerateBuildScript() {
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
+
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "ON"))
 
 		targetTriple, targetAbi := getMinGWTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DHOST_OS=%s", runtime.GOOS))
@@ -991,8 +991,6 @@ func buildStageGenerateBuildScript() {
 	if systemNameFlag == "ios" {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/ios.toolchain.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DDEPLOYMENT_TARGET=%s", iosVersionMinFlag))
-		// FIXME ios doens't support c-ares
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
 		platform := "OS"
 		if subSystemNameFlag == "simulator" {
 			if archFlag == "x86" {
@@ -1027,6 +1025,7 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "android" {
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "ON"))
 		// see #751
 		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		if _, err := os.Stat(androidNdkDir); errors.Is(err, os.ErrNotExist) {
@@ -1054,8 +1053,6 @@ func buildStageGenerateBuildScript() {
 		if harmonyNdkDir == "" {
 			glog.Fatalf("Harmony Ndk Directory demanded")
 		}
-		// FIXME harmony doens't support c-ares
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
 		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
 		// hard-coded
@@ -1076,6 +1073,7 @@ func buildStageGenerateBuildScript() {
 		if subsystem == "musl" {
 			cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		}
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "ON"))
 		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag, subsystem)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Linux.cmake", buildDir))
 		var pkgConfigPath = filepath.Join(sysrootFlag, "usr", "lib", "pkgconfig")
@@ -1105,6 +1103,7 @@ func buildStageGenerateBuildScript() {
 	if systemNameFlag == "freebsd" && sysrootFlag != "" {
 		// depends on ca_root_nss package
 		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "ON"))
 
 		var llvmTarget string
 		var llvmArch string

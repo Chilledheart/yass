@@ -65,6 +65,7 @@ endif
 
 override_dh_auto_configure: CMAKE_OPTIONS += -DENABLE_LTO=on -DENABLE_LLD=on -DUSE_LIBCXX=on
 override_dh_auto_configure: CMAKE_OPTIONS += -DUSE_ZLIB=on -DUSE_SYSTEM_ZLIB=on
+override_dh_auto_configure: CMAKE_OPTIONS += -DUSE_CARES=on
 override_dh_auto_configure: CMAKE_OPTIONS += -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=$(DEB_HOST_ARCH)
 override_dh_auto_configure: CMAKE_OPTIONS += -DUSE_OLD_SYSTEMD_SERVICE=on
 

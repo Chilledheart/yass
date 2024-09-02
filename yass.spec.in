@@ -219,7 +219,8 @@ cd build
    -DUSE_SYSTEM_NGHTTP2="%enable_system_nghttp2_opt" \
    -DUSE_SYSTEM_MBEDTLS="%enable_system_mbedtls_opt" \
    -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
-   -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_LIBCXX="%enable_libcxx_opt" \
+   -DUSE_CARES=on -DUSE_SYSTEM_CARES="%enable_system_cares_opt" \
+   -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DUSE_CET="%enable_cet_opt" \
    -DENABLE_LTO=on -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja

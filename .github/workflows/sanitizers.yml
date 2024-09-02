@@ -77,6 +77,7 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DBUILD_TESTS=on -DGUI=on \
+            -DUSE_ZLIB=on -DUSE_CARES=on \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             ${{ matrix.sanitizer.cmake_options }} ..
           ninja yass_test

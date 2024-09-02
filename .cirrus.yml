@@ -31,7 +31,7 @@ freebsd_task:
     - export CXX=clang++
     - mkdir build
     - cd build
-    - cmake -G Ninja -DBUILD_TESTS=on -DUSE_LIBCXX=on ${configure} ..
+    - cmake -G Ninja -DBUILD_TESTS=on -DUSE_LIBCXX=on -DUSE_ZLIB=on -DUSE_CARES=on ${configure} ..
   compile_script:
     - ninja -C build yass_cli yass_server yass_test
   test_script:
