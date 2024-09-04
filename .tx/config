@@ -27,30 +27,30 @@ source_lang = en
 
 [o:yetanothershadowsocket:p:yetanothershadowsocket:r:yass_macos_localizable_strings]
 file_filter = src/mac/<lang>.lproj/Localizable.strings
-lang_map = zh_TW: zh-Hant, zh_CN: zh-Hans
+lang_map = cs_CZ: cs, de_DE: de, el_GR: el, et_EE: et, fr_FR: fr, he_IL: he, hu_HU: hu, ko_KR: ko, nb_NO: nb, nl_NL: nl, pl_PL: pl, pt_BR: pt, sk_SK: sk, zh_TW: zh-Hant, zh_CN: zh-Hans
 source_file = src/mac/en.lproj/Localizable.strings
 source_lang = en
 
 [o:yetanothershadowsocket:p:yetanothershadowsocket:r:yass_macos_main_strings]
 file_filter = src/mac/<lang>.lproj/Main.strings
-lang_map = zh_TW: zh-Hant, zh_CN: zh-Hans
+lang_map = cs_CZ: cs, de_DE: de, el_GR: el, et_EE: et, fr_FR: fr, he_IL: he, hu_HU: hu, ko_KR: ko, nb_NO: nb, nl_NL: nl, pl_PL: pl, pt_BR: pt, sk_SK: sk, zh_TW: zh-Hant, zh_CN: zh-Hans
 source_file = src/mac/en.lproj/Main.strings
 source_lang = en
 
 [o:yetanothershadowsocket:p:yetanothershadowsocket:r:yass_ios_settings_strings]
 file_filter = src/ios/Settings.bundle/<lang>.lproj/Root.strings
-lang_map = zh_TW: zh-Hant, zh_CN: zh-Hans
+lang_map = cs_CZ: cs, de_DE: de, el_GR: el, et_EE: et, fr_FR: fr, he_IL: he, hu_HU: hu, ko_KR: ko, nb_NO: nb, nl_NL: nl, pl_PL: pl, pt_BR: pt, sk_SK: sk, zh_TW: zh-Hant, zh_CN: zh-Hans
 source_file = src/ios/Settings.bundle/en.lproj/Root.strings
 source_lang = en
 
 [o:yetanothershadowsocket:p:yetanothershadowsocket:r:yass_ios_localizable_strings]
 file_filter = src/ios/<lang>.lproj/Localizable.strings
-lang_map = zh_TW: zh-Hant, zh_CN: zh-Hans
+lang_map = cs_CZ: cs, de_DE: de, el_GR: el, et_EE: et, fr_FR: fr, he_IL: he, hu_HU: hu, ko_KR: ko, nb_NO: nb, nl_NL: nl, pl_PL: pl, pt_BR: pt, sk_SK: sk, zh_TW: zh-Hant, zh_CN: zh-Hans
 source_file = src/ios/en.lproj/Localizable.strings
 source_lang = en
 
 [o:yetanothershadowsocket:p:yetanothershadowsocket:r:yass_ios_main_strings]
 file_filter = src/ios/<lang>.lproj/Main.strings
-lang_map = zh_TW: zh-Hant, zh_CN: zh-Hans
+lang_map = cs_CZ: cs, de_DE: de, el_GR: el, et_EE: et, fr_FR: fr, he_IL: he, hu_HU: hu, ko_KR: ko, nb_NO: nb, nl_NL: nl, pl_PL: pl, pt_BR: pt, sk_SK: sk, zh_TW: zh-Hant, zh_CN: zh-Hans
 source_file = src/ios/en.lproj/Main.strings
 source_lang = en
