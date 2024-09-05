@@ -6,7 +6,7 @@ cd $PWD/..
 
 DEFAULT_TARGET=$(rustc -vV | sed -n 's|host: ||p')
 
-RUST_VER=1.80.0
+RUST_VER=1.80.1
 CARGO_VER=0.81.0
 
 # https://github.com/Homebrew/homebrew-core/blob/master/Formula/r/rust.rb
