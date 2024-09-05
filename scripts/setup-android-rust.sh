@@ -14,8 +14,8 @@ fi
 
 echo "Adding rustup toolchain..."
 
-rustup toolchain install 1.80.0
-rustup default 1.80.0
+rustup toolchain install 1.80.1
+rustup default 1.80.1
 
 echo "Adding rustup toolchain...done"
 
