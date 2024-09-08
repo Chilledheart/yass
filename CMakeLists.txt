@@ -3210,7 +3210,7 @@ if (USE_SYSTEM_JSON)
 int main() {}
 " HAVE_SYSTEM_JSON)
   if (NOT HAVE_SYSTEM_JSON)
-    message(STATUS "System cares not found, using bundled one")
+    message(STATUS "System nlohman json library not found, using bundled one")
     set(USE_SYSTEM_JSON FALSE)
   endif()
 endif()
