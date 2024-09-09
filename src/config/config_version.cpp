@@ -75,10 +75,10 @@ static void ParseConfigFileOption(int argc, const char** argv) {
       std::cout << "Last Change: " << YASS_APP_LAST_CHANGE << std::endl;
       std::cout << "Features: " << YASS_APP_FEATURES << std::endl;
 #ifdef HAVE_TCMALLOC
-      std::cerr << "TCMALLOC: " << tc_version(nullptr, nullptr, nullptr) << std::endl;
+      std::cout << "TCMALLOC: " << tc_version(nullptr, nullptr, nullptr) << std::endl;
 #endif
 #ifdef HAVE_MIMALLOC
-      std::cerr << "MIMALLOC: " << mi_version() << std::endl;
+      std::cout << "MIMALLOC: " << mi_version() << std::endl;
 #endif
 #ifndef NDEBUG
       std::cout << "Debug build (NDEBUG not #defined)" << std::endl;
