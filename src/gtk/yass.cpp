@@ -80,6 +80,15 @@ int main(int argc, const char** argv) {
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
 
+  std::string err = config::ValidateConfig();
+  if (!err.empty()) {
+    LOG(WARNING) << "Failed to validate config: " << err;
+  }
+  if (config::testOnlyMode) {
+    LOG(WARNING) << "Configuration Validated";
+    return 0;
+  }
+
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for
   // any remaining code. Most likely this is superfluous as gtk_init() ought
