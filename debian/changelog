@@ -1,3 +1,8 @@
+yass (1.12.5-1) UNRELEASED; urgency=medium
+
+  * some trivial changes.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 9 Sep 2024 08:58:40 +0800
 yass (1.12.4-1) UNRELEASED; urgency=medium
 
   * ui: add tcp congestion algorithm in option dialog.
