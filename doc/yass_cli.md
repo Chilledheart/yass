@@ -23,6 +23,12 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 * `-c` _file_, `--configfile` _file_:
   Use specified _file_ as config file.
 
+* `-t`:
+  Don't run, just test the configuration file.
+
+* `-v`, `--version`:
+  Print yass_cli version.
+
 * `--limit_rate` _rate_:
   Limits the _rate_ of response transmission to a client. Uint can be `(none)`, `k` and `m`.
 

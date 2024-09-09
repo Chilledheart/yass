@@ -84,5 +84,14 @@ int main(int argc, const char** argv) {
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
 
+  std::string err = config::ValidateConfig();
+  if (!err.empty()) {
+    LOG(WARNING) << "Failed to validate config: " << err;
+  }
+  if (config::testOnlyMode) {
+    LOG(WARNING) << "Configuration Validated";
+    return 0;
+  }
+
   return NSApplicationMain(argc, argv);
 }

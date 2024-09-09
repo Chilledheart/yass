@@ -34,7 +34,10 @@ enum ProgramType {
 extern const ProgramType pType;
 const char* ProgramTypeToStr(ProgramType type);
 
+extern bool testOnlyMode;
 void ReadConfigFileAndArguments(int argc, const char** argv);
+
+std::string ValidateConfig();
 
 std::string ReadConfigFromArgument(std::string_view server_host,
                                    std::string_view server_sni,

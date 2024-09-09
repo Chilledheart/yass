@@ -25,6 +25,8 @@
 
 namespace config {
 
+bool testOnlyMode = false;
+
 static void ParseConfigFileOption(int argc, const char** argv) {
   int pos = 1;
   while (pos < argc) {
@@ -63,6 +65,10 @@ static void ParseConfigFileOption(int argc, const char** argv) {
       argv[pos + 1] = "";
       pos += 2;
       continue;
+    } else if (arg == "-t") {
+      testOnlyMode = true;
+      argv[pos] = "";
+      pos += 1;
     } else if (arg == "-version" || arg == "--version") {
       std::cout << absl::flags_internal::ShortProgramInvocationName() << " " << YASS_APP_TAG
                 << " type: " << ProgramTypeToStr(pType) << std::endl;
