@@ -87,6 +87,16 @@ int main(int argc, const char* argv[]) {
   config::SetServerUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
 
+  std::string err = config::ValidateConfig();
+  if (!err.empty()) {
+    LOG(WARNING) << "Failed to validate config: " << err;
+    return -1;
+  }
+  if (config::testOnlyMode) {
+    LOG(WARNING) << "Configuration Validated";
+    return 0;
+  }
+
 #ifdef _WIN32
   int iResult = 0;
   WSADATA wsaData = {0};

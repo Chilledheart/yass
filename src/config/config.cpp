@@ -160,6 +160,87 @@ bool SaveConfig() {
   return all_fields_written;
 }
 
+std::string ValidateConfig() {
+  std::string err;
+  std::ostringstream err_msg;
+
+  auto server_host = absl::GetFlag(FLAGS_server_host);
+  auto server_sni = absl::GetFlag(FLAGS_server_sni);
+  auto server_port = absl::GetFlag(FLAGS_server_port);
+  auto username = absl::GetFlag(FLAGS_username);
+  auto password = absl::GetFlag(FLAGS_password);
+  auto method = absl::GetFlag(FLAGS_method);
+  auto local_host = absl::GetFlag(FLAGS_local_host);
+  // auto local_port = absl::GetFlag(FLAGS_local_port);
+  auto doh_url = absl::GetFlag(FLAGS_doh_url);
+  auto dot_host = absl::GetFlag(FLAGS_dot_host);
+  // auto limit_rate = absl::GetFlag(FLAGS_limit_rate);
+  // auto timeout = absl::GetFlag(FLAGS_connect_timeout);
+
+  // TODO validate other configurations as well
+
+  if (server_host.empty() || server_host.size() >= TLSEXT_MAXLEN_host_name) {
+    err_msg << ",Invalid Server Host: " << server_host;
+  }
+
+  if (server_sni.size() >= TLSEXT_MAXLEN_host_name) {
+    err_msg << ",Invalid Server Host: " << server_sni;
+  }
+
+  if (server_port.port == 0) {
+    err_msg << ",Invalid Server Port: " << server_port.port;
+  }
+
+  if (method == CRYPTO_INVALID) {
+    err_msg << ",Invalid Cipher: " << to_cipher_method_str(method);
+  }
+
+  if (method == CRYPTO_SOCKS4 || method == CRYPTO_SOCKS4A) {
+    if (!username.empty() || !password.empty()) {
+      err_msg << ",SOCKS4/SOCKSA doesn't support username and passsword";
+    }
+  }
+
+  if (method == CRYPTO_SOCKS5 || method == CRYPTO_SOCKS5H) {
+    if (username.empty() ^ password.empty()) {
+      err_msg << ",SOCKS5/SOCKS5H requires both of username and passsword";
+    }
+  }
+
+  if (CIPHER_METHOD_IS_HTTP(method)) {
+    if (username.empty() ^ password.empty()) {
+      err_msg << ",HTTP requires both of username and passsword";
+    }
+  }
+
+  if (local_host.empty() || local_host.size() >= TLSEXT_MAXLEN_host_name) {
+    err_msg << ",Invalid Local Host: " << local_host;
+  }
+
+  if (!doh_url.empty()) {
+    GURL url(doh_url);
+    if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
+      err_msg << ",Invalid DoH URL: " << doh_url;
+    }
+    if (!dot_host.empty()) {
+      err_msg << ",Conflicting DoT Host: " << dot_host;
+    }
+  }
+
+  if (!dot_host.empty()) {
+    if (dot_host.size() >= TLSEXT_MAXLEN_host_name) {
+      err_msg << ",Invalid DoT Host: " << dot_host;
+    }
+  }
+
+  auto ret = err_msg.str();
+  if (ret.empty()) {
+    return ret;
+  } else {
+    return ret.substr(1);
+  }
+}
+
 std::string ReadConfigFromArgument(std::string_view server_host,
                                    std::string_view server_sni,
                                    std::string_view _server_port,
@@ -184,7 +265,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   }
 
   PortFlag server_port;
-  if (!AbslParseFlag(_server_port, &server_port, &err)) {
+  if (!AbslParseFlag(_server_port, &server_port, &err) || server_port.port == 0u) {
     err_msg << ",Invalid Server Port: " << _server_port;
   }
 
@@ -289,7 +370,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   }
 
   PortFlag server_port;
-  if (!AbslParseFlag(_server_port, &server_port, &err)) {
+  if (!AbslParseFlag(_server_port, &server_port, &err) || server_port.port == 0u) {
     err_msg << ",Invalid Server Port: " << _server_port;
   }
 
@@ -374,6 +455,8 @@ std::string ReadConfigFromArgument(std::string_view server_host,
 void SetClientUsageMessage(std::string_view exec_path) {
   absl::SetProgramUsageMessage(absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n", R"(
   -K, --config <file> Read config from a file
+  -t Don't run, just test the configuration file
+  -v, --version Print yass version
   --server_host <host> Remote server on given host
   --server_port <port> Remote server on given port
   --local_host <host> Local proxy server on given host
@@ -396,6 +479,8 @@ void SetClientUsageMessage(std::string_view exec_path) {
 void SetServerUsageMessage(std::string_view exec_path) {
   absl::SetProgramUsageMessage(absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n", R"(
   -K, --config <file> Read config from a file
+  -t Don't run, just test the configuration file
+  -v, --version Print yass version
   --server_host <host> Server on given host
   --server_port <port> Server on given port
   --username <username> Server user

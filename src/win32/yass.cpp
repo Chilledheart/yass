@@ -102,6 +102,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, &argv[0]);
 
+  std::string err = config::ValidateConfig();
+  if (!err.empty()) {
+    LOG(WARNING) << "Failed to validate config: " << err;
+  }
+  if (config::testOnlyMode) {
+    LOG(WARNING) << "Configuration Validated";
+    return 0;
+  }
+
   int iResult = 0;
   WSADATA wsaData = {0};
   iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
