@@ -513,6 +513,12 @@ option(ENABLE_LLD "Enable build with LLD" OFF)
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 
+# this temporary fix is not working with tests
+# https://discourse.cmake.org/t/dsym-file-not-copied-when-archiving/7691/2
+cmake_dependent_option(
+  IOS_XCODE_DSYM_FOLDER_FIX "Build with xcode dsym folder fixes" OFF
+  "IOS AND NOT BUILD_TESTS" OFF)
+
 cmake_dependent_option(USE_CET "Build with CET support" OFF
   "LINUX OR MSVC; OS_X64 OR OS_X86" OFF)
 
@@ -4872,6 +4878,9 @@ if (GUI)
             XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
             XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
         endif()
+        if (IOS_XCODE_DSYM_FOLDER_FIX)
+          set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "$(inherited)")
+        endif()
 
         # =======================
         # YassPacketTunnel extensions
@@ -4937,6 +4946,10 @@ if (GUI)
             XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
             XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
             XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+        endif()
+
+        if (IOS_XCODE_DSYM_FOLDER_FIX)
+          set_target_properties(network-extension PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "$(inherited)")
         endif()
 
         add_dependencies(${APP_NAME} network-extension)

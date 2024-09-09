@@ -992,6 +992,8 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/ios.toolchain.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DDEPLOYMENT_TARGET=%s", iosVersionMinFlag))
 		platform := "OS"
+		glog.Warning("No Packaging supported for ios, disabling...")
+		noPackagingFlag = true
 		if subSystemNameFlag == "simulator" {
 			if archFlag == "x86" {
 				platform = "SIMULATOR"
@@ -1004,8 +1006,6 @@ func buildStageGenerateBuildScript() {
 			}
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_CODESIGN_IDENTITY=%s", iosCodeSignIdentityFlag))
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_DEPLOYMENT_TEAM=%s", iosDevelopmentTeamFlag))
-			glog.Info("No Packaging supported for simulator, disabling...")
-			noPackagingFlag = true
 		} else if subSystemNameFlag != "" {
 			glog.Fatalf("Invalid subSystemNameFlag: %s", subSystemNameFlag)
 		} else {
@@ -1018,6 +1018,7 @@ func buildStageGenerateBuildScript() {
 			}
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_CODESIGN_IDENTITY=%s", iosCodeSignIdentityFlag))
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_DEPLOYMENT_TEAM=%s", iosDevelopmentTeamFlag))
+			cmakeArgs = append(cmakeArgs, "-DIOS_XCODE_DSYM_FOLDER_FIX=on")
 		}
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DPLATFORM=%s", platform))
