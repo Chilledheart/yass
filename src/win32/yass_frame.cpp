@@ -159,10 +159,11 @@ HWND CreateStatic(const wchar_t* label, HWND pParentWnd, UINT nID, HINSTANCE hIn
 }
 
 HWND CreateEdit(DWORD dwStyle, HWND pParentWnd, UINT nID, HINSTANCE hInstance) {
-  return CreateWindowExW(0, WC_EDITW, nullptr,
-                         WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle, CW_USEDEFAULT,
-                         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, pParentWnd,
-                         reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
+  return CreateWindowExW(
+      0, WC_EDITW, nullptr,
+      WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL | dwStyle, CW_USEDEFAULT,
+      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)),
+      hInstance, nullptr);
 }
 
 HWND CreateComboBox(DWORD dwStyle, HWND pParentWnd, UINT nID, HINSTANCE hInstance) {
