@@ -67,17 +67,19 @@ commands:
     steps:
       - run:
           command: |
+            # we don't like the go installed by circleci
+            sudo rm -rf /usr/local/go
             BUILD_ARCH=$(dpkg-architecture -q DEB_BUILD_ARCH)
             cd /tmp
-            # shipped with debian bookworm
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang_1.19~1_${BUILD_ARCH}.deb
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.19~1_${BUILD_ARCH}.deb
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.19~1_all.deb
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-doc_1.19~1_all.deb
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19_1.19.8-2_all.deb
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19-go_1.19.8-2_${BUILD_ARCH}.deb
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19-src_1.19.8-2_all.deb
-            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19-doc_1.19.8-2_all.deb
+            # shipped with debian trixie
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang_1.22~3_${BUILD_ARCH}.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.22~3_${BUILD_ARCH}.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.22~3_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-doc_1.22~3_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.22/golang-1.22_1.22.6-1_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.22/golang-1.22-go_1.22.6-1_${BUILD_ARCH}.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.22/golang-1.22-src_1.22.6-1_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.22/golang-1.22-doc_1.22.6-1_all.deb
             sudo dpkg --force-depends -i $PWD/*.deb || true
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -f
             rm -vf *.deb
@@ -200,6 +202,9 @@ commands:
             ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=3 --gtest_throw_on_failure --ipv6_mode
             ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=3 --gtest_throw_on_failure --ipv6_mode --enable_post_quantum_kyber
             # alternative for ninja -C build run_tests
+            # fix for download gotoolchain
+            # GOTOOLCHAIN=local go env -u GOTOOLCHAIN
+            export GOTOOLCHAIN=local
             ninja -C build check_boringssl
 
 executors:
