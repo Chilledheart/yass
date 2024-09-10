@@ -71,9 +71,13 @@ class ContentServer {
     enable_upstream_tls_ &= T::Type == CONNECTION_FACTORY_CLIENT;
     enable_tls_ &= T::Type == CONNECTION_FACTORY_SERVER;
     DCHECK_LE(remote_host_sni_.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
+
+    VLOG(1) << "ContentServer (" << T::Name << ") " << " allocated memory";
   }
 
   ~ContentServer() {
+    VLOG(1) << "ContentServer (" << T::Name << ") " << " freed memory";
+
     client_instance_ = nullptr;
 
     work_guard_.reset();
@@ -191,6 +195,8 @@ class ContentServer {
       }
 
       auto connection_map = std::move(connection_map_);
+      // FIXME silence some false-positive warning from abseil-cpp
+      connection_map_ = absl::flat_hash_map<int, scoped_refptr<ConnectionType>>();
       opened_connections_ = 0;
       for (auto [conn_id, conn] : connection_map) {
         VLOG(1) << "Connections (" << T::Name << ")"
