@@ -313,6 +313,18 @@ jobs:
           # for qt 5.6 or before
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             sed -i 's#Q_DECL_CONSTEXPR inline QFlags(Zero = Q_NULLPTR) Q_DECL_NOTHROW : i(0) {}#Q_DECL_CONSTEXPR inline QFlags() Q_DECL_NOTHROW : i(0) {}\n    Q_DECL_CONSTEXPR inline QFlags(Zero) Q_DECL_NOTHROW : i(0) {}#g' /usr/include/$HOST_GNU_TYPE/qt5/QtCore/qflags.h
+          # fix clang after 3847
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            sed -i 's#: integral_constant<bool, (T(0) < T(-1))> {};#: integral_constant<bool, __is_unsigned(T)> {};#g' /usr/include/$HOST_GNU_TYPE/qt5/QtCore/qtypetraits.h
+      - name: Populate dependencie (qt5, x86 only, TODO remove me after cache refresh)
+        if: ${{ steps.schroot-cache.outputs.cache-hit == 'true' && (matrix.arch == 'i386' || matrix.arch == 'amd64') }}
+        run: |
+          export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ matrix.arch }} -q DEB_HOST_GNU_TYPE)
+          # DEB_HOST_GNU_TYPE produces i686-linux-gnu which is wrong
+          [ "${{ matrix.arch }}" = "i386" ] && export HOST_GNU_TYPE=i386-linux-gnu
+          # fix clang after 3847
+          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
+            sed -i 's#: integral_constant<bool, (T(0) < T(-1))> {};#: integral_constant<bool, __is_unsigned(T)> {};#g' /usr/include/$HOST_GNU_TYPE/qt5/QtCore/qtypetraits.h
       - name: Populate dependencie (gtk4, jammy only)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'armel' && matrix.arch != 'mipsel' && matrix.arch != 'mips64el' && matrix.arch != 'riscv64' && matrix.distro == 'jammy' }}
         run: |
