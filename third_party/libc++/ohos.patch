@@ -1,8 +1,8 @@
 diff --git a/include/__config b/include/__config
-index 0797880cb..0ba96186e 100644
+index bccf90d1d..6630b7138 100644
 --- a/include/__config
 +++ b/include/__config
-@@ -1109,6 +1109,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -814,6 +814,7 @@ typedef __char32_t char32_t;
          defined(__GNU__) ||                                                                                            \
          defined(__APPLE__) ||                                                                                          \
          defined(__MVS__) ||                                                                                            \
@@ -10,17 +10,17 @@ index 0797880cb..0ba96186e 100644
          defined(_AIX) ||                                                                                               \
          defined(__EMSCRIPTEN__)
  // clang-format on
-@@ -1183,7 +1184,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -888,7 +889,7 @@ typedef __char32_t char32_t;
  #  endif
  
  #  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
--      defined(_LIBCPP_HAS_MUSL_LIBC) || defined(__OpenBSD__)
-+      defined(_LIBCPP_HAS_MUSL_LIBC) || defined(__OpenBSD__) || defined(__OHOS_FAMILY__)
+-      defined(_LIBCPP_HAS_MUSL_LIBC) || defined(__OpenBSD__) || defined(__LLVM_LIBC__)
++      defined(_LIBCPP_HAS_MUSL_LIBC) || defined(__OpenBSD__) || defined(__LLVM_LIBC__) || defined(__OHOS_FAMILY__)
  #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
  #  endif
  
 diff --git a/include/__locale_dir/locale_base_api.h b/include/__locale_dir/locale_base_api.h
-index 2355b4a84..5a9427cfd 100644
+index 8c000c558..48be6475c 100644
 --- a/include/__locale_dir/locale_base_api.h
 +++ b/include/__locale_dir/locale_base_api.h
 @@ -25,6 +25,8 @@
