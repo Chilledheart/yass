@@ -115,7 +115,18 @@ Make sure you have [Xcode] installed on your system.
 
 TBD
 
+## Flatpak/Packaging
+
+Make sure you follow the [setup guide for your Linux distribution][flatpak_setup] before building
+```
+cd flatpak
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak-builder --force-clean --user --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir io.github.chilledheart.yass.yml
+flatpak build-bundle repo yass.flatpak io.github.chilledheart.yass --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+```
+
 [NSIS]: https://nsis.sourceforge.io/Download
 [7Zip]: https://www.7-zip.org/
 [wix3]: https://wixtoolset.org/docs/wix3/
 [Xcode]: https://apps.apple.com/us/app/xcode/id497799835?mt=12
+[flatpak_setup]: https://flathub.org/setup

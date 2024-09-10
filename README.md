@@ -14,14 +14,15 @@ yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/
 Because we are reusing chromium's network stack directly,
 we are following [chromium's release schedule](https://chromiumdash.appspot.com/schedule) and delivering new versions based on its beta branch.
 
-- [Latest M128's Release (1.12.x)](https://github.com/Chilledheart/yass/releases/tag/1.12.3) will become Stable since _Aug 20, 2024_ (Extended Support).
-- [Latest M127's Release (1.11.x)](https://github.com/Chilledheart/yass/releases/tag/1.11.5) becomes Stable since _Jul 23, 2024_
-- [Latest M126's Release (1.10.x)](https://github.com/Chilledheart/yass/releases/tag/1.10.7) becomes Stable since _Jun 11, 2024_ (Extended Support)
-- [Latest M125's Release (1.9.x)](https://github.com/Chilledheart/yass/releases/tag/1.9.7) becomes Stable since _May 14, 2024_
-- [Latest M124's Release (1.8.x)](https://github.com/Chilledheart/yass/releases/tag/1.8.7) becomes Stable since _Apr 16, 2024_ (Extended Support)
-- [Latest M123's Release (1.7.x)](https://github.com/Chilledheart/yass/releases/tag/1.7.7) becomes Stable since _Mar 19, 2024_
-- [Latest M122's Release (1.6.x)](https://github.com/Chilledheart/yass/releases/tag/1.6.5) becomes Stable since _Feb 20, 2024_ (Extended Support)
-- [Latest M121's Release (1.5.x)](https://github.com/Chilledheart/yass/releases/tag/1.5.24) becomes Stable since _Jan 23, 2024_
+- [Latest M129's Release (1.13.x)](https://github.com/Chilledheart/yass/releases/tag/1.13.2) will become Stable since _Sep 17, 2024_.
+- [Latest M128's Release (1.12.x)](https://github.com/Chilledheart/yass/releases/tag/1.12.5) has become Stable since _Aug 20, 2024_ (Extended Support).
+- [Latest M127's Release (1.11.x)](https://github.com/Chilledheart/yass/releases/tag/1.11.5) has become Stable since _Jul 23, 2024_
+- [Latest M126's Release (1.10.x)](https://github.com/Chilledheart/yass/releases/tag/1.10.7) has become Stable since _Jun 11, 2024_ (Extended Support)
+- [Latest M125's Release (1.9.x)](https://github.com/Chilledheart/yass/releases/tag/1.9.7) has become Stable since _May 14, 2024_
+- [Latest M124's Release (1.8.x)](https://github.com/Chilledheart/yass/releases/tag/1.8.7) has become Stable since _Apr 16, 2024_ (Extended Support)
+- [Latest M123's Release (1.7.x)](https://github.com/Chilledheart/yass/releases/tag/1.7.7) has become Stable since _Mar 19, 2024_
+- [Latest M122's Release (1.6.x)](https://github.com/Chilledheart/yass/releases/tag/1.6.5) has become Stable since _Feb 20, 2024_ (Extended Support)
+- [Latest M121's Release (1.5.x)](https://github.com/Chilledheart/yass/releases/tag/1.5.24) has become Stable since _Jan 23, 2024_
 
 ### Prebuilt binaries (Linux)
 - GTK3 [download rpm][gtk3_rpm_url] or [download deb][gtk3_deb_url] (minimum requirement: _CentOS 8_ or _Ubuntu 16.04_)
@@ -51,16 +52,19 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 - iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
 - Windows [download 64-bit installer][windows_64_installer_url] (require [KB2999226] on _windows 7/8/8.1_) or [download 32-bit installer][windows_32_installer_url] (require [vc 2010 runtime][vs2010_x86] on _windows xp sp3_) or [download arm64 installer][windows_arm64_installer_url] (require _windows 10/11_)
 - macOS [download intel dmg][macos_intel_dmg_url] or [download apple silicon dmg][macos_arm_dmg_url] (require _macOS 10.14_ or above)
-> via [Homebrew](https://brew.sh): `brew install --cask yass`
+> via [Homebrew](https://brew.sh): `brew install --formula yass-cli`
+> via [Homebrew Cask](https://brew.sh): `brew install --cask yass`
 
+[![Homebrew Version](https://img.shields.io/homebrew/v/yass-cli)](https://formulae.brew.sh/formula/yass-cli)
+[![Homebrew Downloads](https://img.shields.io/homebrew/installs/dm/yass-cli)](https://formulae.brew.sh/formula/yass-cli)
 [![Homebrew Cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
-- Flatpak for Linux (Qt5) [download x86_64 flatpak][qt5_flatpak_x86_64_url]
+- Flatpak for Linux (Qt5) [download flatpak][qt5_flatpak_x86_64_url] (unsandboxed edition) for _x86_64_ machine only.
 
-> via [Flathub](https://flathub.org): `flatpak install --user io.github.chilledheart.yass`
+> via [Flathub][flathub_url]: `flatpak install --user io.github.chilledheart.yass` (recommended, signed and sandboxed) for both of _x86_64_ and _aarch64_ machines
 
-[![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)](https://flathub.org/apps/io.github.chilledheart.yass)
-![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)
+[![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)][flathub_url]
+[![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)][flathub_url]
 
 See [Supporteded Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System) for more.
 
@@ -97,34 +101,21 @@ TBD: Spliting Tunnel Support (#954)
 ### More Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
 
-## Extra Features (Limited)
+## Server side support (outside this project)
 
-### SOCKS cipher Support
-Experimental socks4/socks4a/socks5/socks5h cipher support is added for both of CLI and GUI.
+See [Setup forwardproxy caddy service](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#setup-forwardproxy-caddy-service) for more.
 
-### DoH (DNS over HTTPS) and DoT (DNS over TLS) Support
-Experimental DoH and DoT support is added for both of CLI and GUI.
+See [Window sizes for large bandwidth](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#window-sizes-for-large-bandwidth) for more.
 
-### Supplementary Support for ISRG Root X2 and ISRG Root X1 ca which is missing on some machines
-These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
+See [Use BBR Congestion Control](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#use-bbr-congestion-control) for more.
 
-### Supplementary Support for DigiCert Global Root G2 ca which is missing on some machines
-These ca certificates are provided in both builtin ca bundle support and supplementary ca bundle support (bundled).
+See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#chatgpt-capable-caddy-server) for more.
 
-### Specify TCP Congestion Algorithm (Command Line only)
-Pass `--congestion_algorithm algo` to command line.
-Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux only).
-See more at manpage [_tcp(7)_](https://linux.die.net/man/7/tcp)
+## Extra Features (Command Line only)
 
-### Use custom CA (Command Line only)
+### Use custom CA certificate file
 Pass `--certificate_chain_file file` to command line.
 Use custom certificate chain provided by _file_ to verify server's certificate.
-
-### Use server Side Support (Commmand Line only)
-All ciphers supported by client are also supported by `yass_server`.
-See more at manpage _yass_server(1)_
-
-See [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup) for more.
 
 ## Sponsor Me
 Please visit [the pages site](https://letshack.info).
@@ -154,40 +145,44 @@ Please visit [the pages site](https://letshack.info).
 
 [license-link]: LICENSE
 
-[gtk3_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-gtk3.el8.x86_64.1.12.3.rpm
-[gtk3_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-gtk3-ubuntu-16.04-xenial_amd64.1.12.3.deb
-[qt5_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-qt5.el8.x86_64.1.12.3.rpm
-[qt5_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-qt5-ubuntu-16.04-xenial_amd64.1.12.3.deb
-[gtk4_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-gtk4.lp155.x86_64.1.12.3.rpm
-[gtk4_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-gtk4-ubuntu-22.04-jammy_amd64.1.12.3.deb
-[qt6_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-qt6.lp155.x86_64.1.12.3.rpm
-[qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-qt6-ubuntu-22.04-jammy_amd64.1.12.3.deb
-
-[qt5_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-x86_64-1.12.3.flatpak
-[gtk4_arch_url]: https://repo.archlinuxcn.org/x86_64/yass-proxy-1.12.3-1-x86_64.pkg.tar.zst
-
-[cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-amd64-1.12.3.tgz
-[cli_tgz_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-amd64-1.12.3.tgz
-[cli_tgz_arm64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-arm64-1.12.3.tgz
-[cli_tgz_loongarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-loongarch64-1.12.3.tgz
-[cli_tgz_riscv64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-riscv64-1.12.3.tgz
-[cli_tgz_riscv32_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-release-riscv32-1.12.3.tgz
-
-[cli_openwrt_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-openwrt-release-x86_64-1.12.3.tgz
-[cli_openwrt_i486_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-openwrt-release-i486-1.12.3.tgz
-[cli_openwrt_aarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-openwrt-release-aarch64-1.12.3.tgz
-
-[cli_musl_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-musl-release-amd64-1.12.3.tgz
-[cli_musl_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass_cli-linux-musl-release-i386-1.12.3.tgz
-
+[flathub_url]: https://flathub.org/apps/io.github.chilledheart.yass
 [ios_testflight_invitation]: https://testflight.apple.com/join/6AkiEq09
 [ios_testflight_appstore_url]: https://apps.apple.com/us/app/testflight/id899247664
-[android_64_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-android-release-arm64-1.12.3.apk
-[android_32_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-android-release-arm-1.12.3.apk
 [KB2999226]: https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
-[windows_64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-mingw-win7-release-x86_64-1.12.3-system-installer.exe
-[windows_32_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-mingw-winxp-release-i686-1.12.3-system-installer.exe
-[windows_arm64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-mingw-release-aarch64-1.12.3-system-installer.exe
-[macos_intel_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-macos-release-x64-1.12.3.dmg
-[macos_arm_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.12.3/yass-macos-release-arm64-1.12.3.dmg
+
+[gtk3_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk3.el8.x86_64.1.13.2.rpm
+[gtk3_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk3-ubuntu-16.04-xenial_amd64.1.13.2.deb
+[qt5_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt5.el8.x86_64.1.13.2.rpm
+[qt5_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt5-ubuntu-16.04-xenial_amd64.1.13.2.deb
+[gtk4_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk4.lp155.x86_64.1.13.2.rpm
+[gtk4_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk4-ubuntu-22.04-jammy_amd64.1.13.2.deb
+[qt6_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt6.lp155.x86_64.1.13.2.rpm
+[qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt6-ubuntu-22.04-jammy_amd64.1.13.2.deb
+
+[qt5_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-x86_64-1.13.2.flatpak
+[gtk4_arch_url]: https://repo.archlinuxcn.org/x86_64/yass-proxy-1.13.2-1-x86_64.pkg.tar.zst
+
+[cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-amd64-1.13.2.tgz
+[cli_tgz_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-amd64-1.13.2.tgz
+[cli_tgz_arm64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-arm64-1.13.2.tgz
+[cli_tgz_loongarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-loongarch64-1.13.2.tgz
+[cli_tgz_riscv64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-riscv64-1.13.2.tgz
+[cli_tgz_riscv32_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-riscv32-1.13.2.tgz
+
+[cli_openwrt_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-openwrt-release-x86_64-1.13.2.tgz
+[cli_openwrt_i486_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-openwrt-release-i486-1.13.2.tgz
+[cli_openwrt_aarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-openwrt-release-aarch64-1.13.2.tgz
+
+[cli_musl_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-musl-release-amd64-1.13.2.tgz
+[cli_musl_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-musl-release-i386-1.13.2.tgz
+
+[android_64_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-android-release-arm64-1.13.2.apk
+[android_32_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-android-release-arm-1.13.2.apk
+
+[windows_64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-mingw-win7-release-x86_64-1.13.2-system-installer.exe
+[windows_32_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-mingw-winxp-release-i686-1.13.2-system-installer.exe
+
+[windows_arm64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-mingw-release-aarch64-1.13.2-system-installer.exe
+[macos_intel_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-macos-release-x64-1.13.2.dmg
+[macos_arm_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-macos-release-arm64-1.13.2.dmg

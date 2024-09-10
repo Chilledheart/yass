@@ -1,15 +1,20 @@
-yass (1.12.5-1) UNRELEASED; urgency=medium
+yass (1.13.2-1) UNRELEASED; urgency=medium
 
   * some trivial changes.
 
  -- Chilledheart <keeyou-cn@outlook.com>  Mon, 9 Sep 2024 08:58:40 +0800
-yass (1.12.4-1) UNRELEASED; urgency=medium
+yass (1.13.1-1) UNRELEASED; urgency=medium
 
   * ui: add tcp congestion algorithm in option dialog.
   * qt: update windows title and shortcuts in menu.
   * gtk: update windows title.
 
  -- Chilledheart <keeyou-cn@outlook.com>  Sun, 1 Sep 2024 14:29:10 +0800
+yass (1.13.0-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 129 dependents.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 20 Aug 2024 13:46:02 +0800
 yass (1.12.3-1) UNRELEASED; urgency=medium
 
   * gtk4: fix crash.

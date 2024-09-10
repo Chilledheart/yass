@@ -18,7 +18,7 @@ on:
   schedule:
     - cron: '0 16 * * *'
 env:
-  CACHE_EPOCH: 128-3
+  CACHE_EPOCH: 129-1
   GOPROXY: direct
 jobs:
   mingw64-release:
