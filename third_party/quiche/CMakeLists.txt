@@ -596,8 +596,15 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_data_writer.h
   src/quiche/quic/core/quic_datagram_queue.cc
   src/quiche/quic/core/quic_datagram_queue.h
+  src/quiche/quic/core/quic_default_clock.cc
+  src/quiche/quic/core/quic_default_clock.h
+  src/quiche/quic/core/quic_dispatcher.cc
+  src/quiche/quic/core/quic_dispatcher.h
+  src/quiche/quic/core/quic_dispatcher_stats.cc
+  src/quiche/quic/core/quic_dispatcher_stats.h
   src/quiche/quic/core/quic_error_codes.cc
   src/quiche/quic/core/quic_error_codes.h
+  src/quiche/quic/core/quic_flow_controller.h
   src/quiche/quic/core/quic_flow_controller.cc
   src/quiche/quic/core/quic_flow_controller.h
   src/quiche/quic/core/quic_framer.cc

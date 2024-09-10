@@ -666,6 +666,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
   }
 
   void StopContentProvider() {
+    VLOG(1) << "content provider stopping at " << content_provider_endpoint_;
     if (content_provider_server_) {
       content_provider_server_->stop();
     }
