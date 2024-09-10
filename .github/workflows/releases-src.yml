@@ -55,7 +55,7 @@ jobs:
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libarchive-tools zstd
+          sudo apt-get install -y libarchive-tools zstd xz-utils
       - name: Build tarball and zip archive
         run: |
           ./scripts/build-src.sh
@@ -64,4 +64,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.tar.gz yass*.tar.bz2 yass*.tar.zst yass*.zip
+          gh release upload ${{ github.event.release.tag_name }} yass*.tar.gz yass*.tar.bz2 yass*.tar.xz yass*.tar.zst yass*.zip
