@@ -59,12 +59,12 @@ jobs:
             arch: amd64
             gui_variant: qt6
             use_cet: true
-          - distro: sid
+          - distro: trixie
             arch: riscv64
             gui_variant: none
         # XFAIL stretch
         # XFAIL focal-i386,jammy-i386,noble-i386
-        # XFAIL sid-riscv64 (gui, curl)
+        # XFAIL trixie-riscv64 (gui, curl)
         # distro: [trusty, xenial, bionic, focal, jammy, noble, stretch, buster, bullseye, bookworm]
         # arch: [i386, amd64, armhf, arm64]
         # include:
@@ -115,8 +115,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y sbuild debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
-      - name: Populate dependencies (deboostrap update for sid fix)
-        if: ${{ matrix.distro == 'sid' }}
+      - name: Populate dependencies (deboostrap update for trixie fix)
+        if: ${{ matrix.distro == 'trixie' }}
         run: |
           curl -L -O http://mirrors.kernel.org/ubuntu/pool/main/d/debootstrap/debootstrap_1.0.132ubuntu1_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debootstrap*.deb
@@ -129,7 +129,7 @@ jobs:
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
       - name: Pre-Populate sysroot (distro option)
-        if: ${{ matrix.distro == 'stretch' || matrix.distro == 'buster' || matrix.distro == 'bullseye' || matrix.distro == 'bookworm' || matrix.distro == 'sid' }}
+        if: ${{ matrix.distro == 'stretch' || matrix.distro == 'buster' || matrix.distro == 'bullseye' || matrix.distro == 'bookworm' || matrix.distro == 'trixie' }}
         run: |
           echo "mksbuild_distro_opts=--distro=debian" >> $GITHUB_ENV
       - name: Pre-Populate BUILD_ARCH (i386)
@@ -275,8 +275,8 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y perl gcc g++ ninja-build
-      - name: Populate dependencie (base, TODO remove me, fix for sid's broken libc6-riscv64-cross < 2.40)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'riscv64' && matrix.distro == 'sid' }}
+      - name: Populate dependencie (base, TODO remove me, fix for trixie's broken libc6-riscv64-cross < 2.40)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'riscv64' && matrix.distro == 'trixie' }}
         run: |
           # https://launchpad.net/ubuntu/oracular/amd64/libc6-dev-riscv64-cross
           curl -O http://launchpadlibrarian.net/742667245/libc6-dev-riscv64-cross_2.40-1ubuntu1cross2_all.deb
