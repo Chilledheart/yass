@@ -503,7 +503,14 @@ option(USE_ZLIB "Build with zlib (required by quic)" OFF)
 cmake_dependent_option(
   USE_SYSTEM_ZLIB "Build with system or vendored zlib" OFF
   USE_ZLIB OFF)
-option(USE_SYSTEM_JSON "Build with system or vendered json library" OFF)
+
+option(USE_JSONCPP "Build with jsoncpp library" OFF)
+cmake_dependent_option(
+  USE_SYSTEM_JSONCPP "Build with system or vendered jsoncpp library" OFF
+  "USE_JSONCPP AND NOT USE_LIBCXX" OFF)
+cmake_dependent_option(
+  USE_SYSTEM_JSON "Build with system or vendered nlohmann json library" OFF
+  "NOT USE_JSONCPP" OFF)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source (linux only)" OFF)
 option(ENABLE_LTO "Enable build with LTO" OFF)
@@ -3189,7 +3196,67 @@ target_sources(asio PRIVATE $<TARGET_OBJECTS:asio_supplementary_ca_bundle_crt>)
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
 # *****************************************************************************************
-#           json Library
+#           jsoncpp Library
+# *****************************************************************************************
+
+if (USE_SYSTEM_JSONCPP)
+  find_package(PkgConfig)
+  if (PKG_CONFIG_FOUND)
+    # IMPORTED_TARGET require cmake 3.6
+    pkg_check_modules(JSONCPP jsoncpp IMPORTED_TARGET)
+  endif()
+  if(NOT JSONCPP_FOUND)
+    message(STATUS "System jsoncpp not found, using bundled one")
+    set(USE_SYSTEM_JSONCPP OFF)
+  endif()
+endif()
+
+if (USE_SYSTEM_JSONCPP)
+  message(STATUS "Compiling with system jsoncpp")
+  list(APPEND YASS_APP_FEATURES "system jsoncpp")
+  set(SUPPORT_DEFINITIONS
+    HAVE_JSONCPP
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(CORE_LIBS PkgConfig::JSONCPP ${CORE_LIBS})
+elseif (USE_JSONCPP)
+  message(STATUS "Compiling with bundled jsoncpp library")
+  add_library(jsoncpp OBJECT
+    third_party/jsoncpp/include/json/allocator.h
+    third_party/jsoncpp/include/json/assertions.h
+    third_party/jsoncpp/include/json/config.h
+    third_party/jsoncpp/include/json/json_features.h
+    third_party/jsoncpp/include/json/forwards.h
+    third_party/jsoncpp/include/json/json.h
+    third_party/jsoncpp/include/json/reader.h
+    third_party/jsoncpp/include/json/value.h
+    third_party/jsoncpp/include/json/version.h
+    third_party/jsoncpp/include/json/writer.h
+    third_party/jsoncpp/src/lib_json/json_reader.cpp
+    third_party/jsoncpp/src/lib_json/json_tool.h
+    third_party/jsoncpp/src/lib_json/json_value.cpp
+    third_party/jsoncpp/src/lib_json/json_writer.cpp
+    third_party/jsoncpp/src/lib_json/json_valueiterator.inl
+  )
+  target_compile_definitions(jsoncpp PUBLIC
+    -DJSON_USE_EXCEPTION=0
+  )
+  target_include_directories(jsoncpp PUBLIC third_party/jsoncpp/include)
+  target_include_directories(jsoncpp PRIVATE third_party/jsoncpp/src/lib_json)
+  list(APPEND YASS_APP_FEATURES "jsoncpp")
+  set(SUPPORT_DEFINITIONS
+    HAVE_JSONCPP
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_INCLUDE_DIRS
+    third_party/jsoncpp/include
+    ${SUPPORT_INCLUDE_DIRS}
+  )
+  set(CORE_LIBS jsoncpp ${CORE_LIBS})
+endif()
+
+# *****************************************************************************************
+#           nlohmann json Library
 # *****************************************************************************************
 
 if (USE_SYSTEM_JSON)
@@ -3198,14 +3265,14 @@ if (USE_SYSTEM_JSON)
 int main() {}
 " HAVE_SYSTEM_JSON)
   if (NOT HAVE_SYSTEM_JSON)
-    message(STATUS "System nlohman json library not found, using bundled one")
+    message(STATUS "System nlohmann json library not found, using bundled one")
     set(USE_SYSTEM_JSON FALSE)
   endif()
 endif()
 
 if (USE_SYSTEM_JSON)
   message(STATUS "Compiling with system nlohmann json library")
-else()
+elseif (NOT USE_JSONCPP)
   message(STATUS "Compiling with bundled nlohmann json library")
   set(SUPPORT_INCLUDE_DIRS
     third_party/json/include
@@ -4982,6 +5049,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/boringssl/src/LICENSE               _BORINGSSL_LICENSE)
   file(READ third_party/googleurl/LICENSE                   _GOOGLEURL_LICENSE)
   file(READ third_party/json/LICENSE.MIT                    _JSON_LICENSE)
+  file(READ third_party/jsoncpp/LICENSE                     _JSONCPP_LICENSE)
   file(READ third_party/leveldb/LICENSE                     _LEVELDB_LICENSE)
   file(READ third_party/libc++/trunk/LICENSE.TXT            _LIBCXX_LICENSE)
   file(READ third_party/libc++abi/trunk/LICENSE.TXT         _LIBCXXABI_LICENSE)

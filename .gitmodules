@@ -68,3 +68,6 @@
 [submodule "third_party/mimalloc"]
 	path = third_party/mimalloc
 	url = https://github.com/Chilledheart/mimalloc
+[submodule "third_party/jsoncpp"]
+	path = third_party/jsoncpp
+	url = https://github.com/Chilledheart/jsoncpp
