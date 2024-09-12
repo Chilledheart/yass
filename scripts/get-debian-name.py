@@ -17,6 +17,7 @@ codenames = {
   "lunar" : "ubuntu-23.04-lunar",
   "mantic" : "ubuntu-23.10-mantic",
   "noble" : "ubuntu-24.04-noble",
+  "oracular" : "ubuntu-24.10-oracular",
   "stretch" : "debian-9-stretch",
   "buster" : "debian-10-buster",
   "bullseye" : "debian-11-bullseye",
