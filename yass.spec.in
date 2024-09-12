@@ -25,10 +25,10 @@
 %endif
 
 # requires nlohman json
-%if 0%{?fedora}
-%global enable_system_json_opt on
+%if 0%{?fedora} && !%{with use_libcxx}
+%global enable_system_jsoncpp_opt on
 %else
-%global enable_system_json_opt off
+%global enable_system_jsoncpp_opt off
 %endif
 
 # test failed in copr
@@ -173,8 +173,8 @@ BuildRequires: mbedtls-devel
 %if 0%{?fedora} && !%{with use_libcxx}
 BuildRequires: gperftools-devel
 %endif
-%if 0%{?fedora}
-BuildRequires: json-devel
+%if 0%{?fedora} && !%{with use_libcxx}
+BuildRequires: jsoncpp-devel
 %endif
 BuildRequires: zlib-devel
 %if 0%{?fedora}
@@ -218,7 +218,7 @@ cd build
    -DUSE_ZLIB=on -DUSE_SYSTEM_ZLIB=on \
    -DUSE_SYSTEM_NGHTTP2="%enable_system_nghttp2_opt" \
    -DUSE_SYSTEM_MBEDTLS="%enable_system_mbedtls_opt" \
-   -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
+   -DUSE_JSONCPP=on -DUSE_SYSTEM_JSONCPP="%enable_system_jsoncpp_opt" \
    -DUSE_CARES=on -DUSE_SYSTEM_CARES="%enable_system_cares_opt" \
    -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DUSE_CET="%enable_cet_opt" \

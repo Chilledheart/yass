@@ -790,6 +790,7 @@ func buildStageGenerateBuildScript() {
 	cmakeArgs = append(cmakeArgs, "-DOFFICIAL_BUILD=on")
 	cmakeArgs = append(cmakeArgs, "-DENABLE_LLD=on")
 	cmakeArgs = append(cmakeArgs, "-DUSE_ZLIB=on")
+	cmakeArgs = append(cmakeArgs, "-DUSE_JSONCPP=on")
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	if systemNameFlag == "ios" {

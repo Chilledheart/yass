@@ -16,9 +16,13 @@
 
 @_GOOGLEURL_LICENSE@
 
-=== json ==
+=== nlohmann json ==
 
 @_JSON_LICENSE@
+
+=== jsoncpp ==
+
+@_JSONCPP_LICENSE@
 
 === leveldb ==
 
