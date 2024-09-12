@@ -72,11 +72,13 @@ class ContentServer {
     enable_tls_ &= T::Type == CONNECTION_FACTORY_SERVER;
     DCHECK_LE(remote_host_sni_.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
 
-    VLOG(1) << "ContentServer (" << T::Name << ") " << " allocated memory";
+    VLOG(1) << "ContentServer (" << T::Name << ") "
+            << " allocated memory";
   }
 
   ~ContentServer() {
-    VLOG(1) << "ContentServer (" << T::Name << ") " << " freed memory";
+    VLOG(1) << "ContentServer (" << T::Name << ") "
+            << " freed memory";
 
     client_instance_ = nullptr;
 

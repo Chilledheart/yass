@@ -11,7 +11,7 @@ RUN yum clean all && \
     cmake ninja-build pkg-config perl golang \
     gtk3-devel gtk4-devel qt5-qtbase-devel qt6-qtbase-devel \
     zlib-devel c-ares-devel libnghttp2-devel curl-devel \
-    json-devel mbedtls-devel gperftools-devel && \
+    json-devel mbedtls-devel gperftools-devel jsoncpp-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
 
