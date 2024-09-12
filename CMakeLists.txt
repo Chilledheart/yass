@@ -2459,10 +2459,6 @@ if (USE_SYSTEM_TCMALLOC AND USE_TCMALLOC)
     HAVE_TCMALLOC
     ${SUPPORT_DEFINITIONS}
   )
-  set(SUPPORT_LIBS
-    ${TCMALLOC_LIB}
-    ${SUPPORT_LIBS}
-    )
 elseif (USE_TCMALLOC AND NOT WIN32)
   message(STATUS "Compiling with bundled tcmalloc support")
 
@@ -2491,10 +2487,6 @@ elseif (USE_TCMALLOC AND NOT WIN32)
     third_party/gperftools/src
     ${SUPPORT_INCLUDE_DIRS}
   )
-  set(SUPPORT_LIBS
-    ${TCMALLOC_LIB}
-    ${SUPPORT_LIBS}
-    )
 elseif (USE_TCMALLOC AND WIN32)
   message(STATUS "Compiling with bundled tcmalloc support")
 
@@ -2533,10 +2525,6 @@ elseif (USE_TCMALLOC AND WIN32)
     third_party/gperftools/src
     ${SUPPORT_INCLUDE_DIRS}
   )
-  set(SUPPORT_LIBS
-    ${TCMALLOC_LIB}
-    ${SUPPORT_LIBS}
-    )
 
   install(TARGETS tcmalloc_minimal RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
@@ -2559,6 +2547,11 @@ elseif (USE_TCMALLOC AND WIN32)
   endif()
 endif()
 
+set(CORE_LIBS
+  ${TCMALLOC_LIB}
+  ${CORE_LIBS}
+)
+
 # *****************************************************************************************
 #           mimalloc Library
 # *****************************************************************************************
@@ -2574,7 +2567,7 @@ endif()
 if (USE_SYSTEM_MIMALLOC)
   find_package(PkgConfig)
   if (PKG_CONFIG_FOUND)
-    pkg_check_modules(MIMALLOC mimalloc)
+    pkg_check_modules(MIMALLOC mimalloc IMPORTED_TARGET)
   endif()
   if(NOT MIMALLOC_FOUND)
     message(STATUS "System mimalloc not found, using bundled one")
@@ -2593,15 +2586,11 @@ if (USE_MIMALLOC AND USE_SYSTEM_MIMALLOC)
   message(STATUS "Compiling with system tcmalloc support")
   list(APPEND YASS_APP_FEATURES "system mimalloc")
 
-  set(MIMALLOC_LIB mimalloc)
+  set(MIMALLOC_LIB PkgConfig::MIMALLOC)
 
   set(SUPPORT_DEFINITIONS
     HAVE_MIMALLOC
     ${SUPPORT_DEFINITIONS}
-  )
-  set(SUPPORT_LIBS
-    ${SUPPORT_LIBS}
-    ${MIMALLOC_LIB}
   )
 
 elseif(USE_MIMALLOC AND NOT WIN32)
@@ -2628,10 +2617,6 @@ elseif(USE_MIMALLOC AND NOT WIN32)
     HAVE_MIMALLOC
     ${SUPPORT_DEFINITIONS}
   )
-  set(SUPPORT_LIBS
-    ${SUPPORT_LIBS}
-    ${MIMALLOC_LIB}
-    )
 
   list(APPEND YASS_APP_FEATURES "mimalloc")
 elseif(USE_MIMALLOC AND WIN32)
@@ -2663,10 +2648,6 @@ elseif(USE_MIMALLOC AND WIN32)
     HAVE_MIMALLOC
     ${SUPPORT_DEFINITIONS}
   )
-  set(SUPPORT_LIBS
-    ${SUPPORT_LIBS}
-    ${MIMALLOC_LIB}
-    )
 
   add_library(mimalloc_override OBJECT src/mimalloc.cc)
   target_link_libraries(mimalloc_override PRIVATE mimalloc)
@@ -2689,6 +2670,11 @@ elseif(USE_MIMALLOC AND WIN32)
 
   list(APPEND YASS_APP_FEATURES "mimalloc (dll)")
 endif()
+
+set(CORE_LIBS
+  ${CORE_LIBS}
+  ${MIMALLOC_LIB}
+)
 
 function(minject_patch_exetuable target_name)
   if (NOT USE_MIMALLOC_MINJECT)
@@ -2759,7 +2745,7 @@ if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic" AND NOT ALLOW_XP AND ${CMAKE_BU
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   list(APPEND YASS_APP_FEATURES "crashpad")
-  set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  set(CORE_LIBS yass_crashpad ${CORE_LIBS})
   set(USE_CRASHPAD ON)
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
@@ -2837,7 +2823,7 @@ if (UNIX AND (${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATC
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   list(APPEND YASS_APP_FEATURES "crashpad")
-  set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  set(CORE_LIBS yass_crashpad ${CORE_LIBS})
   set(USE_CRASHPAD ON)
   if (IOS)
     add_library(crashpad_handler_common STATIC IMPORTED)
@@ -3392,7 +3378,7 @@ endif()
 if (USE_SYSTEM_CARES)
   find_package(PkgConfig)
   if (PKG_CONFIG_FOUND)
-    pkg_check_modules(CARES libcares)
+    pkg_check_modules(CARES libcares IMPORTED_TARGET)
   endif()
   if(NOT CARES_FOUND)
     message(STATUS "System cares not found, using bundled one")
@@ -3407,9 +3393,7 @@ if (USE_SYSTEM_CARES AND USE_CARES)
     HAVE_C_ARES
     ${SUPPORT_DEFINITIONS}
   )
-  include_directories(${CARES_INCLUDE_DIRS})
-  link_directories(${CARES_LIBRARY_DIRS})
-  link_libraries(${CARES_LIBRARIES})
+  set(SUPPORT_LIBS PkgConfig::CARES ${SUPPORT_LIBS})
 elseif (USE_CARES)
   message(STATUS "Compiling with bundled cares")
   list(APPEND YASS_APP_FEATURES "c-ares")
@@ -3435,7 +3419,7 @@ endif()
 if (USE_SYSTEM_NGHTTP2)
   find_package(PkgConfig)
   if (PKG_CONFIG_FOUND)
-    pkg_check_modules(NGHTTP2 libnghttp2)
+    pkg_check_modules(NGHTTP2 libnghttp2 IMPORTED_TARGET)
   endif()
   if(NOT NGHTTP2_FOUND)
     message(STATUS "System nghttp2 not found, using bundled one")
@@ -3450,9 +3434,7 @@ if (USE_SYSTEM_NGHTTP2 AND USE_NGHTTP2)
     HAVE_NGHTTP2
     ${SUPPORT_DEFINITIONS}
   )
-  include_directories(${NGHTTP2_INCLUDE_DIRS})
-  link_directories(${NGHTTP2_LIBRARY_DIRS})
-  link_libraries(${NGHTTP2_LIBRARIES})
+  set(SUPPORT_LIBS PkgConfig::NGHTTP2 ${SUPPORT_LIBS})
 elseif (USE_NGHTTP2)
   message(STATUS "Compiling with bundled libnghttp2")
   set(ENABLE_APP OFF CACHE BOOL "")
@@ -3614,7 +3596,7 @@ endif()
 if (USE_SYSTEM_SQLITE)
   find_package(PkgConfig)
   if (PKG_CONFIG_FOUND)
-    pkg_check_modules(SQLITE sqlite3)
+    pkg_check_modules(SQLITE sqlite3 IMPORTED_TARGET)
   endif()
   if(NOT SQLITE_FOUND)
     message(STATUS "System sqlite3 not found, using bundled one")
@@ -3629,9 +3611,7 @@ if (USE_SYSTEM_SQLITE AND USE_SQLITE)
     HAVE_SQLITE
     ${SUPPORT_DEFINITIONS}
   )
-  include_directories(${SQLITE_INCLUDE_DIRS})
-  link_directories(${SQLITE_LIBRARY_DIRS})
-  link_libraries(${SQLITE_LIBRARIES})
+  set(SUPPORT_LIBS PkgConfig::SQLITE ${SUPPORT_LIBS})
 elseif (USE_SQLITE)
   message(STATUS "Compiling with bundled sqlite3 library")
   add_subdirectory(third_party/sqlite EXCLUDE_FROM_ALL)
@@ -4065,18 +4045,6 @@ target_link_libraries(yass_core PUBLIC url
   asio_core
   )
 
-if (USE_CRASHPAD)
-  target_link_libraries(yass_core PUBLIC yass_crashpad)
-endif()
-
-if (USE_TCMALLOC)
-  target_link_libraries(yass_core PUBLIC ${TCMALLOC_LIB})
-endif()
-
-if (USE_MIMALLOC)
-  target_link_libraries(yass_core PUBLIC ${MIMALLOC_LIB})
-endif()
-
 if (APPLE)
   target_link_libraries(yass_core PUBLIC -Wl,-framework,Foundation)
   target_link_libraries(yass_core PUBLIC -Wl,-framework,SystemConfiguration)
@@ -4093,6 +4061,9 @@ target_include_directories(yass_core PRIVATE
 
 target_compile_definitions(yass_core PUBLIC
   ${SUPPORT_DEFINITIONS})
+
+target_link_libraries(yass_core PUBLIC
+  ${CORE_LIBS})
 
 set(SUPPORT_LIBS
   yass_core
