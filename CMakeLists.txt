@@ -435,6 +435,13 @@ include(CMakeDependentOption)
 
 option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
+cmake_dependent_option(
+  CLI_STATIC_BUILD "Build with static build cli." OFF
+  "CLI AND LINUX" OFF)
+cmake_dependent_option(
+  SERVER_STATIC_BUILD "Build with static build server." OFF
+  "SERVER AND LINUX" OFF)
+
 option(GUI "Build against GUI." OFF)
 
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
@@ -4332,6 +4339,9 @@ if (CLI)
     set_property(TARGET yass_cli
                  PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
   endif()
+  if (CLI_STATIC_BUILD)
+    target_link_options(yass_cli PRIVATE "-static")
+  endif()
 
   if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
@@ -4389,6 +4399,9 @@ if (SERVER)
   if (USE_LTO_CMAKE)
     set_property(TARGET yass_server
                  PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
+  if (SERVER_STATIC_BUILD)
+    target_link_options(yass_server PRIVATE "-static")
   endif()
 
   if (WIN32)
