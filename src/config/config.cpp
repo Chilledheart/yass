@@ -39,7 +39,7 @@ bool ReadConfig() {
   client_required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
   client_required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
 
-  if (pType & YASS_CLIENT_MASK) {
+  if (pType_IsClient()) {
     required_fields_loaded &= client_required_fields_loaded;
   }
 
@@ -69,11 +69,11 @@ bool ReadConfig() {
   config_impl->Read("cacert", &FLAGS_cacert);
   config_impl->Read("capath", &FLAGS_capath);
   config_impl->Read("certificate_chain_file", &FLAGS_certificate_chain_file);
-  if (pType & YASS_SERVER_MASK) {
+  if (pType_IsServer()) {
     config_impl->Read("private_key_file", &FLAGS_private_key_file);
     config_impl->Read("private_key_password", &FLAGS_private_key_password, true);
   }
-  if (pType & YASS_CLIENT_MASK) {
+  if (pType_IsClient()) {
     config_impl->Read("insecure_mode", &FLAGS_insecure_mode);
     config_impl->Read("enable_post_quantum_kyber", &FLAGS_enable_post_quantum_kyber);
   }
@@ -141,11 +141,11 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("cacert", FLAGS_cacert);
   all_fields_written &= config_impl->Write("capath", FLAGS_capath);
   all_fields_written &= config_impl->Write("certificate_chain_file", FLAGS_certificate_chain_file);
-  if (pType & YASS_SERVER_MASK) {
+  if (pType_IsServer()) {
     all_fields_written &= config_impl->Write("private_key_file", FLAGS_private_key_file);
     all_fields_written &= config_impl->Write("private_key_password", FLAGS_private_key_password);
   }
-  if (pType & YASS_CLIENT_MASK) {
+  if (pType_IsClient()) {
     all_fields_written &= config_impl->Write("insecure_mode", FLAGS_insecure_mode);
     all_fields_written &= config_impl->Write("enable_post_quantum_kyber", FLAGS_enable_post_quantum_kyber);
   }
