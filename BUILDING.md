@@ -15,8 +15,8 @@ Run the following command in ADMINISTRATIVE shell:
 ```
 choco install 7zip.install
 choco install git.install
-choco install strawberryperl --version=5.38.2.2
-choco install cmake.portable --version=3.28.6
+choco install strawberryperl
+choco install cmake.portable
 choco install ninja
 choco install golang
 ```
@@ -68,7 +68,7 @@ ninja yass
 ## Windows (MSVC)
 
 1. Make sure you have [Git for Windows][gitforwindows] installed.
-2. Make sure you have [Perl], [CMake] (3.13 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+2. Make sure you have [Perl], [CMake] (3.16 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
@@ -149,7 +149,7 @@ Run in `Console`:
 sudo apt-get install -y cmake ninja-build pkg-config perl gettext libgtk-3-dev golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.13 or above).
+Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.16 or above).
 
 You might want to give these APT/PPA sites a look if the requirements are not meet:
 
@@ -186,7 +186,7 @@ or (for RHEL/CentOS users)
 sudo yum install -y cmake3 ninja-build pkg-config perl gtk3-devel gettext golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.13 or above).
+Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.16 or above).
 
 You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
 
