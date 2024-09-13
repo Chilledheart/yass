@@ -56,6 +56,7 @@ var clangPath string
 var useLibCxxFlag bool
 var enableLtoFlag bool
 var useMoldFlag bool
+var useStaticBuildFlag bool
 
 var clangTidyModeFlag bool
 
@@ -164,6 +165,8 @@ func InitFlag() {
 
 	builtClangPath, _ := filepath.Abs(filepath.Join(projectDir, "third_party", "llvm-build", "Release+Asserts"))
 	flag.StringVar(&clangPath, "clang-path", builtClangPath, "Compiler clang's path")
+
+	flag.BoolVar(&useStaticBuildFlag, "use-static-build", false, "Use Static Build for CLI and Server")
 
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 	flag.BoolVar(&enableLtoFlag, "enable-lto", true, "Enable lto")
@@ -792,6 +795,9 @@ func buildStageGenerateBuildScript() {
 	cmakeArgs = append(cmakeArgs, "-DUSE_ZLIB=on")
 	cmakeArgs = append(cmakeArgs, "-DUSE_JSONCPP=on")
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
+	if useStaticBuildFlag {
+		cmakeArgs = append(cmakeArgs, "-DCLI_STATIC_BUILD=ON", "-DSERVER_STATIC_BUILD=ON")
+	}
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	if systemNameFlag == "ios" {
 		cmakeArgs = append(cmakeArgs, "-G", "Xcode")
