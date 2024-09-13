@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2024 Chilledheart  */
+/* Copyright (c) 2024 Chilledheart  */
 
 #include "config/config_ptype.hpp"
 

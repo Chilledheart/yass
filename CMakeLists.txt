@@ -3245,6 +3245,10 @@ elseif (USE_JSONCPP)
     third_party/jsoncpp/src/lib_json/json_writer.cpp
     third_party/jsoncpp/src/lib_json/json_valueiterator.inl
   )
+  if (USE_LTO_CMAKE)
+    set_property(TARGET jsoncpp
+      PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
   target_compile_definitions(jsoncpp PUBLIC
     -DJSON_USE_EXCEPTION=0
   )
@@ -4143,6 +4147,7 @@ target_link_libraries(yass_core PUBLIC
 
 set(SUPPORT_LIBS
   yass_core
+  ${CORE_LIBS}
   ${SUPPORT_LIBS})
 
 set(files
