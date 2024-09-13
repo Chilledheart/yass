@@ -8,7 +8,8 @@
 #include <deque>
 
 #include "channel.hpp"
-#include "config/config.hpp"
+#include "config/config_network.hpp"
+#include "config/config_ptype.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"
@@ -454,7 +455,7 @@ class stream : public RefCountedThreadSafe<stream> {
       return;
     }
     connected_ = true;
-    if (config::pType & config::YASS_CLIENT_MASK) {
+    if (config::pType_IsClient()) {
       SetTCPCongestion(socket_.native_handle(), ec);
       SetTCPKeepAlive(socket_.native_handle(), ec);
     }
