@@ -262,6 +262,6 @@ ninja yass
 [NASM]: https://www.nasm.us/
 [Xcode]: https://apps.apple.com/us/app/xcode/id497799835?mt=12
 [HomeBrew]: https://docs.brew.sh/Installation
-[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.6/LLVM-18.1.6-win64.exe
+[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/LLVM-18.1.8-win64.exe
 [msys2]: https://www.msys2.org/
 [EPEL]: https://docs.fedoraproject.org/en-US/epel
