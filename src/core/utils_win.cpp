@@ -164,7 +164,7 @@ bool SetCurrentThreadName(const std::string& name) {
   return SUCCEEDED(ret);
 }
 
-uint64_t GetMonotonicTime() {
+static uint64_t GetMonotonicTimeQPC() {
   static LARGE_INTEGER StartTime, Frequency;
   static bool started;
 
@@ -197,10 +197,24 @@ uint64_t GetMonotonicTime() {
   // to microseconds *before* dividing by ticks-per-second.
   //
 
-  ElapsedNanoseconds.QuadPart =
-      static_cast<double>(ElapsedNanoseconds.QuadPart) * NS_PER_SECOND / static_cast<double>(Frequency.QuadPart);
+  ElapsedNanoseconds.QuadPart *= NS_PER_SECOND;
+  ElapsedNanoseconds.QuadPart /= Frequency.QuadPart;
 
   return ElapsedNanoseconds.QuadPart;
+}
+
+uint64_t GetMonotonicTime() {
+#if _WIN32_WINNT >= 0x0600
+  return GetMonotonicTimeQPC();
+#else
+  /* if vista or later */
+  static const auto fPointer =
+      reinterpret_cast<void*>(::GetProcAddress(::GetModuleHandleW(L"Kernel32.dll"), "GetTickCount64"));
+  if (fPointer) {
+    return GetMonotonicTimeQPC();
+  }
+  return GetTickCount() * 1000000;
+#endif
 }
 
 static bool IsHandleConsole(HANDLE handle) {
