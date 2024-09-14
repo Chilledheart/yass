@@ -43,7 +43,9 @@ uint64_t GetMonotonicTime() {
     PLOG(WARNING) << "clock_gettime failed";
     return 0;
   }
-  return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND + ts.tv_nsec - start_ts.tv_nsec;
+  ts.tv_sec -= start_ts.tv_sec;
+  ts.tv_nsec -= start_ts.tv_nsec;
+  return static_cast<uint64_t>(ts.tv_sec) * NS_PER_SECOND + ts.tv_nsec;
 }
 
 #endif  // BUILDFLAG(IS_FREEBSD)
