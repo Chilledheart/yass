@@ -382,7 +382,11 @@ static uint64_t MonotoicTickCount();
 
 uint64_t MonotoicTickCount() {
 #if BUILDFLAG(IS_WIN)
+#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+  return GetTickCount64();
+#else
   return GetTickCount();
+#endif
 #elif BUILDFLAG(IS_APPLE)
   return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
 #elif BUILDFLAG(IS_POSIX)
