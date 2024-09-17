@@ -32,7 +32,7 @@ ABSL_FLAG(bool, background, false, "start up background");
 
 YASSApp* mApp = nullptr;
 
-static const char* kAppId = "io.github.Chilledheart.yass";
+static const char* kAppId = "io.github.chilledheart.yass";
 static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
 extern "C" {
