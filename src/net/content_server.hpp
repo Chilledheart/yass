@@ -80,6 +80,10 @@ class ContentServer {
     VLOG(1) << "ContentServer (" << T::Name << ") "
             << " freed memory";
 
+    CHECK_EQ(pending_next_listen_ctxes_.size(), 0u) << "ContentServer freed on pending listen ctx";
+    CHECK_EQ(opened_connections_, 0u) << "ContentServer freed on non-closed connections";
+    CHECK_EQ(connection_map_.size(), 0u) << "ContentServer freed on non-closed connections";
+
     client_instance_ = nullptr;
 
     work_guard_.reset();
@@ -170,6 +174,9 @@ class ContentServer {
           }
         }
       }
+
+      pending_next_listen_ctxes_.clear();
+
       if (connection_map_.empty()) {
         LOG(WARNING) << "No more connections alive... ready to stop";
         work_guard_.reset();
@@ -195,6 +202,8 @@ class ContentServer {
           }
         }
       }
+
+      pending_next_listen_ctxes_.clear();
 
       auto connection_map = std::move(connection_map_);
       // FIXME silence some false-positive warning from abseil-cpp
