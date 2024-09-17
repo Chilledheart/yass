@@ -18,10 +18,6 @@
 
 @_GOOGLEURL_LICENSE@
 
-=== nlohmann json ==
-
-@_JSON_LICENSE@
-
 === jsoncpp ==
 
 @_JSONCPP_LICENSE@

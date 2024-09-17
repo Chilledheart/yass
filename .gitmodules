@@ -26,9 +26,6 @@
 [submodule "third_party/libc++"]
 	path = third_party/libc++/trunk
 	url = https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libcxx
-[submodule "third_party/json"]
-	path = third_party/json
-	url = https://github.com/nlohmann/json
 [submodule "third_party/googleurl"]
 	path = third_party/googleurl
 	url = https://quiche.googlesource.com/googleurl/
