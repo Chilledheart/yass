@@ -5077,7 +5077,7 @@ endif()
 # *****************************************************************************************
 
 if(NOT CMAKE_SKIP_INSTALL_RULES)
-  file(READ LICENSE                                         _YASS_LICENSE)
+  file(READ LICENSES/GPL-2.0                                _YASS_LICENSE)
   file(READ third_party/abseil-cpp/LICENSE                  _ABSEIL_CPP_LICENSE)
   file(READ third_party/asio/asio/LICENSE_1_0.txt           _ASIO_LICENSE)
   file(READ third_party/boringssl/src/LICENSE               _BORINGSSL_LICENSE)
@@ -5102,7 +5102,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/mimalloc/LICENSE                    _MIMALLOC_LICENSE)
 
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
-  configure_file("LICENSE.cmake.in" "${LICENSE_FILE}" @ONLY)
+  configure_file("LICENSES/LICENSE.cmake.in" "${LICENSE_FILE}" @ONLY)
   install(FILES "${LICENSE_FILE}" DESTINATION "${CMAKE_INSTALL_DOCDIR}")
 endif()
 
