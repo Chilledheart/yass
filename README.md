@@ -14,15 +14,16 @@ yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/
 Because we are reusing chromium's network stack directly,
 we are following [chromium's release schedule](https://chromiumdash.appspot.com/schedule) and delivering new versions based on its beta branch.
 
-- [Latest M129's Release (1.13.x)](https://github.com/Chilledheart/yass/releases/tag/1.13.2) will become Stable since _Sep 17, 2024_.
-- [Latest M128's Release (1.12.x)](https://github.com/Chilledheart/yass/releases/tag/1.12.5) has become Stable since _Aug 20, 2024_ (Extended Support).
-- [Latest M127's Release (1.11.x)](https://github.com/Chilledheart/yass/releases/tag/1.11.5) has become Stable since _Jul 23, 2024_
-- [Latest M126's Release (1.10.x)](https://github.com/Chilledheart/yass/releases/tag/1.10.7) has become Stable since _Jun 11, 2024_ (Extended Support)
-- [Latest M125's Release (1.9.x)](https://github.com/Chilledheart/yass/releases/tag/1.9.7) has become Stable since _May 14, 2024_
-- [Latest M124's Release (1.8.x)](https://github.com/Chilledheart/yass/releases/tag/1.8.7) has become Stable since _Apr 16, 2024_ (Extended Support)
-- [Latest M123's Release (1.7.x)](https://github.com/Chilledheart/yass/releases/tag/1.7.7) has become Stable since _Mar 19, 2024_
-- [Latest M122's Release (1.6.x)](https://github.com/Chilledheart/yass/releases/tag/1.6.5) has become Stable since _Feb 20, 2024_ (Extended Support)
-- [Latest M121's Release (1.5.x)](https://github.com/Chilledheart/yass/releases/tag/1.5.24) has become Stable since _Jan 23, 2024_
+- [Latest M130's Release (1.14.x)](https://github.com/Chilledheart/yass/releases/tag/1.14.0) will become Stable Release since _Oct 15, 2024_ (Extended Support).
+- [Latest M129's Release (1.13.x)](https://github.com/Chilledheart/yass/releases/tag/1.13.2) has become Stable Release since _Sep 17, 2024_.
+- [Latest M128's Release (1.12.x)](https://github.com/Chilledheart/yass/releases/tag/1.12.5) has become Stable Release since _Aug 20, 2024_ (Extended Support).
+- [Latest M127's Release (1.11.x)](https://github.com/Chilledheart/yass/releases/tag/1.11.5) has become Stable Release since _Jul 23, 2024_
+- [Latest M126's Release (1.10.x)](https://github.com/Chilledheart/yass/releases/tag/1.10.7) has become Stable Release since _Jun 11, 2024_ (Extended Support)
+- [Latest M125's Release (1.9.x)](https://github.com/Chilledheart/yass/releases/tag/1.9.7) has become Stable Release since _May 14, 2024_
+- [Latest M124's Release (1.8.x)](https://github.com/Chilledheart/yass/releases/tag/1.8.7) has become Stable Release since _Apr 16, 2024_ (Extended Support)
+- [Latest M123's Release (1.7.x)](https://github.com/Chilledheart/yass/releases/tag/1.7.7) has become Stable Release since _Mar 19, 2024_
+- [Latest M122's Release (1.6.x)](https://github.com/Chilledheart/yass/releases/tag/1.6.5) has become Stable Release since _Feb 20, 2024_ (Extended Support)
+- [Latest M121's Release (1.5.x)](https://github.com/Chilledheart/yass/releases/tag/1.5.24) has become Stable Release since _Jan 23, 2024_
 
 ### Prebuilt binaries (Linux)
 - GTK3 [download rpm][gtk3_rpm_url] or [download deb][gtk3_deb_url] (minimum requirement: _CentOS 8_ or _Ubuntu 16.04_)
@@ -151,38 +152,38 @@ Please visit [the pages site](https://letshack.info).
 [KB2999226]: https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
 
-[gtk3_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk3.el8.x86_64.1.13.2.rpm
-[gtk3_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk3-ubuntu-16.04-xenial_amd64.1.13.2.deb
-[qt5_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt5.el8.x86_64.1.13.2.rpm
-[qt5_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt5-ubuntu-16.04-xenial_amd64.1.13.2.deb
-[gtk4_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk4.lp155.x86_64.1.13.2.rpm
-[gtk4_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-gtk4-ubuntu-22.04-jammy_amd64.1.13.2.deb
-[qt6_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt6.lp155.x86_64.1.13.2.rpm
-[qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-qt6-ubuntu-22.04-jammy_amd64.1.13.2.deb
+[gtk3_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-gtk3.el8.x86_64.1.14.0.rpm
+[gtk3_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-gtk3-ubuntu-16.04-xenial_amd64.1.14.0.deb
+[qt5_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-qt5.el8.x86_64.1.14.0.rpm
+[qt5_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-qt5-ubuntu-16.04-xenial_amd64.1.14.0.deb
+[gtk4_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-gtk4.lp155.x86_64.1.14.0.rpm
+[gtk4_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-gtk4-ubuntu-22.04-jammy_amd64.1.14.0.deb
+[qt6_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-qt6.lp155.x86_64.1.14.0.rpm
+[qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-qt6-ubuntu-22.04-jammy_amd64.1.14.0.deb
 
-[qt5_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-x86_64-1.13.2.flatpak
-[gtk4_arch_url]: https://repo.archlinuxcn.org/x86_64/yass-proxy-1.13.2-1-x86_64.pkg.tar.zst
+[qt5_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-x86_64-1.14.0.flatpak
+[gtk4_arch_url]: https://repo.archlinuxcn.org/x86_64/yass-proxy-1.14.0-1-x86_64.pkg.tar.zst
 
-[cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-amd64-1.13.2.tgz
-[cli_tgz_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-amd64-1.13.2.tgz
-[cli_tgz_arm64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-arm64-1.13.2.tgz
-[cli_tgz_loongarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-loongarch64-1.13.2.tgz
-[cli_tgz_riscv64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-riscv64-1.13.2.tgz
-[cli_tgz_riscv32_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-release-riscv32-1.13.2.tgz
+[cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-amd64-1.14.0.tgz
+[cli_tgz_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-amd64-1.14.0.tgz
+[cli_tgz_arm64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-arm64-1.14.0.tgz
+[cli_tgz_loongarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-loongarch64-1.14.0.tgz
+[cli_tgz_riscv64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-riscv64-1.14.0.tgz
+[cli_tgz_riscv32_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-riscv32-1.14.0.tgz
 
-[cli_openwrt_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-openwrt-release-x86_64-1.13.2.tgz
-[cli_openwrt_i486_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-openwrt-release-i486-1.13.2.tgz
-[cli_openwrt_aarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-openwrt-release-aarch64-1.13.2.tgz
+[cli_openwrt_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-openwrt-release-x86_64-1.14.0.tgz
+[cli_openwrt_i486_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-openwrt-release-i486-1.14.0.tgz
+[cli_openwrt_aarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-openwrt-release-aarch64-1.14.0.tgz
 
-[cli_musl_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-musl-release-amd64-1.13.2.tgz
-[cli_musl_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass_cli-linux-musl-release-i386-1.13.2.tgz
+[cli_musl_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-musl-release-amd64-1.14.0.tgz
+[cli_musl_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-musl-release-i386-1.14.0.tgz
 
-[android_64_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-android-release-arm64-1.13.2.apk
-[android_32_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-android-release-arm-1.13.2.apk
+[android_64_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-android-release-arm64-1.14.0.apk
+[android_32_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-android-release-arm-1.14.0.apk
 
-[windows_64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-mingw-win7-release-x86_64-1.13.2-system-installer.exe
-[windows_32_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-mingw-winxp-release-i686-1.13.2-system-installer.exe
+[windows_64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-mingw-win7-release-x86_64-1.14.0-system-installer.exe
+[windows_32_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-mingw-winxp-release-i686-1.14.0-system-installer.exe
 
-[windows_arm64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-mingw-release-aarch64-1.13.2-system-installer.exe
-[macos_intel_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-macos-release-x64-1.13.2.dmg
-[macos_arm_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.13.2/yass-macos-release-arm64-1.13.2.dmg
+[windows_arm64_installer_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-mingw-release-aarch64-1.14.0-system-installer.exe
+[macos_intel_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-macos-release-x64-1.14.0.dmg
+[macos_arm_dmg_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-macos-release-arm64-1.14.0.dmg
