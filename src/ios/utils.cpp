@@ -9,15 +9,9 @@
 #include <netdb.h>
 #include <sys/socket.h>
 
-#ifdef HAVE_JSONCPP
 #include <json/json.h>
-#else
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
-#endif
 
 std::string serializeTelemetryJson(uint64_t total_rx_bytes, uint64_t total_tx_bytes) {
-#ifdef HAVE_JSONCPP
   Json::Value j = Json::objectValue;
   j["total_rx_bytes"] = total_rx_bytes;
   j["total_tx_bytes"] = total_tx_bytes;
@@ -25,16 +19,9 @@ std::string serializeTelemetryJson(uint64_t total_rx_bytes, uint64_t total_tx_by
   builder["commentStyle"] = "None";
   builder["indentation"] = "    ";
   return Json::writeString(builder, j);
-#else
-  json j;
-  j["total_rx_bytes"] = total_rx_bytes;
-  j["total_tx_bytes"] = total_tx_bytes;
-  return j.dump(4);
-#endif
 }
 
 bool parseTelemetryJson(std::string_view resp, uint64_t* total_rx_bytes, uint64_t* total_tx_bytes) {
-#ifdef HAVE_JSONCPP
   Json::Value root;
   Json::CharReaderBuilder builder;
   builder["collectComments"] = false;
@@ -54,19 +41,5 @@ bool parseTelemetryJson(std::string_view resp, uint64_t* total_rx_bytes, uint64_
   if (root.isMember("total_tx_bytes") && root["total_tx_bytes"].isUInt64()) {
     *total_tx_bytes = root["total_tx_bytes"].asUInt64();
   }
-#else
-  auto root = json::parse(resp, nullptr, false);
-  if (root.is_discarded() || !root.is_object()) {
-    return false;
-  }
-  *total_rx_bytes = 0;
-  if (root.contains("total_rx_bytes") && root["total_rx_bytes"].is_number_unsigned()) {
-    *total_rx_bytes = root["total_rx_bytes"].get<uint64_t>();
-  }
-  *total_tx_bytes = 0;
-  if (root.contains("total_tx_bytes") && root["total_tx_bytes"].is_number_unsigned()) {
-    *total_tx_bytes = root["total_tx_bytes"].get<uint64_t>();
-  }
-#endif
   return true;
 }

@@ -3233,10 +3233,6 @@ endif()
 if (USE_SYSTEM_JSONCPP)
   message(STATUS "Compiling with system jsoncpp")
   list(APPEND YASS_APP_FEATURES "system jsoncpp")
-  set(SUPPORT_DEFINITIONS
-    HAVE_JSONCPP
-    ${SUPPORT_DEFINITIONS}
-  )
   set(CORE_LIBS PkgConfig::JSONCPP ${CORE_LIBS})
 elseif (USE_JSONCPP)
   message(STATUS "Compiling with bundled jsoncpp library")
@@ -3267,10 +3263,6 @@ elseif (USE_JSONCPP)
   target_include_directories(jsoncpp PUBLIC third_party/jsoncpp/include)
   target_include_directories(jsoncpp PRIVATE third_party/jsoncpp/src/lib_json)
   list(APPEND YASS_APP_FEATURES "jsoncpp")
-  set(SUPPORT_DEFINITIONS
-    HAVE_JSONCPP
-    ${SUPPORT_DEFINITIONS}
-  )
   set(SUPPORT_INCLUDE_DIRS
     third_party/jsoncpp/include
     ${SUPPORT_INCLUDE_DIRS}
