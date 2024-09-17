@@ -31,8 +31,6 @@ we are following [chromium's release schedule](https://chromiumdash.appspot.com/
 - GTK4 [download rpm][gtk4_rpm_url] or [download deb][gtk4_deb_url] (minimum requirement: _openSUSE Leap 15.5_, _CentOS 9_ or _Ubuntu 22.04_)
 - Qt6 [download rpm][qt6_rpm_url] or [download deb][qt6_deb_url] (minimum requirement: _openSUSE Leap 15.5_, _CentOS 9_ with epel or _Ubuntu 22.04_)
 
-- GTK4 (Archlinux) [download binary pkg file][gtk4_arch_url] (PGP Keys: `sudo pacman -S archlinuxcn-keyring`)
-
 [![aur yass-proxy-gtk3](https://img.shields.io/aur/version/yass-proxy-gtk3)](https://aur.archlinux.org/packages/yass-proxy-gtk3)
 [![aur yass-proxy-qt5](https://img.shields.io/aur/version/yass-proxy-qt5)](https://aur.archlinux.org/packages/yass-proxy-qt5)
 [![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
@@ -156,7 +154,6 @@ Please visit [the pages site](https://letshack.info).
 [qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-qt6-ubuntu-22.04-jammy_amd64.1.14.0.deb
 
 [qt5_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass-x86_64-1.14.0.flatpak
-[gtk4_arch_url]: https://repo.archlinuxcn.org/x86_64/yass-proxy-1.14.0-1-x86_64.pkg.tar.zst
 
 [cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-amd64-1.14.0.tgz
 [cli_tgz_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.14.0/yass_cli-linux-release-amd64-1.14.0.tgz
