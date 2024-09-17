@@ -53,11 +53,8 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 - iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
 - Windows [download 64-bit installer][windows_64_installer_url] (require [KB2999226] on _windows 7/8/8.1_) or [download 32-bit installer][windows_32_installer_url] (require [vc 2010 runtime][vs2010_x86] on _windows xp sp3_) or [download arm64 installer][windows_arm64_installer_url] (require _windows 10/11_)
 - macOS [download intel dmg][macos_intel_dmg_url] or [download apple silicon dmg][macos_arm_dmg_url] (require _macOS 10.14_ or above)
-> via [Homebrew](https://brew.sh): `brew install --formula yass-cli`
 > via [Homebrew Cask](https://brew.sh): `brew install --cask yass`
 
-[![Homebrew Version](https://img.shields.io/homebrew/v/yass-cli)](https://formulae.brew.sh/formula/yass-cli)
-[![Homebrew Downloads](https://img.shields.io/homebrew/installs/dm/yass-cli)](https://formulae.brew.sh/formula/yass-cli)
 [![Homebrew Cask](https://img.shields.io/homebrew/cask/v/yass)](https://formulae.brew.sh/cask/yass)
 
 - Flatpak for Linux (Qt5) [download flatpak][qt5_flatpak_x86_64_url] (unsandboxed edition) for _x86_64_ machine only.
