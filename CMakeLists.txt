@@ -511,13 +511,10 @@ cmake_dependent_option(
   USE_SYSTEM_ZLIB "Build with system or vendored zlib" OFF
   USE_ZLIB OFF)
 
-option(USE_JSONCPP "Build with jsoncpp library" OFF)
+option(USE_JSONCPP "Build with jsoncpp library" ON)
 cmake_dependent_option(
   USE_SYSTEM_JSONCPP "Build with system or vendered jsoncpp library" OFF
   "USE_JSONCPP AND NOT USE_LIBCXX" OFF)
-cmake_dependent_option(
-  USE_SYSTEM_JSON "Build with system or vendered nlohmann json library" OFF
-  "NOT USE_JSONCPP" OFF)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source (linux only)" OFF)
 option(ENABLE_LTO "Enable build with LTO" OFF)
@@ -3217,6 +3214,10 @@ set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 #           jsoncpp Library
 # *****************************************************************************************
 
+if (USE_SYSTEM_JSON)
+  message(WARNING "Compiling with nlohmann json support is no longer supported, ignoring...")
+endif()
+
 if (USE_SYSTEM_JSONCPP)
   find_package(PkgConfig)
   if (PKG_CONFIG_FOUND)
@@ -3275,31 +3276,8 @@ elseif (USE_JSONCPP)
     ${SUPPORT_INCLUDE_DIRS}
   )
   set(CORE_LIBS jsoncpp ${CORE_LIBS})
-endif()
-
-# *****************************************************************************************
-#           nlohmann json Library
-# *****************************************************************************************
-
-if (USE_SYSTEM_JSON)
-  check_cxx_source_compiles ("
-#include <nlohmann/json.hpp>
-int main() {}
-" HAVE_SYSTEM_JSON)
-  if (NOT HAVE_SYSTEM_JSON)
-    message(STATUS "System nlohmann json library not found, using bundled one")
-    set(USE_SYSTEM_JSON FALSE)
-  endif()
-endif()
-
-if (USE_SYSTEM_JSON)
-  message(STATUS "Compiling with system nlohmann json library")
-elseif (NOT USE_JSONCPP)
-  message(STATUS "Compiling with bundled nlohmann json library")
-  set(SUPPORT_INCLUDE_DIRS
-    third_party/json/include
-    ${SUPPORT_INCLUDE_DIRS}
-  )
+else()
+  message(FATAL_ERROR "Compiling without jsoncpp support is no longer supported")
 endif()
 
 # *****************************************************************************************
@@ -5082,7 +5060,6 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/asio/asio/LICENSE_1_0.txt           _ASIO_LICENSE)
   file(READ third_party/boringssl/src/LICENSE               _BORINGSSL_LICENSE)
   file(READ third_party/googleurl/LICENSE                   _GOOGLEURL_LICENSE)
-  file(READ third_party/json/LICENSE.MIT                    _JSON_LICENSE)
   file(READ third_party/jsoncpp/LICENSE                     _JSONCPP_LICENSE)
   file(READ third_party/leveldb/LICENSE                     _LEVELDB_LICENSE)
   file(READ third_party/libc++/trunk/LICENSE.TXT            _LIBCXX_LICENSE)
