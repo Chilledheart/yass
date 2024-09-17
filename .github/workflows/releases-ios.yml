@@ -87,6 +87,10 @@ jobs:
       - name: Set up Xcode to 15.4
         run: |
           sudo xcode-select -s /Applications/Xcode_15.4.app
+      # FIXME
+      #- name: Set up Xcode to 16.0
+      #  run: |
+      #    sudo xcode-select -s /Applications/Xcode_16.0.app
       - name: Build and Run tests (arm64)
         if: ${{ matrix.arch == 'arm64' }}
         run: |
