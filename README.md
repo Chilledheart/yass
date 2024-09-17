@@ -2,9 +2,6 @@
 
 yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/socks5h protocol running on PC and mobile devices.
 
-## License
-[![License](https://img.shields.io/github/license/Chilledheart/yass)][license-link]
-
 ## Releases
 
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
@@ -135,8 +132,6 @@ Please visit [the pages site](https://letshack.info).
 [![MSVC Build](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml)
 [![Old MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 [![Clang Tidy](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml)
-
-[license-link]: LICENSE
 
 [flathub_url]: https://flathub.org/apps/io.github.chilledheart.yass
 [ios_testflight_invitation]: https://testflight.apple.com/join/6AkiEq09
