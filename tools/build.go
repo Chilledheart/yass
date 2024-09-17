@@ -793,6 +793,7 @@ func buildStageGenerateBuildScript() {
 	cmakeArgs = append(cmakeArgs, "-DOFFICIAL_BUILD=on")
 	cmakeArgs = append(cmakeArgs, "-DENABLE_LLD=on")
 	cmakeArgs = append(cmakeArgs, "-DUSE_ZLIB=on")
+	cmakeArgs = append(cmakeArgs, "-DUSE_JSONCPP=on")
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
 	if useStaticBuildFlag {
 		cmakeArgs = append(cmakeArgs, "-DCLI_STATIC_BUILD=ON", "-DSERVER_STATIC_BUILD=ON")

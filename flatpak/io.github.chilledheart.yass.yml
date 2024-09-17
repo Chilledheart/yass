@@ -59,6 +59,7 @@ modules:
       - -DINSTALL_FLATHUB_METAINFO=on
       - -DUSE_ZLIB=on
       - -DUSE_SYSTEM_ZLIB=on
+      - -DUSE_JSONCPP=on
       - -DUSE_CARES=on
       - -DUSE_QT5=on
       - -DGUI=on
