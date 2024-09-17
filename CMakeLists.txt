@@ -2994,14 +2994,21 @@ set(SUPPORT_LIBS modp_b64 ${SUPPORT_LIBS})
 # pip install -U jinja2
 
 if (USE_SYSTEM_MBEDTLS)
-  check_library_exists(mbedcrypto mbedtls_cipher_init "" HAVE_SYSTEM_MBEDTLS)
-  if (NOT HAVE_SYSTEM_MBEDTLS)
+  find_package(PkgConfig)
+  if (PKG_CONFIG_FOUND)
+    # IMPORTED_TARGET require cmake 3.6
+    pkg_check_modules(MBEDCRYPTO mbedcrypto IMPORTED_TARGET)
+  endif()
+  if(NOT MBEDCRYPTO_FOUND)
+    check_library_exists(mbedcrypto mbedtls_cipher_init "" HAVE_SYSTEM_MBEDTLS)
+  endif()
+  if (NOT MBEDCRYPTO_FOUND AND NOT HAVE_SYSTEM_MBEDTLS)
     message(STATUS "System mbedtls not found, using bundled one")
-    set(HAVE_SYSTEM_MBEDTLS FALSE)
+    set(USE_SYSTEM_MBEDTLS FALSE)
   endif()
 endif()
 
-if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
+if (USE_SYSTEM_MBEDTLS)
   message(STATUS "Compiling with system mbedtls library")
   list(APPEND YASS_APP_FEATURES "system mbedtls")
   set(SUPPORT_DEFINITIONS
@@ -3009,7 +3016,11 @@ if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
     ${SUPPORT_DEFINITIONS}
   )
 
-  set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
+  if (MBEDCRYPTO_FOUND)
+    set(SUPPORT_LIBS PkgConfig::MBEDCRYPTO ${SUPPORT_LIBS})
+  else()
+    set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
+  endif()
 elseif (USE_MBEDTLS)
   message(STATUS "Compiling with bundled mbedtls library")
   set(USE_SHARED_MBEDTLS_LIBRARY "OFF" CACHE STRING "")
@@ -4303,6 +4314,7 @@ target_include_directories(yass_net PUBLIC
 target_compile_definitions(yass_net PUBLIC
   ${SUPPORT_DEFINITIONS})
 
+target_link_directories(yass_net PUBLIC ${SUPPORT_LIB_DIRS})
 target_link_libraries(yass_net PUBLIC ${SUPPORT_LIBS})
 
 if (ANDROID)
