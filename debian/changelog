@@ -1,3 +1,11 @@
+yass (1.14.0-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 130 dependents.
+  * config: use jsoncpp for configuration reader and writer.
+  * net: apply tcp congestion only to connections between cli and server.
+  * c-ares: backport some patches from upstream.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 17 Sep 2024 08:29:20 +0800
 yass (1.13.2-1) UNRELEASED; urgency=medium
 
   * some trivial changes.

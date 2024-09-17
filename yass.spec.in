@@ -318,6 +318,11 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Tue Sep 17 2024 Chilledheart <keeyou-cn@outlook.com> - 1.14.0-1
+  - bump to chromium 130 dependents
+  - config: use jsoncpp for configuration reader and writer
+  - net: apply tcp congestion only to connections between cli and server
+  - c-ares: backport some patches from upstream
 * Mon Sep 9 2024 Chilledheart <keeyou-cn@outlook.com> - 1.13.2-1
   - some trivial changes
 * Sun Sep 1 2024 Chilledheart <keeyou-cn@outlook.com> - 1.13.1-1
