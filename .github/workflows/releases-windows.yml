@@ -204,9 +204,6 @@ jobs:
           pushd third_party/libc++/trunk
           patch -p1 < ../winxp.patch
           popd
-          pushd third_party/benchmark
-          patch -p1 < ../benchmark-winxp-fix.patch
-          popd
       - name: Build
         run: |
           set VCToolsVersion=14.16.27012
