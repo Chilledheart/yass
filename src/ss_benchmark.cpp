@@ -158,7 +158,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
                         }
                         if (ec || bytes_transferred != g_send_buffer.length()) {
                           LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                                       << " Failed to transfer data: " << ec.value();
+                                       << " Failed to transfer data: " << ec;
                         } else {
                           VLOG(1) << "Connection (content-provider) " << connection_id()
                                   << " written: " << bytes_transferred << " bytes";
@@ -192,6 +192,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
       return;
     }
     g_in_provider_mutex.unlock();
+    VLOG(1) << "Connection (content-provider) " << connection_id() << " done IO";
     if (ec) {
       return;
     }
@@ -317,6 +318,8 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::error_code ec;
     s.connect(endpoint, ec);
     CHECK(!ec) << "Connection (content-consumer) connect failure " << ec;
+    SetSocketTcpNoDelay(&s, ec);
+    CHECK(!ec) << "Connection (content-consumer) set TCP_NODELAY failure: " << ec;
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
     GenerateConnectRequest("localhost"sv, content_provider_endpoint_.port(), request_buf.get());
 
@@ -353,6 +356,12 @@ class SsEndToEndBM : public benchmark::Fixture {
     auto work_guard =
         std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
+    IOBuf resp_buffer;
+    resp_buffer.reserve(0, g_send_buffer.length());
+
+    //
+    // START
+    //
     auto start = std::chrono::high_resolution_clock::now();
 
     VLOG(1) << "Connection (content-consumer) start to do IO";
@@ -362,15 +371,12 @@ class SsEndToEndBM : public benchmark::Fixture {
       CHECK_EQ(written, g_send_buffer.length()) << "Partial written";
     });
 
-    IOBuf resp_buffer;
-    resp_buffer.reserve(0, g_send_buffer.length());
     asio::async_read(s, tail_buffer(resp_buffer), [work_guard, &resp_buffer](asio::error_code ec, size_t read) {
       VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
       resp_buffer.append(read);
       CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
     });
     work_guard.reset();
-    io_context.restart();
     io_context.run();
 
 #if 0
@@ -385,9 +391,17 @@ class SsEndToEndBM : public benchmark::Fixture {
       g_recv_buffer->clear();
     }
 
+    //
+    // END
+    //
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     state.SetIterationTime(elapsed_seconds.count());
+
+    VLOG(1) << "Connection (content-consumer) done IO in "
+      << elapsed_seconds.count() * 1000 * 1000 << " us";
+
+    io_context.restart();
   }
 
   void SendRequestAndCheckResponse_Post(asio::ip::tcp::socket& s) {
@@ -556,7 +570,6 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state) {
     });
 
     work_guard.reset();
-    io_context.restart();
     io_context.run();
 
     //
@@ -565,6 +578,8 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state) {
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     state.SetIterationTime(elapsed_seconds.count());
+
+    io_context.restart();
   }
 
   state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * static_cast<int64_t>(state.range(0)));

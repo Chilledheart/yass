@@ -505,6 +505,8 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     asio::error_code ec;
     s.connect(endpoint, ec);
     ASSERT_FALSE(ec) << ec;
+    SetSocketTcpNoDelay(&s, ec);
+    ASSERT_FALSE(ec) << ec;
 
     // Generate http 1.0 proxy header
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
