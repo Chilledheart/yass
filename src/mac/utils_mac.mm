@@ -20,6 +20,7 @@
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
 #include "core/utils.hpp"
+#include "core/utils_fs.hpp"
 #include "net/asio.hpp"
 
 #include <absl/strings/str_split.h>
@@ -32,6 +33,8 @@
 using namespace std::string_literals;
 
 using namespace gurl_base::apple;
+
+using namespace yass;
 
 namespace {
 
@@ -598,4 +601,49 @@ void SetDockIconStyle(bool hidden) {
     NSError* error = [NSError errorWithDomain:NSOSStatusErrorDomain code:err userInfo:nil];
     LOG(WARNING) << "SetDockIconStyle failed: " << SysNSStringToUTF8([error localizedDescription]);
   }
+}
+
+static bool IsSoftwarePrivatedImpl() {
+#if defined(ARCH_CPU_X86_64)
+  if (GetCPUType() == CPUType::kIntel)
+    return IsFile("/usr/local/bin/brew");
+#endif
+  return IsFile("/opt/homebrew/bin/brew");
+}
+
+bool IsSoftwarePrivated() {
+  bool ret = IsSoftwarePrivatedImpl();
+  if (ret) {
+    LOG(WARNING) << "Software Pirated Detected";
+    NSAlert* alert = [[NSAlert alloc] init];
+    alert.messageText = @("Software aka Homebrew in your mac is pirating yass."
+#ifdef OFFICIAL_BUILD
+                          "Functionalities will be inavailable due to the censorship of homebrew."
+#else
+                          "Functionalities might be abnormal due to the censorship of homebrew."
+#endif
+    );
+    alert.icon = [NSImage imageNamed:NSImageNameCaution];
+#ifdef OFFICIAL_BUILD
+    alert.alertStyle = NSAlertStyleCritical;
+#else
+    alert.alertStyle = NSAlertStyleInformational;
+#endif
+    [alert addButtonWithTitle:@("Remove now")];
+#ifndef OFFICIAL_BUILD
+    [alert addButtonWithTitle:@("Leave it alone")];
+#endif
+    NSModalResponse response = [alert runModal];
+    if (response == NSAlertFirstButtonReturn) {
+      [[NSWorkspace sharedWorkspace]
+          openURL:[NSURL URLWithString:@"https://docs.brew.sh/FAQ#how-do-i-uninstall-homebrew"]];
+    } else if (response == NSAlertSecondButtonReturn) {
+      /* nope */
+    }
+#ifdef OFFICIAL_BUILD
+    LOG(WARNING) << "Leave due to Pirated Software";
+    exit(-1);
+#endif
+  }
+  return ret;
 }
