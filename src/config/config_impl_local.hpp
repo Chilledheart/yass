@@ -107,29 +107,17 @@ class ConfigImplLocal : public ConfigImpl {
     return true;
   }
 
-  bool HasKeyStringImpl(const std::string& key) override {
-    return root_.isMember(key) && root_[key].isString();
-  }
+  bool HasKeyStringImpl(const std::string& key) override { return root_.isMember(key) && root_[key].isString(); }
 
-  bool HasKeyBoolImpl(const std::string& key) override {
-    return root_.isMember(key) && root_[key].isBool();
-  }
+  bool HasKeyBoolImpl(const std::string& key) override { return root_.isMember(key) && root_[key].isBool(); }
 
-  bool HasKeyUint32Impl(const std::string& key) override {
-    return root_.isMember(key) && root_[key].isUInt();
-  }
+  bool HasKeyUint32Impl(const std::string& key) override { return root_.isMember(key) && root_[key].isUInt(); }
 
-  bool HasKeyUint64Impl(const std::string& key) override {
-    return root_.isMember(key) && root_[key].isUInt64();
-  }
+  bool HasKeyUint64Impl(const std::string& key) override { return root_.isMember(key) && root_[key].isUInt64(); }
 
-  bool HasKeyInt32Impl(const std::string& key) override {
-    return root_.isMember(key) && root_[key].isInt();
-  }
+  bool HasKeyInt32Impl(const std::string& key) override { return root_.isMember(key) && root_[key].isInt(); }
 
-  bool HasKeyInt64Impl(const std::string& key) override {
-    return root_.isMember(key) && root_[key].isInt64();
-  }
+  bool HasKeyInt64Impl(const std::string& key) override { return root_.isMember(key) && root_[key].isInt64(); }
 
   bool ReadImpl(const std::string& key, std::string* value) override {
     if (root_.isMember(key) && root_[key].isString()) {

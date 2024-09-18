@@ -151,22 +151,21 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
     scoped_refptr<ContentProviderConnection> self(this);
     g_in_provider_mutex.lock();
 
-    asio::async_write(downlink_->socket_, const_buffer(g_send_buffer),
-                      [this, self](asio::error_code ec, size_t bytes_transferred) {
-                        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
-                          goto done;
-                        }
-                        if (ec || bytes_transferred != g_send_buffer.length()) {
-                          LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                                       << " Failed to transfer data: " << ec;
-                        } else {
-                          VLOG(1) << "Connection (content-provider) " << connection_id()
-                                  << " written: " << bytes_transferred << " bytes";
-                        }
-                      done:
-                        done_[0] = true;
-                        shutdown(ec);
-                      });
+    asio::async_write(
+        downlink_->socket_, const_buffer(g_send_buffer), [this, self](asio::error_code ec, size_t bytes_transferred) {
+          if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
+            goto done;
+          }
+          if (ec || bytes_transferred != g_send_buffer.length()) {
+            LOG(WARNING) << "Connection (content-provider) " << connection_id() << " Failed to transfer data: " << ec;
+          } else {
+            VLOG(1) << "Connection (content-provider) " << connection_id() << " written: " << bytes_transferred
+                    << " bytes";
+          }
+        done:
+          done_[0] = true;
+          shutdown(ec);
+        });
 
     asio::async_read(downlink_->socket_, mutable_buffer(*g_recv_buffer),
                      [this, self](asio::error_code ec, size_t bytes_transferred) {
@@ -398,8 +397,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     state.SetIterationTime(elapsed_seconds.count());
 
-    VLOG(1) << "Connection (content-consumer) done IO in "
-      << elapsed_seconds.count() * 1000 * 1000 << " us";
+    VLOG(1) << "Connection (content-consumer) done IO in " << elapsed_seconds.count() * 1000 * 1000 << " us";
 
     io_context.restart();
   }
