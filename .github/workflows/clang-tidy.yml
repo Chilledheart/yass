@@ -22,7 +22,7 @@ env:
   GOPROXY: direct
 jobs:
   win-clang-tidy:
-    runs-on: windows-2019
+    runs-on: windows-2022
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
@@ -76,11 +76,11 @@ jobs:
           ninja --version
       - name: Build
         run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
+          set VCToolsVersion=
+          set Winsdk=10.0.22621.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           set Platform=${{ matrix.arch }}
 

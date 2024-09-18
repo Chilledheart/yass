@@ -14,8 +14,8 @@ for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Micros
 )
 popd
 
-set VCToolsVersion=14.29
-set Winsdk=10.0.19041.0
+set VCToolsVersion=
+set Winsdk=10.0.22621.0
 set "WindowsSDKVersion=%Winsdk%\"
 set "vsdevcmd=%VisualStudioInstallDir%\Common7\Tools\VsDevCmd.bat"
 set CL=/MP
