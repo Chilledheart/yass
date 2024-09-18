@@ -40,6 +40,8 @@
   if (![NSApp isActive]) {
     [NSApp activateIgnoringOtherApps:YES];
   }
+
+  (void)IsSoftwarePrivated();
 }
 
 - (void)applicationWillTerminate:(NSNotification*)aNotification {
