@@ -1939,6 +1939,7 @@ endif()
 if (NOT WIN32 AND NOT APPLE)
   check_library_exists(c pipe2 "" HAVE_PIPE2)
   check_library_exists(c dup3 "" HAVE_DUP3)
+  check_library_exists(rt shm_open "" HAVE_LIB_RT)
   # for android mallinfo2 is alias to mallinfo
   check_symbol_exists(mallinfo malloc.h HAVE_MALLINFO)
   check_symbol_exists(mallinfo2 malloc.h HAVE_MALLINFO2)
@@ -3315,62 +3316,33 @@ endif()
 #           google benchmark Library
 # *****************************************************************************************
 if (BUILD_BENCHMARKS)
-  set(BENCHMARK_ENABLE_TESTING "OFF" CACHE STRING "")
-  set(BENCHMARK_ENABLE_EXCEPTIONS "OFF" CACHE STRING "")
-  set(BENCHMARK_ENABLE_LTO "OFF" CACHE STRING "")
-  set(BENCHMARK_USE_LIBCXX "OFF" CACHE STRING "")
-  set(BENCHMARK_ENABLE_WERROR "OFF" CACHE STRING "")
-  set(BENCHMARK_FORCE_WERROR "OFF" CACHE STRING "")
-  set(BENCHMARK_BUILD_32_BITS "OFF" CACHE STRING "")
-  set(BENCHMARK_ENABLE_INSTALL "OFF" CACHE STRING "")
-  set(BENCHMARK_ENABLE_DOXYGEN "OFF" CACHE STRING "")
-  set(BENCHMARK_INSTALL_DOCS "OFF" CACHE STRING "")
-  set(BENCHMARK_DOWNLOAD_DEPENDENCIES "OFF" CACHE STRING "")
-  set(BENCHMARK_ENABLE_GTEST_TESTS "OFF" CACHE STRING "")
-  set(BENCHMARK_USE_BUNDLED_GTEST "OFF" CACHE STRING "")
-  set(BENCHMARK_ENABLE_ASSEMBLY_TESTS "OFF" CACHE STRING "")
-  # by-pass linkage issue with libc++
-  set(HAVE_STD_REGEX "ON" CACHE STRING "")
-  set(HAVE_STEADY_CLOCK "ON" CACHE STRING "")
+  file(GLOB
+    BENCHMARK_SOURCE_FILES
+      third_party/benchmark/src/*.cc
+      third_party/benchmark/include/benchmark/*.h
+      third_party/benchmark/src/*.h)
+  file(GLOB BENCHMARK_MAIN "benchmark_main.cc")
+  foreach(item ${BENCHMARK_MAIN})
+    list(REMOVE_ITEM BENCHMARK_SOURCE_FILES "${item}")
+  endforeach()
 
-check_c_source_compiles("
-#include <regex.h>
-#include <stddef.h>
-int main() {
-  const char* str = \"test0159\";
-  regex_t re;
-  int ec = regcomp(&re, \"^[a-z]+[0-9]+$\", REG_EXTENDED | REG_NOSUB);
-  if (ec != 0) {
-    return ec;
-  }
-  int ret = regexec(&re, str, 0, NULL, 0) ? -1 : 0;
-  regfree(&re);
-  return ret;
-} " HAVE_POSIX_REGEX_C)
-  if (HAVE_POSIX_REGEX_C)
-    set(HAVE_POSIX_REGEX "ON" CACHE STRING "")
+  add_library(benchmark STATIC ${BENCHMARK_SOURCE_FILES})
+  add_library(benchmark::benchmark ALIAS benchmark)
+
+  target_compile_definitions(benchmark PUBLIC -DBENCHMARK_STATIC_DEFINE)
+  target_compile_definitions(benchmark PRIVATE BENCHMARK_VERSION="1.9.0")
+
+  target_include_directories(benchmark PUBLIC third_party/benchmark/include)
+
+  target_link_libraries(benchmark PRIVATE re2)
+
+  if (WIN32)
+    target_link_libraries(benchmark PRIVATE shlwapi)
   endif()
 
-check_c_source_compiles("
-#include <gnuregex.h>
-#include <stddef.h>
-int main() {
-  const char* str = \"test0159\";
-  regex_t re;
-  int ec = regcomp(&re, \"^[a-z]+[0-9]+$\", REG_EXTENDED | REG_NOSUB);
-  if (ec != 0) {
-    return ec;
-  }
-  return regexec(&re, str, 0, NULL, 0) ? -1 : 0;
-}
-} " HAVE_GNU_POSIX_REGEX_C)
-  if (HAVE_GNU_POSIX_REGEX_C)
-    set(HAVE_GNU_POSIX_REGEX "ON" CACHE STRING "")
-  endif()
-
-  add_subdirectory(third_party/benchmark EXCLUDE_FROM_ALL)
-  # fix a typo in re.h
-  target_compile_definitions(benchmark PRIVATE BENCHMARK_HAVE_STD_REGEX)
+  if(HAVE_LIB_RT)
+    target_link_libraries(benchmark PRIVATE rt)
+  endif(HAVE_LIB_RT)
 endif()
 
 # *****************************************************************************************

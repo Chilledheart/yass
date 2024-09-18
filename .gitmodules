@@ -37,7 +37,7 @@
 	url = https://github.com/Chilledheart/nghttp2
 [submodule "third_party/benchmark"]
 	path = third_party/benchmark
-	url = https://github.com/google/benchmark
+	url = https://github.com/Chilledheart/benchmark
 [submodule "third_party/mbedtls"]
 	path = third_party/mbedtls
 	url = https://github.com/Chilledheart/mbedtls

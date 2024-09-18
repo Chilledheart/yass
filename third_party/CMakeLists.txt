@@ -42,12 +42,15 @@ endif()
 target_include_directories(re2 PUBLIC re2)
 
 target_link_libraries(re2 PUBLIC
+  absl::absl_check
+  absl::absl_log
   absl::base
   absl::core_headers
   absl::fixed_array
   absl::flags
   absl::flat_hash_map
   absl::flat_hash_set
+  absl::hash
   absl::inlined_vector
   absl::optional
   absl::span

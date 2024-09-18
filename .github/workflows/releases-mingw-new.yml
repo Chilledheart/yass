@@ -145,9 +145,6 @@ jobs:
           pushd third_party/libc++abi/trunk
           patch -p1 < ../winxp.patch
           popd
-          pushd third_party/benchmark
-          patch -p1 < ../benchmark-winxp-fix.patch
-          popd
           echo "BUILD_OPTIONS=-mingw-allow-xp -enable-lto=false" >> $GITHUB_ENV
       - name: Build
         run: |
