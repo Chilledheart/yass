@@ -608,7 +608,7 @@ static bool IsSoftwarePrivatedImpl() {
   if (GetCPUType() == CPUType::kIntel)
     return IsFile("/usr/local/bin/brew");
 #endif
-  return IsFile("/opt/homebrew/bin/brew");
+  return IsFile("/opt/homebrew/bin/brew") || IsDirectory("/opt/homebrew/.git");
 }
 
 bool IsSoftwarePrivated() {
