@@ -163,7 +163,7 @@ jobs:
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y cmake ninja-build pkg-config bubblewrap
+          sudo apt-get install -y cmake ninja-build pkgconf bubblewrap
           # libc6-i386 interferes with x86 build
           sudo apt remove libc6-i386
 
