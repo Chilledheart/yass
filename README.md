@@ -107,9 +107,6 @@ See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usa
 Pass `--certificate_chain_file file` to command line.
 Use custom certificate chain provided by _file_ to verify server's certificate.
 
-## Sponsor Me
-Please visit [the pages site](https://letshack.info).
-
 ## Build Status
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
