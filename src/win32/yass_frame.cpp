@@ -1153,7 +1153,7 @@ INT_PTR CALLBACK CYassFrame::OnAppAboutMessage(HWND hDlg, UINT message, WPARAM w
       return static_cast<INT_PTR>(TRUE);
     }
     case WM_COMMAND:
-      if (LOWORD(wParam) == IDOK) {
+      if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
         EndDialog(hDlg, LOWORD(wParam));
         return static_cast<INT_PTR>(TRUE);
       }
