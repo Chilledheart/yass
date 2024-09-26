@@ -279,9 +279,9 @@ jobs:
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'riscv64' && matrix.distro == 'trixie' }}
         run: |
           # https://launchpad.net/ubuntu/oracular/amd64/libc6-dev-riscv64-cross
-          curl -O http://launchpadlibrarian.net/742667245/libc6-dev-riscv64-cross_2.40-1ubuntu1cross2_all.deb
+          curl -O http://launchpadlibrarian.net/749345307/libc6-dev-riscv64-cross_2.40-1ubuntu3cross1_all.deb
           # https://launchpad.net/ubuntu/oracular/amd64/libc6-riscv64-cross
-          curl -O http://launchpadlibrarian.net/742667260/libc6-riscv64-cross_2.40-1ubuntu1cross2_all.deb
+          curl -O http://launchpadlibrarian.net/749345318/libc6-riscv64-cross_2.40-1ubuntu3cross1_all.deb
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             dpkg --force-depends -i $PWD/*.deb || true
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
