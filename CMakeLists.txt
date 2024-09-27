@@ -4975,6 +4975,15 @@ if (GUI)
           )
         endif()
 
+        # FIXME workaround with xcode 16 error with test enabled
+        # Multiple commands produce '/Users/hky/yass-develop/build-ios-simulator-arm64/Release-iphonesimulator/yass.app/PlugIns'
+        if (NOT IOS_XCODE_DSYM_FOLDER_FIX)
+          set_target_properties(${APP_NAME} PROPERTIES
+            XCODE_ATTRIBUTE_PLUGINS_FOLDER_PATH "${APP_NAME}.app/PlugIns2"
+            XCODE_ATTRIBUTE_BUNDLE_PLUGINS_FOLDER_PATH "PlugIns2"
+          )
+        endif()
+
         find_library(Security_LIBRARY Security REQUIRED)
         target_link_directories(network-extension PRIVATE ${TUN2PROXY_LIB_DIR})
         target_link_libraries(network-extension PRIVATE -Wl,-hidden-ltun2proxy)
