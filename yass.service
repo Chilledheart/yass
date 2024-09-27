@@ -9,6 +9,7 @@ DynamicUser=yes
 LogsDirectory=yass
 ExecStart=/usr/bin/yass_cli -c /etc/yass/config.json -log_dir=/var/log/yass
 Restart=on-failure
+RestartSec=5s
 RestartPreventExitStatus=23
 
 [Install]

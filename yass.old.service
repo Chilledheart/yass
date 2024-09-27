@@ -8,6 +8,7 @@ Type=exec
 User=nobody
 ExecStart=/usr/bin/yass_cli -c /etc/yass/config.json -logtostderr
 Restart=on-failure
+RestartSec=5s
 RestartPreventExitStatus=23
 
 [Install]
