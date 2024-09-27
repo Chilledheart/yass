@@ -9,6 +9,7 @@ DynamicUser=yes
 LogsDirectory=yass-redir
 ExecStart=/usr/bin/yass_cli -c /etc/yass/redir.json -log_dir=/var/log/yass-redir --redir_mode
 Restart=on-failure
+RestartSec=5s
 RestartPreventExitStatus=23
 
 [Install]
