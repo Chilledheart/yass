@@ -241,7 +241,7 @@ jobs:
         run: |
           ./tools/build -clang-tidy-mode -build-test -build-benchmark -no-packaging
   mac-clang-tidy:
-    runs-on: macos-14
+    runs-on: macos-15
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false

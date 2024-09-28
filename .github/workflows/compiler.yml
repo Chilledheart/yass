@@ -353,7 +353,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14]
+        os: [macos-15]
         build_type: [Debug, Release]
     runs-on: ${{ matrix.os }}
     env:
