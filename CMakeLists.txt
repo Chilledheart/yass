@@ -4723,6 +4723,11 @@ if (GUI)
     endif()
 
     if (GUI_FLAVOUR STREQUAL "cocoa")
+        # handle with empty dsymutil output
+        # see https://reviews.llvm.org/D84565
+        if (LTO)
+          target_link_options(${APP_NAME} PRIVATE "-Wl,-object_path_lto,${CMAKE_BINARY_DIR}/lto_tmp")
+        endif()
         # Handle the Storyboard ourselves
         if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
           # Compile the storyboard file with the ibtool.
