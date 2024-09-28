@@ -1632,11 +1632,11 @@ func postStateStripBinaries() {
 		cmdRun([]string{objcopy, "--add-gnu-debuglink=" + getAppName() + ".dbg", getAppName()}, false)
 	} else if systemNameFlag == "darwin" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
-			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
+			"--statistics", "--update", "-o", getAppName() + ".dSYM"}, false)
 		cmdRun([]string{"strip", "-S", "-x", "-v", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME)}, false)
 	} else if systemNameFlag == "ios" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), APPNAME),
-			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
+			"--statistics", "--update", "-o", getAppName() + ".dSYM"}, false)
 		cmdRun([]string{"strip", "-S", "-x", "-v", filepath.Join(getAppName(), APPNAME)}, false)
 	} else {
 		glog.Warningf("not supported in platform %s", systemNameFlag)
