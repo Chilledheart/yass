@@ -849,6 +849,7 @@ int main(int argc, char** argv) {
   int ret = RUN_ALL_TESTS();
 
   PrintMallocStats();
+  PrintCliStats();
 
 #ifdef HAVE_CURL
   curl_global_cleanup();

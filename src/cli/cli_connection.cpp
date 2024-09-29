@@ -852,6 +852,7 @@ void CliConnection::WriteStream() {
       break;
     }
     if (UNLIKELY(bytes_read_without_yielding > kYieldAfterBytesRead || GetMonotonicTime() > yield_after_time)) {
+      ++total_tx_yields;
       if (downstream_.empty()) {
         try_again = true;
         yield = true;
@@ -1578,6 +1579,7 @@ void CliConnection::WriteUpstreamInPipe() {
       break;
     }
     if (UNLIKELY(bytes_read_without_yielding > kYieldAfterBytesRead || GetMonotonicTime() > yield_after_time)) {
+      ++total_rx_yields;
       if (upstream_.empty()) {
         try_again = true;
         yield = true;
@@ -1649,6 +1651,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec,
   }
   rbytes_transferred_ += read;
   total_rx_bytes += read;
+  ++total_rx_times;
   *bytes_transferred += read;
   if (read) {
     VLOG(2) << "Connection (client) " << connection_id() << " received data (pipe): " << read << " bytes."
@@ -1810,6 +1813,7 @@ void CliConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_
 
   rbytes_transferred_ += bytes_transferred;
   total_rx_bytes += bytes_transferred;
+  ++total_rx_times;
 
   if (buf) {
     DCHECK_LE(bytes_transferred, buf->length());
@@ -1870,6 +1874,7 @@ void CliConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_
 void CliConnection::ProcessSentData(asio::error_code ec, size_t bytes_transferred) {
   wbytes_transferred_ += bytes_transferred;
   total_tx_bytes += bytes_transferred;
+  ++total_tx_times;
 
   VLOG(2) << "Connection (client) " << connection_id() << " sent data: " << bytes_transferred << " bytes."
           << " done: " << wbytes_transferred_ << " bytes."

@@ -14,6 +14,7 @@
 #include <locale.h>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
+#include "cli/cli_connection_stats.hpp"
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "net/asio.hpp"
@@ -211,6 +212,7 @@ int main(int argc, const char* argv[]) {
 #if defined(SIGUSR1)
     if (signal_number == SIGUSR1) {
       PrintMallocStats();
+      PrintCliStats();
       signals.async_wait(cb);
       return;
     }
@@ -234,6 +236,7 @@ int main(int argc, const char* argv[]) {
   io_context.run();
 
   PrintMallocStats();
+  PrintCliStats();
 
   return 0;
 }
