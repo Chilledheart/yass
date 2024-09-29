@@ -1517,7 +1517,7 @@ void CliConnection::WriteUpstreamInPipe() {
   int bytes_read_without_yielding = 0;
   uint64_t yield_after_time = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
 
-  if (channel_ && channel_->write_inprogress()) {
+  if (UNLIKELY(channel_ && channel_->write_inprogress())) {
     return;
   }
 
@@ -1531,19 +1531,19 @@ void CliConnection::WriteUpstreamInPipe() {
 
     read = buf ? buf->length() : 0;
 
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
       if (!upstream_blocked) {
         ec = asio::error_code();
         try_again = true;
       }
-    } else if (ec) {
+    } else if (UNLIKELY(ec)) {
       /* handled in getter */
       return;
     }
-    if (!read) {
+    if (UNLIKELY(!read)) {
       break;
     }
-    if (!channel_ || !channel_->connected() || channel_->eof()) {
+    if (UNLIKELY(!channel_ || !channel_->connected() || channel_->eof())) {
       ec = asio::error::try_again;
       break;
     }
@@ -1558,26 +1558,26 @@ void CliConnection::WriteUpstreamInPipe() {
     buf->trimStart(written);
     wbytes_transferred += written;
     bytes_read_without_yielding += written;
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
       break;
     }
     VLOG(2) << "Connection (client) " << connection_id() << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
             << " ec: " << ec;
     // continue to resume
-    if (buf->empty()) {
+    if (UNLIKELY(buf->empty())) {
       DCHECK(!upstream_.empty() && upstream_.front() == buf);
       upstream_.pop_front();
     }
-    if (ec) {
+    if (UNLIKELY(ec)) {
       OnDisconnect(ec);
       return;
     }
-    if (!buf->empty()) {
+    if (UNLIKELY(!buf->empty())) {
       ec = asio::error::try_again;
       break;
     }
-    if (bytes_read_without_yielding > kYieldAfterBytesRead || GetMonotonicTime() > yield_after_time) {
+    if (UNLIKELY(bytes_read_without_yielding > kYieldAfterBytesRead || GetMonotonicTime() > yield_after_time)) {
       if (upstream_.empty()) {
         try_again = true;
         yield = true;
