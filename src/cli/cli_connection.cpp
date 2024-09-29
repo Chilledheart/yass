@@ -208,6 +208,9 @@ void CliConnection::SendIfNotProcessing() {
 // cipher_visitor_interface
 //
 bool CliConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
+  if (buf->empty()) {
+    return false;
+  }
   downstream_.push_back(buf);
   return true;
 }
@@ -1560,6 +1563,7 @@ void CliConnection::WriteUpstreamInPipe() {
     wbytes_transferred += written;
     bytes_read_without_yielding += written;
     if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
+      DCHECK_EQ(0u, written);
       break;
     }
     VLOG(2) << "Connection (client) " << connection_id() << " upstream: sent request (pipe): " << written << " bytes"
