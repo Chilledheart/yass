@@ -72,13 +72,11 @@ class ContentServer {
     enable_tls_ &= T::Type == CONNECTION_FACTORY_SERVER;
     DCHECK_LE(remote_host_sni_.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
 
-    VLOG(1) << "ContentServer (" << T::Name << ") "
-            << " allocated memory";
+    VLOG(1) << "ContentServer (" << T::Name << ") allocated memory";
   }
 
   ~ContentServer() {
-    VLOG(1) << "ContentServer (" << T::Name << ") "
-            << " freed memory";
+    VLOG(1) << "ContentServer (" << T::Name << ") freed memory";
 
     CHECK_EQ(pending_next_listen_ctxes_.size(), 0u) << "ContentServer freed on pending listen ctx";
     CHECK_EQ(opened_connections_, 0u) << "ContentServer freed on non-closed connections";
