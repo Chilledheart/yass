@@ -815,6 +815,10 @@ void CliConnection::WriteStream() {
 
   bool try_again = false;
   bool yield = false;
+
+  int bytes_read_without_yielding = 0;
+  uint64_t yield_after_time = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+
   asio::error_code ec;
   size_t wbytes_transferred = 0u;
   do {
@@ -831,7 +835,7 @@ void CliConnection::WriteStream() {
       }
     } while (false);
     buf->trimStart(written);
-    bytes_downstream_passed_without_yield_ += written;
+    bytes_read_without_yielding += written;
     wbytes_transferred += written;
     // continue to resume
     if (LIKELY(buf->empty())) {
@@ -847,10 +851,7 @@ void CliConnection::WriteStream() {
       ec = asio::error::try_again;
       break;
     }
-    if (UNLIKELY(GetMonotonicTime() > yield_downstream_after_time_ ||
-                 bytes_downstream_passed_without_yield_ > kYieldAfterBytesRead)) {
-      bytes_downstream_passed_without_yield_ = 0U;
-      yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+    if (UNLIKELY(bytes_read_without_yielding > kYieldAfterBytesRead || GetMonotonicTime() > yield_after_time)) {
       if (downstream_.empty()) {
         try_again = true;
         yield = true;
@@ -1509,14 +1510,18 @@ err_out:
 }
 
 void CliConnection::WriteUpstreamInPipe() {
-  asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
   bool yield = false;
 
-  if (channel_ && channel_->write_inprogress()) {
+  int bytes_read_without_yielding = 0;
+  uint64_t yield_after_time = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+
+  if (UNLIKELY(channel_ && channel_->write_inprogress())) {
     return;
   }
+
+  asio::error_code ec;
 
   /* recursively send the remainings */
   while (true) {
@@ -1526,19 +1531,19 @@ void CliConnection::WriteUpstreamInPipe() {
 
     read = buf ? buf->length() : 0;
 
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
       if (!upstream_blocked) {
         ec = asio::error_code();
         try_again = true;
       }
-    } else if (ec) {
+    } else if (UNLIKELY(ec)) {
       /* handled in getter */
       return;
     }
-    if (!read) {
+    if (UNLIKELY(!read)) {
       break;
     }
-    if (!channel_ || !channel_->connected() || channel_->eof()) {
+    if (UNLIKELY(!channel_ || !channel_->connected() || channel_->eof())) {
       ec = asio::error::try_again;
       break;
     }
@@ -1552,30 +1557,27 @@ void CliConnection::WriteUpstreamInPipe() {
     } while (false);
     buf->trimStart(written);
     wbytes_transferred += written;
-    bytes_upstream_passed_without_yield_ += written;
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    bytes_read_without_yielding += written;
+    if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
       break;
     }
     VLOG(2) << "Connection (client) " << connection_id() << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
             << " ec: " << ec;
     // continue to resume
-    if (buf->empty()) {
+    if (UNLIKELY(buf->empty())) {
       DCHECK(!upstream_.empty() && upstream_.front() == buf);
       upstream_.pop_front();
     }
-    if (ec) {
+    if (UNLIKELY(ec)) {
       OnDisconnect(ec);
       return;
     }
-    if (!buf->empty()) {
+    if (UNLIKELY(!buf->empty())) {
       ec = asio::error::try_again;
       break;
     }
-    if (GetMonotonicTime() > yield_upstream_after_time_ ||
-        bytes_upstream_passed_without_yield_ > kYieldAfterBytesRead) {
-      bytes_upstream_passed_without_yield_ = 0U;
-      yield_upstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+    if (UNLIKELY(bytes_read_without_yielding > kYieldAfterBytesRead || GetMonotonicTime() > yield_after_time)) {
       if (upstream_.empty()) {
         try_again = true;
         yield = true;
@@ -2272,9 +2274,6 @@ void CliConnection::connected() {
 
   upstream_readable_ = true;
   upstream_writable_ = true;
-
-  yield_upstream_after_time_ = yield_downstream_after_time_ =
-      GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
 
   ReadUpstream();
   WriteUpstreamInPipe();
