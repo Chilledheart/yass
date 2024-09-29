@@ -354,10 +354,6 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool upstream_readable_ = false;
   /// the previous read error (upstream)
   asio::error_code pending_upstream_read_error_;
-  /// the previous written bytes
-  size_t bytes_upstream_passed_without_yield_ = 0U;
-  /// the time to yield after previous write
-  uint64_t yield_upstream_after_time_ = 0U;
 
   /// the upstream the service bound with
   scoped_refptr<stream> channel_;
@@ -380,10 +376,6 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool downstream_read_inprogress_ = false;
   /// the previous read error (downstream)
   asio::error_code pending_downstream_read_error_;
-  /// the previous written bytes
-  size_t bytes_downstream_passed_without_yield_ = 0U;
-  /// the time to yield after previous write
-  uint64_t yield_downstream_after_time_ = 0U;
 
  private:
   /// handle with connect event (upstream)
