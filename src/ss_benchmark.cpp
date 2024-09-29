@@ -680,6 +680,9 @@ int main(int argc, char** argv) {
 
   ::benchmark::RunSpecifiedBenchmarks();
 
+  PrintMallocStats();
+  PrintCliStats();
+
   ::benchmark::Shutdown();
   return 0;
 }

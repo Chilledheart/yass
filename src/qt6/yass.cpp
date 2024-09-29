@@ -17,6 +17,7 @@
 #include <QTranslator>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
+#include "cli/cli_connection_stats.hpp"
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -284,6 +285,7 @@ void YASSApp::OnQuit() {
   LOG(WARNING) << "Application Exit";
   idle_timer_->stop();
   PrintMallocStats();
+  PrintCliStats();
 }
 
 void YASSApp::OnStarted() {
