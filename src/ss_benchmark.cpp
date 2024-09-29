@@ -123,9 +123,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
                    upstream_ssl_ctx,
                    ssl_ctx) {}
 
-  ~ContentProviderConnection() override {
-    VLOG(1) << "Connection (content-provider) " << connection_id() << " freed memory";
-  }
+  ~ContentProviderConnection() override { VLOG(1) << "Connection (content-provider) freed memory"; }
 
   ContentProviderConnection(const ContentProviderConnection&) = delete;
   ContentProviderConnection& operator=(const ContentProviderConnection&) = delete;
@@ -136,7 +134,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
   void start() { do_io(); }
 
   void close() {
-    VLOG(1) << "Connection (content-provider) " << connection_id() << " disconnected";
+    VLOG(1) << "Connection (content-provider) disconnected";
     asio::error_code ec;
     downlink_->socket_.close(ec);
     on_disconnect();
@@ -146,53 +144,73 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
   void do_io() {
     done_[0] = false;
     done_[1] = false;
+    start_ = std::chrono::high_resolution_clock::now();
+    ec_ = asio::error_code();
 
-    VLOG(1) << "Connection (content-provider) " << connection_id() << " start to do IO";
+    VLOG(1) << "Connection (content-provider) start to do IO";
     scoped_refptr<ContentProviderConnection> self(this);
     g_in_provider_mutex.lock();
 
-    asio::async_write(
-        downlink_->socket_, const_buffer(g_send_buffer), [this, self](asio::error_code ec, size_t bytes_transferred) {
-          if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
-            goto done;
-          }
-          if (ec || bytes_transferred != g_send_buffer.length()) {
-            LOG(WARNING) << "Connection (content-provider) " << connection_id() << " Failed to transfer data: " << ec;
-          } else {
-            VLOG(1) << "Connection (content-provider) " << connection_id() << " written: " << bytes_transferred
-                    << " bytes";
-          }
-        done:
-          done_[0] = true;
-          shutdown(ec);
-        });
+    asio::async_write(downlink_->socket_, const_buffer(g_send_buffer),
+                      [this, self](asio::error_code ec, size_t bytes_transferred) {
+                        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
+                          goto done;
+                        }
+                        if (ec || bytes_transferred != g_send_buffer.length()) {
+                          LOG(WARNING) << "Connection (content-provider) Failed to transfer data: " << ec;
+                        } else {
+                          VLOG(1) << "Connection (content-provider) written: " << bytes_transferred << " bytes";
+                        }
+                      done:
+                        if (done_[0]) {
+                          return;
+                        }
+                        done_[0] = true;
+                        shutdown(ec);
+                      });
 
     asio::async_read(downlink_->socket_, mutable_buffer(*g_recv_buffer),
                      [this, self](asio::error_code ec, size_t bytes_transferred) {
                        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
                          goto done;
                        }
+                       if (ec.value() == asio::error::eof) {
+                         goto done;
+                       }
                        if (ec || bytes_transferred != g_send_buffer.length()) {
-                         LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                                      << " Failed to transfer data: " << ec;
+                         LOG(WARNING) << "Connection (content-provider) Failed to transfer data: " << ec;
                        } else {
-                         VLOG(1) << "Connection (content-provider) " << connection_id()
-                                 << " read: " << bytes_transferred << " bytes";
+                         VLOG(1) << "Connection (content-provider) read: " << bytes_transferred << " bytes";
                        }
                        g_recv_buffer->append(bytes_transferred);
                      done:
+                       if (done_[1]) {
+                         return;
+                       }
                        done_[1] = true;
                        shutdown(ec);
                      });
   }
 
   void shutdown(asio::error_code ec) {
+    if (ec) {
+      LOG(WARNING) << "Connection (content-provider) stopped with error: " << ec;
+      /* early return */
+      done_[0] = true;
+      done_[1] = true;
+      ec_ = ec;
+    }
     if (!done_[0] || !done_[1]) {
       return;
     }
+    end_ = std::chrono::high_resolution_clock::now();
     g_in_provider_mutex.unlock();
-    VLOG(1) << "Connection (content-provider) " << connection_id() << " done IO";
-    if (ec) {
+
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end_ - start_);
+
+    VLOG(1) << "Connection (content-provider) done IO in " << elapsed_seconds.count() * 1000 * 1000 << " us";
+
+    if (ec_) {
       return;
     }
     shutdown_impl();
@@ -209,6 +227,8 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
     g_in_consumer_mutex.unlock();
   }
 
+  std::chrono::time_point<std::chrono::high_resolution_clock> start_, end_;
+  asio::error_code ec_;
   bool done_[2] = {false, false};
 };
 
