@@ -318,6 +318,14 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Sun Sep 29 2024 Chilledheart <keeyou-cn@outlook.com> - 1.14.1-1
+  - gtk4: fix typo in icon name
+  - mbedtls: fix searching algorithm (system library)
+  - benchmark: use re2 now
+  - systemd: increase RestartSec to 5s
+  - net: optimize yield algorithm
+  - cli: add stats for yield event
+  - net: add some assertions
 * Tue Sep 17 2024 Chilledheart <keeyou-cn@outlook.com> - 1.14.0-1
   - bump to chromium 130 dependents
   - config: use jsoncpp for configuration reader and writer
