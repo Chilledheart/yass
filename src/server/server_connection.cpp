@@ -249,6 +249,9 @@ void ServerConnection::SendIfNotProcessing() {
 //
 bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   if (state_ == state_stream) {
+    if (buf->empty()) {
+      return false;
+    }
     upstream_.push_back(buf);
   } else if (state_ == state_handshake) {
     if (handshake_) {
@@ -415,7 +418,7 @@ bool ServerConnection::OnDataForStream(StreamId stream_id, absl::string_view dat
       if (ec) {
         return true;
       }
-      DCHECK(buf);
+      DCHECK(buf && buf->length());
       upstream_.push_back(buf);
       ++num_padding_recv_;
     }
@@ -1340,6 +1343,7 @@ void ServerConnection::WriteUpstreamInPipe() {
     buf->trimStart(written);
     wbytes_transferred += written;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      DCHECK_EQ(0u, written);
       break;
     }
     VLOG(2) << "Connection (server) " << connection_id() << " upstream: sent request (pipe): " << written << " bytes"

@@ -42,6 +42,10 @@ std::shared_ptr<net::IOBuf> RemovePadding(std::shared_ptr<net::IOBuf> buf, asio:
   }
   const uint8_t* p = buf->data();
   size_t payload_size = (p[0] << 8) + p[1];
+  if (payload_size == 0) {
+    ec = asio::error::invalid_argument;
+    return nullptr;
+  }
   size_t padding_size = p[2];
   if (buf->length() < kPaddingHeaderSize + payload_size + padding_size) {
     ec = asio::error::try_again;
