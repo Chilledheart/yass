@@ -1575,7 +1575,7 @@ void CliConnection::WriteUpstreamInPipe() {
     if (GetMonotonicTime() > yield_upstream_after_time_ ||
         bytes_upstream_passed_without_yield_ > kYieldAfterBytesRead) {
       bytes_upstream_passed_without_yield_ = 0U;
-      yield_upstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds;
+      yield_upstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
       if (upstream_.empty()) {
         try_again = true;
         yield = true;
