@@ -7,5 +7,9 @@
     "server_port": 443,
     "timeout": 0,
     "username": "username",
-    "password": "password"
+    "password": "password",
+    "insecure_mode": false,
+    "certificate_chain_file": "",
+    "enable_post_quantum_kyber": false,
+    "tcp_congestion_algorithm": ""
 }
