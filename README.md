@@ -73,20 +73,24 @@ Take a look at [build instructions](BUILDING.md) and [packaging instructions](PA
 
 ## Highlight Features
 
-### Post Quantum Kyber Support
+### TLS-Compatible Protocol Support
+Cipher http over TLS are compatible.
+
+### Post Quantum Kyber Support (TLS)
 Post Quantum Kyber Support (not enabled by default) is added on all of supported Platforms.
 
 See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
+### Socks-Compatible Protocol Support
+Cipher socks4 and socks5 are compatible.
+
+### Shadowsocket-Compatible Protocol Support
+Ciphers released ahead of 2022 are compatible.
+
 ### NaïveProxy-Compatible Protocol Support
-Cipher http2 and https are NaïveProxy-compatible.
+Cipher http2 and https are compatible.
 
 See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
-
-### Android/iOS/macOS (M1/M2/M3/M4 only) comes with VPN Service support
-Mobile users including macOS (M1/M2/M3/M4) machines can use yass as VPN Service more than pure Global Proxy Client.
-
-TBD: Spliting Tunnel Support (#954)
 
 ### More Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
