@@ -43,13 +43,13 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
-### Prebuilt binaries (Other platforms)
-- Android [download 64-bit apk][android_64_apk_url] or [download 32-bit apk][android_32_apk_url] (require _Android 7.0_ or above)
-- iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
-- Windows [download 64-bit installer][windows_64_installer_url] (require [KB2999226] on _windows 7/8/8.1_) or [download 32-bit installer][windows_32_installer_url] (require [vc 2010 runtime][vs2010_x86] on _windows xp sp3_) or [download arm64 installer][windows_arm64_installer_url] (require _windows 10/11_)
-- macOS [download intel dmg][macos_intel_dmg_url] or [download apple silicon dmg][macos_arm_dmg_url] (require _macOS 10.14_ or above)
+### Prebuilt binaries (Legacy platforms)
+- Legacy Android [download 64-bit apk][android_64_apk_url] or [download 32-bit apk][android_32_apk_url] (require _Android 7.0_ or above)
+- Legacy iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
+- Legacy Windows [download 64-bit installer][windows_64_installer_url] (require [KB2999226] on _windows 7/8/8.1_) or [download 32-bit installer][windows_32_installer_url] (require [vc 2010 runtime][vs2010_x86] on _windows xp sp3_) or [download arm64 installer][windows_arm64_installer_url] (require _windows 10/11_)
+- Legacy macOS [download intel dmg][macos_intel_dmg_url] or [download apple silicon dmg][macos_arm_dmg_url] (require _macOS 10.14_ or above)
 
-- Flatpak for Linux (Qt5) [download flatpak][qt5_flatpak_x86_64_url] (unsandboxed edition) for _x86_64_ machine only.
+- Flatpak for Legacy Linux [download flatpak][qt6_flatpak_x86_64_url] (unsandboxed edition) for _x86_64_ machine only.
 
 > via [Flathub][flathub_url]: `flatpak install --user io.github.chilledheart.yass` (recommended, signed and sandboxed) for both of _x86_64_ and _aarch64_ machines
 
@@ -145,7 +145,7 @@ Use custom certificate chain provided by _file_ to verify server's certificate.
 [qt6_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass-qt6.lp155.x86_64.1.14.1.rpm
 [qt6_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass-qt6-ubuntu-22.04-jammy_amd64.1.14.1.deb
 
-[qt5_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass-x86_64-1.14.1.flatpak
+[qt6_flatpak_x86_64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass-x86_64-1.14.1.flatpak
 
 [cli_tgz_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass_cli-linux-release-amd64-1.14.1.tgz
 [cli_tgz_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass_cli-linux-release-amd64-1.14.1.tgz
