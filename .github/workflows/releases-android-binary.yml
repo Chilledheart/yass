@@ -128,6 +128,13 @@ jobs:
         run: |
           cd tools
           go build
+      #- uses: actions/setup-java@v4
+      #  with:
+      #    distribution: 'temurin'
+      #    java-version: '17'
+      - name: Replace JAVA_HOME (pin to java 17)
+        run: |
+          echo "JAVA_HOME=${JAVA_HOME_17_X64}" >> $GITHUB_ENV
       - name: Replace Android NDK (pin to r26c)
         run: |
           echo "ANDROID_NDK_VER=26.3.11579264" >> $GITHUB_ENV
