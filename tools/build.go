@@ -93,7 +93,7 @@ var androidAbiTarget string
 var androidApiLevel int
 
 var androidSdkDir string
-var androidNdkDir string
+var androidNdkVer string
 
 var harmonyAppAbi string
 var harmonyAbiTarget string
@@ -204,7 +204,7 @@ func InitFlag() {
 
 	flag.IntVar(&androidApiLevel, "android-api", 24, "Select Android API Level")
 	flag.StringVar(&androidSdkDir, "android-sdk-dir", getEnv("ANDROID_SDK_ROOT", ""), "Android SDK Home Path")
-	flag.StringVar(&androidNdkDir, "android-ndk-dir", getEnv("ANDROID_NDK_ROOT", "../third_party/android_toolchain"), "Android NDK Home Path")
+	flag.StringVar(&androidNdkVer, "android-ndk-ver", getEnv("ANDROID_NDK_VER", "26.3.11579264"), "Android NDK Version")
 
 	flag.StringVar(&harmonyNdkDir, "harmony-ndk-dir", getEnv("HARMONY_NDK_ROOT", ""), "OpenHarmony NDK Home Path")
 
@@ -1036,23 +1036,25 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "ON"))
 		// see #751
 		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
-		if _, err := os.Stat(androidNdkDir); errors.Is(err, os.ErrNotExist) {
-			glog.Fatalf("Android Ndk Directory at %s demanded", androidNdkDir)
+		glog.Infof("Using android ndk version %s", androidNdkVer)
+		NdkDir := filepath.Join(androidSdkDir, "ndk", androidNdkVer)
+		if _, err := os.Stat(NdkDir); errors.Is(err, os.ErrNotExist) {
+			glog.Fatalf("Android Ndk Directory at %s demanded", NdkDir)
 		}
-		glog.Infof("Using android ndk dir %s", androidNdkDir)
+		glog.Infof("Using android ndk dir %s", NdkDir)
 		androidAbiTarget, androidAppAbi = getAndroidTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Android.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI_TARGET=%s", androidAbiTarget))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_API_VERSION=%d", androidApiLevel))
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_NDK_ROOT=%s", androidNdkDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_NDK_ROOT=%s", NdkDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_CURRENT_OS=%s", runtime.GOOS))
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s%d", androidAbiTarget, androidApiLevel))
 		// FIXME patch llvm toolchain to find libunwind.a
-		getAndFixAndroidLibunwind(androidNdkDir)
+		getAndFixAndroidLibunwind(NdkDir)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
 
@@ -2022,9 +2024,7 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 		if androidSdkDir != "" {
 			glog.Infof("android sdk dir to %s", androidSdkDir)
 			localProperties := fmt.Sprintf("sdk.dir=%s\n", androidSdkDir)
-			if androidNdkDir != "" {
-				localProperties += fmt.Sprintf("ndk.dir=%s\n", androidNdkDir)
-			}
+			localProperties += fmt.Sprintf("android.ndkVersion=%s\n", androidNdkVer)
 			tagVersionStrs := strings.Split(tagFlag, ".")
 			tagMajorVer, _ := strconv.Atoi(tagVersionStrs[0])
 			tagMinorVer, _ := strconv.Atoi(tagVersionStrs[1])

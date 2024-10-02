@@ -130,8 +130,7 @@ jobs:
           go build
       - name: Replace Android NDK (pin to r26c)
         run: |
-          echo "ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/26.3.11579264" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=/usr/local/lib/android/sdk/ndk/26.3.11579264" >> $GITHUB_ENV
+          echo "ANDROID_NDK_VER=26.3.11579264" >> $GITHUB_ENV
       - name: "Install dependency: tun2proxy"
         run: |
           ./scripts/setup-android-rust.sh
@@ -152,7 +151,7 @@ jobs:
           # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
             -cmake-build-type MinSizeRel -no-build -no-configure \
-            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
+            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-ver "${ANDROID_NDK_VER}"
       - name: Download and Build Crashpad (include depot_tools)
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -192,7 +191,7 @@ jobs:
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \
             -build-benchmark -build-test \
-            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
+            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-ver "${ANDROID_NDK_VER}"
       - name: Clean up keychain and provisioning profile
         if: ${{ always() }}
         run: |
