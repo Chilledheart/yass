@@ -98,13 +98,13 @@ jobs:
           cache-dependency-path: |
             tools/go.sum
             third_party/boringssl/src/go.sum
-      - name: Cache qemu-user-static
+      - name: Cache qemu-user
         id: qemu-user-cache
         uses: actions/cache@v4
         with:
           path: |
-            qemu-user-static*.deb
-          key: ${{ runner.os }}-qemu-8.2.5-ds-1
+            qemu-user*.deb
+          key: ${{ runner.os }}-qemu-9.1.0-ds-8
       - name: Cache openwrt sdk home
         id: openwrt-sdkhome-cache
         uses: actions/cache@v4
@@ -126,7 +126,7 @@ jobs:
       - name: "Install dependency: qemu user cache"
         if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
-          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.2.5+ds-1_amd64.deb
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_9.1.0+ds-8_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
@@ -167,9 +167,7 @@ jobs:
           # libc6-i386 interferes with x86 build
           sudo apt remove libc6-i386
 
-          sudo apt install qemu-user
-          sudo apt remove -y qemu-user-binfmt
-          sudo dpkg -i qemu-user-static_*.deb
+          sudo dpkg -i qemu-user_*.deb
       - name: Populate dependencie (cmake, overwrite)
         run: |
           curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz
@@ -199,7 +197,7 @@ jobs:
         if: ${{ matrix.arch_name != 'x86' && matrix.arch_name != 'x86_64' }}
         run: |
           # TMPDIR is required by leveldb unittests
-          qemu-${{ matrix.qemu_suffix }}-static -L $SDK_ROOT \
+          qemu-${{ matrix.qemu_suffix }} -L $SDK_ROOT \
             -E TMPDIR=$PWD/build-linux-openwrt-${{ matrix.arch }} \
             $PWD/build-linux-openwrt-${{ matrix.arch }}/yass_test \
             --no_exec_proc_tests

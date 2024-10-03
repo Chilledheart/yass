@@ -110,13 +110,13 @@ jobs:
         with:
           path: ~/.gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle') }}
-      - name: Cache qemu-user-static
+      - name: Cache qemu-user
         id: qemu-user-cache
         uses: actions/cache@v4
         with:
           path: |
-            qemu-user-static*.deb
-          key: ${{ runner.os }}-qemu-8.2.5-ds-1
+            qemu-user*.deb
+          key: ${{ runner.os }}-qemu-9.1.0-ds-8
       - name: Cache sysroot
         id: sysroot-cache
         uses: actions/cache@v4
@@ -166,7 +166,7 @@ jobs:
       - name: "Install dependency: qemu user cache"
         if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
-          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.2.5+ds-1_amd64.deb
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_9.1.0+ds-8_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
@@ -178,9 +178,7 @@ jobs:
           # libc6-i386 interferes with x86 build
           sudo apt remove libc6-i386
 
-          sudo apt install qemu-user
-          sudo apt remove -y qemu-user-binfmt
-          sudo dpkg -i qemu-user-static_*.deb
+          sudo dpkg -i qemu-user_*.deb
       - name: Install the Release certificate
         if: ${{ github.event_name == 'release' }}
         env:
@@ -225,7 +223,7 @@ jobs:
         if: ${{ matrix.arch != 'x86' && matrix.arch != 'x64' }}
         run: |
           # TMPDIR is required by leveldb unittests
-          qemu-${{ matrix.qemu_suffix }}-static -L $SYSROOT \
+          qemu-${{ matrix.qemu_suffix }} -L $SYSROOT \
             -E TMPDIR=$PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} \
             $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }}/yass_test
       - name: Upload dist tarball (including debuginfo)
