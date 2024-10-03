@@ -7,10 +7,16 @@ if [ -z "$(which rustup)" ]; then
   exit -1
 fi
 
-if [ -z "$ANDROID_NDK_ROOT" ]; then
-  echo "ANDROID_NDK_ROOT not defined"
+if [ -z "$ANDROID_SDK_ROOT" ]; then
+  echo "ANDROID_SDK_ROOT not defined"
   exit -1
 fi
+
+if [ -z "$ANDROID_NDK_VER" ]; then
+  echo "ANDROID_NDK_VER not defined"
+  exit -1
+fi
+NDK_ROOT="${ANDROID_SDK_ROOT}/ndk/${ANDROID_NDK_VER}"
 
 echo "Adding rustup toolchain..."
 
@@ -54,20 +60,20 @@ esac
 cat >> ~/.cargo/config.toml << EOF
 
 [target.aarch64-linux-android]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/aarch64-linux-android24-clang"
+ar = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/aarch64-linux-android24-clang"
 
 [target.armv7-linux-androideabi]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/armv7a-linux-androideabi24-clang"
+ar = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/armv7a-linux-androideabi24-clang"
 
 [target.i686-linux-android]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/i686-linux-android24-clang"
+ar = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/i686-linux-android24-clang"
 
 [target.x86_64-linux-android]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/x86_64-linux-android24-clang"
+ar = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/x86_64-linux-android24-clang"
 EOF
 
 echo "Patching cargo config.toml ...done"
