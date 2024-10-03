@@ -91,7 +91,7 @@ jobs:
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-stripped
+          key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-ndk-ver
       - name: Cache cargo build stage
         id: cargo-cache
         uses: actions/cache@v4
@@ -158,7 +158,7 @@ jobs:
           # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
             -cmake-build-type MinSizeRel -no-build -no-configure \
-            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-ver "${ANDROID_NDK_VER}"
+            -android-sdk-dir "${ANDROID_SDK_ROOT}" -android-ndk-ver "${ANDROID_NDK_VER}"
       - name: Download and Build Crashpad (include depot_tools)
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -198,7 +198,7 @@ jobs:
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \
             -build-benchmark -build-test \
-            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-ver "${ANDROID_NDK_VER}"
+            -android-sdk-dir "${ANDROID_SDK_ROOT}" -android-ndk-ver "${ANDROID_NDK_VER}"
       - name: Clean up keychain and provisioning profile
         if: ${{ always() }}
         run: |

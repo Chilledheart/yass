@@ -140,7 +140,7 @@ ios_deployment_target=\"13.0\""
   os_suffix="-android"
   flags="$flags
 android_api_level=24
-android_ndk_root=\"$ANDROID_NDK_ROOT\""
+android_ndk_root=\"$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VER\""
     ;;
   *)
     ;;
