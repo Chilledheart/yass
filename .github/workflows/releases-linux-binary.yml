@@ -114,6 +114,8 @@ jobs:
       - name: Setup mold linker
         uses: rui314/setup-mold@v1
         with:
+          # FIXME see https://github.com/rui314/mold/issues/1351
+          mold-version: 2.33.0
           make-default: false
       - name: Setup build flags for mold
         if: ${{ matrix.arch != 'riscv32' && matrix.arch != 'mipsel' && matrix.arch != 'mips64el' }}
