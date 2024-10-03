@@ -2373,6 +2373,12 @@ func inspectArchive(file string, files []string) {
 	} else if strings.HasSuffix(file, ".zip") || strings.HasSuffix(file, ".msi") || strings.HasSuffix(file, ".exe") || strings.HasSuffix(file, ".apk") || strings.HasSuffix(file, ".ipa") {
 		p7z := get7zPath()
 		cmdRun([]string{p7z, "l", file}, false)
+		if strings.HasSuffix(file, ".apk") {
+			// check 16kb-alignment with zipalign
+			// FIXME hardcoded with build-tools 35.0.0
+			zipalign := filepath.Join(androidSdkDir, "build-tools", "35.0.0", "zipalign")
+			cmdRun([]string{zipalign, "-c", "-P", "16", "-v", "4", file}, true)
+		}
 	} else if strings.HasSuffix(file, ".tgz") {
 		cmdRun([]string{"tar", "tvf", file}, false)
 	} else {

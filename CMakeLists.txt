@@ -993,6 +993,11 @@ if (NOT MSVC)
   if (ANDROID OR OHOS)
     add_definitions(-D__GNU_SOURCE=1)
   endif()
+  # support for 16k page size
+  # https://developer.android.com/guide/practices/page-sizes#compile-r26-lower
+  if (ANDROID)
+    add_link_options(-Wl,-z,max-page-size=16384)
+  endif()
 
   ## optimization flags
   ## TODO Changed in version 3.19: Multiple configurations can be specified for cfgs
@@ -1462,7 +1467,7 @@ endif()
 # Linux-specific compiler flags setup.
 # ------------------------------------
 if ((UNIX AND NOT APPLE) AND USE_LLD)
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" AND NOT ANDROID)
     # Reduce the page size from 65536 in order to reduce binary size slightly
     # by shrinking the alignment gap between segments. This also causes all
     # segments to be mapped adjacently, which breakpad relies on.
@@ -1828,7 +1833,7 @@ if (ANDROID)
   # Reduce the page size from 65536 in order to reduce binary size slightly
   # by shrinking the alignment gap between segments. This also causes all
   # segments to be mapped adjacently, which breakpad relies on.
-  if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm64.*")
+  if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm64.*" AND NOT ANDROID)
     add_link_options(-Wl,-z,max-page-size=4096)
   endif()
 
