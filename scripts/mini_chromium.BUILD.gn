@@ -369,6 +369,7 @@ config("default") {
 
     common_flags += [ "--target=" + clang_prefix ]
     common_flags += [ "--sysroot=" + ndk_sysroot_dir ]
+    ldflags += [ "-Wl,-z,max-page-size=16384" ]
   }
 
   if (mini_chromium_is_fuchsia) {
