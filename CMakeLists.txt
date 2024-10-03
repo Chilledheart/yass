@@ -993,11 +993,6 @@ if (NOT MSVC)
   if (ANDROID OR OHOS)
     add_definitions(-D__GNU_SOURCE=1)
   endif()
-  # support for 16k page size
-  # https://developer.android.com/guide/practices/page-sizes#compile-r26-lower
-  if (ANDROID)
-    add_link_options(-Wl,-z,max-page-size=16384)
-  endif()
 
   ## optimization flags
   ## TODO Changed in version 3.19: Multiple configurations can be specified for cfgs
