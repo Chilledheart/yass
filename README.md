@@ -73,11 +73,11 @@ it is expected that it would be delayed in a proper and unlimited period.
 
 ### Contribute your translation (i18n)
 
-Please submit translations via Transifex: https://app.transifex.com/yetanothershadowsocket/yetanothershadowsocket
+Please submit translations via [Transifex][transifex]
 
 Steps:
 
-1. Create a free account on Transifex (https://www.transifex.com/).
+1. Create a free account on [Transifex][transifex] (https://www.transifex.com/).
 2. Send a request to join the language translation.
 3. After accepted by the project maintainer, then you can translate online.
 
@@ -160,6 +160,7 @@ See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usa
 [ios_testflight_appstore_url]: https://apps.apple.com/us/app/testflight/id899247664
 [KB2999226]: https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
+[transifex]: https://app.transifex.com/yetanothershadowsocket/yetanothershadowsocket
 
 [bugs]: https://github.com/Chilledheart/yass/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=
 [frs]: https://github.com/Chilledheart/yass/issues/new?assignees=&labels=feature&projects=&template=feature_request.md&title=
