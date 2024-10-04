@@ -2,6 +2,8 @@
 
 yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/socks5h protocol running on PC and mobile devices.
 
+[Report here if find bugs in this product][bugs]
+
 ## Releases
 
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
@@ -21,6 +23,8 @@ we are following [chromium's release schedule](https://chromiumdash.appspot.com/
 - [Latest M123's Release (1.7.x)](https://github.com/Chilledheart/yass/releases/tag/1.7.7) has become Stable Release since _Mar 19, 2024_
 - [Latest M122's Release (1.6.x)](https://github.com/Chilledheart/yass/releases/tag/1.6.5) has become Stable Release since _Feb 20, 2024_ (Extended Support)
 - [Latest M121's Release (1.5.x)](https://github.com/Chilledheart/yass/releases/tag/1.5.24) has become Stable Release since _Jan 23, 2024_
+
+[Report here if you find new network protocol/modification here and there, likely outside Chromium and curl][frs]
 
 ### Prebuilt binaries (Supported platforms)
 - GTK3 [download rpm][gtk3_rpm_url] or [download deb][gtk3_deb_url] (minimum requirement: _CentOS 8_ or _Ubuntu 16.04_)
@@ -43,20 +47,29 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
-- Flatpak for Linux (Qt6) [download flatpak][qt6_flatpak_x86_64_url] (unsandboxed edition) for _x86_64_ machine only.
+- Flatpak for Linux (Qt6) [download flatpak][qt6_flatpak_x86_64_url] for _x86_64_ only.
 
-### Prebuilt binaries (Legacy platforms)
+[Flathub][flathub_url]: available at latest version (Qt5, [report if you need Qt6 version][frs]). Do the following commands if you don't know how to start:
+> `flatpak install --user io.github.chilledheart.yass`
+
+[![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)][flathub_url]
+[![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)][flathub_url]
+
+[Report here if you need new features][frs]
+
+### Prebuilt binaries (Legacy supported platforms)
+
 - Legacy Android [download 64-bit apk][android_64_apk_url] or [download 32-bit apk][android_32_apk_url] (require _Android 7.0_ or above)
 - Legacy iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
 - Legacy Windows [download 64-bit installer][windows_64_installer_url] (require [KB2999226] on _windows 7/8/8.1_) or [download 32-bit installer][windows_32_installer_url] (require [vc 2010 runtime][vs2010_x86] on _windows xp sp3_) or [download arm64 installer][windows_arm64_installer_url] (require _windows 10/11_)
 - Legacy macOS [download intel dmg][macos_intel_dmg_url] or [download apple silicon dmg][macos_arm_dmg_url] (require _macOS 10.14_ or above)
 
-> via [Flathub][flathub_url]: `flatpak install --user io.github.chilledheart.yass` (recommended, signed and sandboxed) for both of _x86_64_ and _aarch64_ machines
-
-[![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)][flathub_url]
-[![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)][flathub_url]
-
 See [Supporteded Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System) for more.
+
+[Report here if you need to run outside the OS in the table][frs]
+
+Special Note: for legacy supported platforms, [bugs][bugs] will be fixed ASAP while [feature request][frs] is a time-consuming task and
+it is expected that it would be delayed in a proper and unlimited period.
 
 ### Contribute your translation (i18n)
 
@@ -68,13 +81,19 @@ Steps:
 2. Send a request to join the language translation.
 3. After accepted by the project maintainer, then you can translate online.
 
+[Report here if you want to add new language outside current layout][frs]
+
 ### Build from Source
 Take a look at [build instructions](BUILDING.md) and [packaging instructions](PACKAGING.md).
+
+[Report here if you want to build or package in a new distribution/platform][frs]
 
 ## Highlight Features
 
 ### TLS-Compatible Protocol Support
 Cipher http over TLS are compatible.
+
+If you need custom Certificate Authority support in GUI or add other TLS-related features, [report here][frs].
 
 ### Post Quantum Kyber Support (TLS)
 Post Quantum Kyber Support (not enabled by default) is added on all of supported Platforms.
@@ -92,10 +111,14 @@ Cipher http2 and https are compatible.
 
 See [NaïveProxy](https://github.com/klzgrad/naiveproxy)'s project homepage for support.
 
-### More Usages
+## Usages
+
+### Standard Usages
 Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage).
 
-## Server side support (outside this project)
+[Report here if you want to add new client-side optimization/usage][frs]
+
+### Server side support (mostly outside this project)
 
 See [Setup forwardproxy caddy service](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#setup-forwardproxy-caddy-service) for more.
 
@@ -105,11 +128,7 @@ See [Use BBR Congestion Control](https://github.com/Chilledheart/yass/wiki/Usage
 
 See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup#chatgpt-capable-caddy-server) for more.
 
-## Extra Features (Command Line only)
-
-### Use custom CA certificate file
-Pass `--certificate_chain_file file` to command line.
-Use custom certificate chain provided by _file_ to verify server's certificate.
+[Report here if you want to add new server-side optimization/cooperation][frs]
 
 ## Build Status
 
@@ -134,11 +153,16 @@ Use custom certificate chain provided by _file_ to verify server's certificate.
 [![Old MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 [![Clang Tidy](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml)
 
+[Report here if you want to connect to new CI infrastructure][frs]
+
 [flathub_url]: https://flathub.org/apps/io.github.chilledheart.yass
 [ios_testflight_invitation]: https://testflight.apple.com/join/6AkiEq09
 [ios_testflight_appstore_url]: https://apps.apple.com/us/app/testflight/id899247664
 [KB2999226]: https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c
 [vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
+
+[bugs]: https://github.com/Chilledheart/yass/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=
+[frs]: https://github.com/Chilledheart/yass/issues/new?assignees=&labels=feature&projects=&template=feature_request.md&title=
 
 [gtk3_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass-gtk3.el8.x86_64.1.14.1.rpm
 [gtk3_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.14.1/yass-gtk3-ubuntu-16.04-xenial_amd64.1.14.1.deb
