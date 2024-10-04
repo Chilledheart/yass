@@ -2,7 +2,7 @@
 
 yass is an efficient forward proxy client supporting http/socks4/socks4a/socks5/socks5h protocol running on PC and mobile devices.
 
-[Report here if find bugs in this product][bugs]
+[Report if you find any bug in this product][bugs]
 
 ## Releases
 
