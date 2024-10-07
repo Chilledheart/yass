@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #include "net/ssl_server_socket.hpp"
 
+#include "config/config_tls.hpp"
 #include "net/openssl_util.hpp"
 #include "third_party/boringssl/src/include/openssl/err.h"
 
@@ -28,7 +29,19 @@ SSLServerSocket::SSLServerSocket(asio::io_context* io_context, asio::ip::tcp::so
   // TODO:
   // Set certificate and private key.
   // SSL_set_signing_algorithm_prefs
-  // SSL_set1_curves
+  if (TEST_post_quantumn_only_mode && absl::GetFlag(FLAGS_enable_post_quantum_kyber)) {
+    const uint16_t postquantum_group =
+        absl::GetFlag(FLAGS_use_ml_kem) ? SSL_GROUP_X25519_MLKEM768 : SSL_GROUP_X25519_KYBER768_DRAFT00;
+    const uint16_t kGroups[] = {postquantum_group};
+    int ret = SSL_set1_group_ids(ssl_.get(), kGroups, std::size(kGroups));
+    CHECK_EQ(ret, 1) << "SSL_set1_group_ids failure";
+  } else if (absl::GetFlag(FLAGS_enable_post_quantum_kyber)) {
+    const uint16_t postquantum_group =
+        absl::GetFlag(FLAGS_use_ml_kem) ? SSL_GROUP_X25519_MLKEM768 : SSL_GROUP_X25519_KYBER768_DRAFT00;
+    const uint16_t kGroups[] = {postquantum_group, SSL_GROUP_X25519, SSL_GROUP_SECP256R1, SSL_GROUP_SECP384R1};
+    int ret = SSL_set1_group_ids(ssl_.get(), kGroups, std::size(kGroups));
+    CHECK_EQ(ret, 1) << "SSL_set1_group_ids failure";
+  }
 }
 
 SSLServerSocket::~SSLServerSocket() {
@@ -481,5 +494,7 @@ int SSLServerSocket::MapLastOpenSSLError(int ssl_error) {
 
   return net_error;
 }
+
+bool SSLServerSocket::TEST_post_quantumn_only_mode = false;
 
 }  // namespace net

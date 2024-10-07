@@ -31,11 +31,20 @@ ABSL_FLAG(std::string,
 ABSL_FLAG(std::string, capath, "", "Tells where to use the specified certificate directory to verify the peer");
 
 ABSL_FLAG(bool, tls13_early_data, true, "Enable 0RTTI Early Data (risk at production)");
+
 ABSL_FLAG(bool,
           enable_post_quantum_kyber,
           false,
-          "Enable post-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard "
-          "(ML-KEM) (Client only)");
+          "Enables post-quantum key-agreements in TLS 1.3 connections. "
+          "The use_ml_kem flag controls whether ML-KEM or Kyber is used.");
+ABSL_FLAG(bool,
+          use_ml_kem,
+          false,
+          "Use ML-KEM in TLS 1.3. "
+          "Causes TLS 1.3 connections to use the ML-KEM standard instead of the Kyber "
+          "draft standard for post-quantum key-agreement. "
+          "The enable_post_quantum_kyber flag must be enabled "
+          "for this to have an effect.");
 
 namespace config {
 bool ReadTLSConfigFile() {
