@@ -736,6 +736,38 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
   std::unique_ptr<cli::CliServer> local_server_;
   asio::ip::tcp::endpoint local_endpoint_;
 };
+
+class EndToEndTestPostQuantumnKyber : public EndToEndTest {
+ protected:
+  void SetUp() override {
+    absl::SetFlag(&FLAGS_enable_post_quantum_kyber, true);
+    absl::SetFlag(&FLAGS_use_ml_kem, false);
+    net::SSLServerSocket::TEST_set_post_quantumn_only_mode(true);
+    EndToEndTest::SetUp();
+  }
+  void TearDown() override {
+    EndToEndTest::TearDown();
+    net::SSLServerSocket::TEST_set_post_quantumn_only_mode(false);
+    absl::SetFlag(&FLAGS_enable_post_quantum_kyber, false);
+    absl::SetFlag(&FLAGS_use_ml_kem, false);
+  }
+};
+
+class EndToEndTestPostQuantumnMLKEM : public EndToEndTest {
+ protected:
+  void SetUp() override {
+    absl::SetFlag(&FLAGS_enable_post_quantum_kyber, true);
+    absl::SetFlag(&FLAGS_use_ml_kem, true);
+    net::SSLServerSocket::TEST_set_post_quantumn_only_mode(true);
+    EndToEndTest::SetUp();
+  }
+  void TearDown() override {
+    EndToEndTest::TearDown();
+    net::SSLServerSocket::TEST_set_post_quantumn_only_mode(false);
+    absl::SetFlag(&FLAGS_enable_post_quantum_kyber, false);
+    absl::SetFlag(&FLAGS_use_ml_kem, false);
+  }
+};
 }  // namespace
 
 TEST_P(EndToEndTest, 4K) {
@@ -762,6 +794,56 @@ static constexpr const cipher_method kCiphers[] = {
 INSTANTIATE_TEST_SUITE_P(Ss,
                          EndToEndTest,
                          ::testing::ValuesIn(kCiphers),
+                         [](const ::testing::TestParamInfo<cipher_method>& info) -> std::string {
+                           return std::string(to_cipher_method_name(info.param));
+                         });
+
+TEST_P(EndToEndTestPostQuantumnKyber, 4K) {
+  GenerateRandContent(4096);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTestPostQuantumnKyber, 256K) {
+  GenerateRandContent(256 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTestPostQuantumnKyber, 1M) {
+  GenerateRandContent(1024 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+static constexpr const cipher_method kCiphersHttps[] = {
+#define XX(num, name, string) CRYPTO_##name,
+    CIPHER_METHOD_MAP_HTTPS(XX)
+#undef XX
+};
+
+INSTANTIATE_TEST_SUITE_P(Ss,
+                         EndToEndTestPostQuantumnKyber,
+                         ::testing::ValuesIn(kCiphersHttps),
+                         [](const ::testing::TestParamInfo<cipher_method>& info) -> std::string {
+                           return std::string(to_cipher_method_name(info.param));
+                         });
+
+TEST_P(EndToEndTestPostQuantumnMLKEM, 4K) {
+  GenerateRandContent(4096);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTestPostQuantumnMLKEM, 256K) {
+  GenerateRandContent(256 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTestPostQuantumnMLKEM, 1M) {
+  GenerateRandContent(1024 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+INSTANTIATE_TEST_SUITE_P(Ss,
+                         EndToEndTestPostQuantumnMLKEM,
+                         ::testing::ValuesIn(kCiphersHttps),
                          [](const ::testing::TestParamInfo<cipher_method>& info) -> std::string {
                            return std::string(to_cipher_method_name(info.param));
                          });

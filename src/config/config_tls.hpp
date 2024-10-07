@@ -17,6 +17,7 @@ ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
 ABSL_DECLARE_FLAG(bool, tls13_early_data);
 ABSL_DECLARE_FLAG(bool, enable_post_quantum_kyber);
+ABSL_DECLARE_FLAG(bool, use_ml_kem);
 
 namespace config {
 bool ReadTLSConfigFile();

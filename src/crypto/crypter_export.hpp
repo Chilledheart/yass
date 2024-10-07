@@ -42,6 +42,9 @@
 #define CIPHER_METHOD_MAP_HTTP(XX) XX(0x110U, HTTPS, "https")
 
 #ifdef HAVE_QUICHE
+#define CIPHER_METHOD_MAP_HTTPS(XX) \
+  CIPHER_METHOD_MAP_HTTP(XX)        \
+  XX(0x121U, HTTP2, "http2")
 #define CIPHER_METHOD_MAP_HTTP2(XX)              \
   XX(0x120U, HTTP2_PLAINTEXT, "http2-plaintext") \
   XX(0x121U, HTTP2, "http2")
@@ -53,6 +56,7 @@
   XX(0x124U, HTTP2_INPLACE_4, "http2-4-protocol") \
   XX(0x125U, HTTP2_INPLACE_5, "http2-5-protocol")
 #else
+#define CIPHER_METHOD_MAP_HTTPS(XX) CIPHER_METHOD_MAP_HTTP(XX)
 #define CIPHER_METHOD_MAP_HTTP2(XX)
 #endif
 

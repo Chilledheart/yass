@@ -472,7 +472,8 @@ void SetClientUsageMessage(std::string_view exec_path) {
   --certificate_chain_file <file> Use custom certificate chain file to verify server's certificate
   -k, --insecure_mode Skip the verification step and proceed without checking
   --tls13_early_data Enable 0RTTI Early Data
-  --enable_post_quantum_kyber Enable post-quantum secure TLS key encapsulation mechanism X25519Kyber768, based on a NIST standard (ML-KEM)
+  --enable_post_quantum_kyber Enables post-quantum key-agreements in TLS 1.3 connections. The use_ml_kem flag controls whether ML-KEM or Kyber is used.
+  --use_ml_kem Use ML-KEM in TLS 1.3. Causes TLS 1.3 connections to use the ML-KEM standard instead of the Kyber draft standard for post-quantum key-agreement. The enable_post_quantum_kyber flag must be enabled for this to have an effect.
 )"));
 }
 
@@ -494,7 +495,6 @@ void SetServerUsageMessage(std::string_view exec_path) {
   --certificate_chain_file <file> Use custom certificate chain file to verify server's certificate
   --private_key_file <file> Use custom private key file to secure connection between server and client
   --private_key_password <password> Use custom private key password to decrypt server's encrypted private key
-  --tls13_early_data Enable 0RTTI Early Data
 )"));
 }
 

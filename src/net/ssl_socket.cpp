@@ -57,9 +57,11 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
   }
 
   if (absl::GetFlag(FLAGS_enable_post_quantum_kyber)) {
-    static constexpr const int kCurves[] = {NID_X25519Kyber768Draft00, NID_X25519, NID_X9_62_prime256v1, NID_secp384r1};
-    int ret = SSL_set1_curves(ssl_.get(), kCurves, std::size(kCurves));
-    CHECK_EQ(ret, 1) << "SSL_set1_curves failure";
+    const uint16_t postquantum_group =
+        absl::GetFlag(FLAGS_use_ml_kem) ? SSL_GROUP_X25519_MLKEM768 : SSL_GROUP_X25519_KYBER768_DRAFT00;
+    const uint16_t kGroups[] = {postquantum_group, SSL_GROUP_X25519, SSL_GROUP_SECP256R1, SSL_GROUP_SECP384R1};
+    int ret = SSL_set1_group_ids(ssl_.get(), kGroups, std::size(kGroups));
+    CHECK_EQ(ret, 1) << "SSL_set1_group_ids failure";
   }
 
   SSL_set_early_data_enabled(ssl_.get(), early_data_enabled_);
