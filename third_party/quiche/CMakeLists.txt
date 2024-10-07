@@ -208,6 +208,8 @@ set(quiche_SRCS
   src/quiche/http2/hpack/decoder/hpack_whole_entry_listener.h
   src/quiche/http2/hpack/hpack_constants.cc
   src/quiche/http2/hpack/hpack_constants.h
+  src/quiche/http2/hpack/hpack_decoder_adapter.cc
+  src/quiche/http2/hpack/hpack_decoder_adapter.h
   src/quiche/http2/hpack/hpack_encoder.cc
   src/quiche/http2/hpack/hpack_encoder.h
   src/quiche/http2/hpack/hpack_entry.cc
@@ -245,13 +247,6 @@ set(quiche_SRCS
   src/quiche/oblivious_http/oblivious_http_client.h
   src/quiche/oblivious_http/oblivious_http_gateway.cc
   src/quiche/oblivious_http/oblivious_http_gateway.h
-  src/quiche/spdy/core/http2_frame_decoder_adapter.h
-  src/quiche/spdy/core/http2_header_block.h
-  src/quiche/spdy/core/spdy_alt_svc_wire_format.h
-  src/quiche/spdy/core/spdy_bitmasks.h
-  src/quiche/spdy/core/spdy_frame_builder.h
-  src/quiche/spdy/core/spdy_framer.h
-  src/quiche/spdy/core/spdy_protocol.h
   )
 
 set(quiche_quic_SOURCES
@@ -280,6 +275,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/congestion_control/loss_detection_interface.h
   src/quiche/quic/core/congestion_control/pacing_sender.cc
   src/quiche/quic/core/congestion_control/pacing_sender.h
+  src/quiche/quic/core/congestion_control/prague_sender.cc
+  src/quiche/quic/core/congestion_control/prague_sender.h
   src/quiche/quic/core/congestion_control/prr_sender.cc
   src/quiche/quic/core/congestion_control/prr_sender.h
   src/quiche/quic/core/congestion_control/rtt_stats.cc
@@ -702,9 +699,6 @@ set(quiche_quic_SOURCES
   src/quiche/quic/platform/api/quic_stack_trace.h
   src/quiche/quic/platform/api/quic_testvalue.h
   src/quiche/quic/platform/api/quic_thread.h
-  src/quiche/spdy/core/hpack/hpack_decoder_adapter.cc
-  src/quiche/spdy/core/hpack/hpack_decoder_adapter.h
-  src/quiche/spdy/core/hpack/hpack_encoder.h
   src/quiche/web_transport/complete_buffer_visitor.cc
   src/quiche/web_transport/complete_buffer_visitor.h
   src/quiche/web_transport/encapsulated/encapsulated_web_transport.cc

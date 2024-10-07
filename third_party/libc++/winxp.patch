@@ -15,10 +15,10 @@ index de35aaca1..864134812 100644
  #  ifdef _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
    ~condition_variable() = default;
 diff --git a/include/__config b/include/__config
-index 0797880cb..ae205a24c 100644
+index 0d7126461..8282a5d2f 100644
 --- a/include/__config
 +++ b/include/__config
-@@ -1164,8 +1164,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -860,8 +860,7 @@ typedef __char32_t char32_t;
  //               respective stakeholders.
  // clang-format off
  #  if (defined(_LIBCPP_HAS_THREAD_API_PTHREAD) && defined(__GLIBC__)) ||                                               \
@@ -28,7 +28,7 @@ index 0797880cb..ae205a24c 100644
  // clang-format on
  #    define _LIBCPP_HAS_TRIVIAL_MUTEX_DESTRUCTION
  #  endif
-@@ -1178,7 +1177,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -874,7 +873,7 @@ typedef __char32_t char32_t;
  //
  // TODO(EricWF): This is potentially true for some pthread implementations
  // as well.
@@ -38,7 +38,7 @@ index 0797880cb..ae205a24c 100644
  #  endif
  
 diff --git a/include/__mutex/mutex.h b/include/__mutex/mutex.h
-index ddc85cf5a..d8f9b0563 100644
+index 1ed015471..8c41fb7fa 100644
 --- a/include/__mutex/mutex.h
 +++ b/include/__mutex/mutex.h
 @@ -25,7 +25,11 @@ class _LIBCPP_EXPORTED_FROM_ABI _LIBCPP_THREAD_SAFETY_ANNOTATION(capability("mut
@@ -227,10 +227,10 @@ index 5dc4fa14f..99d22cdb5 100644
  _LIBCPP_EXPORTED_FROM_ABI int __libcpp_thread_join(__libcpp_thread_t* __t);
  
 diff --git a/include/__thread/thread.h b/include/__thread/thread.h
-index 28c2e2160..e337bd50f 100644
+index 481a3f38b..bcbce83c5 100644
 --- a/include/__thread/thread.h
 +++ b/include/__thread/thread.h
-@@ -147,6 +147,9 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, __thread_id __id) {
+@@ -150,6 +150,9 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, __thread_id __id) {
  
  class _LIBCPP_EXPORTED_FROM_ABI thread {
    __libcpp_thread_t __t_;
@@ -240,8 +240,8 @@ index 28c2e2160..e337bd50f 100644
  
    thread(const thread&);
    thread& operator=(const thread&);
-@@ -165,8 +168,16 @@ public:
- #endif
+@@ -168,8 +171,16 @@ public:
+ #  endif
    ~thread();
  
 +#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
@@ -257,7 +257,7 @@ index 28c2e2160..e337bd50f 100644
    _LIBCPP_HIDE_FROM_ABI thread& operator=(thread&& __t) _NOEXCEPT {
      if (!__libcpp_thread_isnull(&__t_))
        terminate();
-@@ -174,13 +185,35 @@ public:
+@@ -177,13 +188,35 @@ public:
      __t.__t_ = _LIBCPP_NULL_THREAD;
      return *this;
    }
@@ -293,7 +293,7 @@ index 28c2e2160..e337bd50f 100644
    _LIBCPP_HIDE_FROM_ABI native_handle_type native_handle() _NOEXCEPT { return __t_; }
  
    static unsigned hardware_concurrency() _NOEXCEPT;
-@@ -209,7 +242,11 @@ thread::thread(_Fp&& __f, _Args&&... __args) {
+@@ -212,7 +245,11 @@ thread::thread(_Fp&& __f, _Args&&... __args) {
    _TSPtr __tsp(new __thread_struct);
    typedef tuple<_TSPtr, __decay_t<_Fp>, __decay_t<_Args>...> _Gp;
    unique_ptr<_Gp> __p(new _Gp(std::move(__tsp), std::forward<_Fp>(__f), std::forward<_Args>(__args)...));
@@ -305,7 +305,7 @@ index 28c2e2160..e337bd50f 100644
    if (__ec == 0)
      __p.release();
    else
-@@ -241,7 +278,11 @@ thread::thread(_Fp __f) {
+@@ -244,7 +281,11 @@ thread::thread(_Fp __f) {
    typedef __thread_invoke_pair<_Fp> _InvokePair;
    typedef unique_ptr<_InvokePair> _PairPtr;
    _PairPtr __pp(new _InvokePair(__f));
@@ -349,7 +349,7 @@ index 59811ed7f..15de32f2e 100644
    ~condition_variable();
  
 diff --git a/src/filesystem/posix_compat.h b/src/filesystem/posix_compat.h
-index 760cdb65d..7238a27bd 100644
+index b41c00434..f45ee6344 100644
 --- a/src/filesystem/posix_compat.h
 +++ b/src/filesystem/posix_compat.h
 @@ -47,6 +47,9 @@
@@ -480,7 +480,7 @@ index 3aaf71d84..4fa2fc246 100644
  #endif
    __c_ = 1;
 diff --git a/src/support/win32/thread_win32.cpp b/src/support/win32/thread_win32.cpp
-index a2585c0b8..f7d025674 100644
+index 3a67d759f..f7d025674 100644
 --- a/src/support/win32/thread_win32.cpp
 +++ b/src/support/win32/thread_win32.cpp
 @@ -11,23 +11,48 @@
@@ -771,7 +771,7 @@ index a2585c0b8..f7d025674 100644
  
 -int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void (*__init_routine)(void)) {
 -  if (!InitOnceExecuteOnce(
--          (PINIT_ONCE)__flag, __libcpp_init_once_execute_once_thunk, reinterpret_cast<void*>(__init_routine), NULL))
+-          (PINIT_ONCE)__flag, __libcpp_init_once_execute_once_thunk, reinterpret_cast<void*>(__init_routine), nullptr))
 +int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void* arg, void (*init_routine)(void*)) {
 +  static_assert(sizeof(__libcpp_exec_once_flag) == sizeof(INIT_ONCE), "invalid size");
 +  __libcpp_init_once_execute_context __ctx;
