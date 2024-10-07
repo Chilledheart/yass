@@ -1249,7 +1249,7 @@ func GetWin32SearchPath() []string {
 	// TODO test under shaded libc++
 
 	// VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
-	//  14.30-14.3?:v143:Visual Studio 2022
+	//  14.30-14.??:v143:Visual Studio 2022
 	//  14.20-14.29:v142:Visual Studio 2019
 	//  14.10-14.19:v141:Visual Studio 2017
 	//  14.00-14.00:v140:Visual Studio 2015
@@ -1283,6 +1283,16 @@ func GetWin32SearchPath() []string {
 	//  14.29   Visual Studio 2019 version 16.10, 16.11    1929
 	//  14.30   Visual Studio 2022 RTW (17.0)              1930
 	//  14.31   Visual Studio 2022 version 17.1            1931
+	//  14.32   Visual Studio 2022 version 17.2            1932
+	//  14.33   Visual Studio 2022 version 17.3            1933
+	//  14.34   Visual Studio 2022 version 17.4            1934
+	//  14.35   Visual Studio 2022 version 17.5            1935
+	//  14.36   Visual Studio 2022 version 17.6            1936
+	//  14.37   Visual Studio 2022 version 17.7            1937
+	//  14.38   Visual Studio 2022 version 17.8            1938
+	//  14.39   Visual Studio 2022 version 17.9            1939
+	//  14.40   Visual Studio 2022 version 17.10           1940
+	//  14.41   Visual Studio 2022 version 17.11           1941
 	//
 	//  Visual Studio 2015 is not supported by this script due to
 	//  the missing environment variable VCToolsVersion

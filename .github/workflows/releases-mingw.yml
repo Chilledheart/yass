@@ -18,11 +18,11 @@ on:
   schedule:
     - cron: '0 16 * * *'
 env:
-  CACHE_EPOCH: 129-1
+  CACHE_EPOCH: 130-2
   GOPROXY: direct
 jobs:
   mingw64-release:
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:

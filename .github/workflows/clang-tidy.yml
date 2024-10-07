@@ -18,11 +18,11 @@ on:
   schedule:
     - cron: '0 16 * * *'
 env:
-  CACHE_EPOCH: 129-1
+  CACHE_EPOCH: 130-2
   GOPROXY: direct
 jobs:
   win-clang-tidy:
-    runs-on: windows-2019
+    runs-on: windows-2022
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
@@ -76,11 +76,11 @@ jobs:
           ninja --version
       - name: Build
         run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
+          set VCToolsVersion=
+          set Winsdk=10.0.22621.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           set Platform=${{ matrix.arch }}
 
@@ -241,7 +241,7 @@ jobs:
         run: |
           ./tools/build -clang-tidy-mode -build-test -build-benchmark -no-packaging
   mac-clang-tidy:
-    runs-on: macos-14
+    runs-on: macos-15
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false

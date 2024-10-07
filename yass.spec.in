@@ -318,10 +318,9 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
-* Sun Sep 29 2024 Chilledheart <keeyou-cn@outlook.com> - 1.13.3-1
-  - config: use jsoncpp for configuration reader and writer
-  - net: apply tcp congestion only to connections between cli and server
-  - c-ares: backport some patches from upstream
+* Sun Oct 6 2024 Chilledheart <keeyou-cn@outlook.com> - 1.14.2-1
+  - systemd: update sample config files
+* Sun Sep 29 2024 Chilledheart <keeyou-cn@outlook.com> - 1.14.1-1
   - gtk4: fix typo in icon name
   - mbedtls: fix searching algorithm (system library)
   - benchmark: use re2 now
@@ -329,6 +328,11 @@ for embedded devices and low end boxes.
   - net: optimize yield algorithm
   - cli: add stats for yield event
   - net: add some assertions
+* Tue Sep 17 2024 Chilledheart <keeyou-cn@outlook.com> - 1.14.0-1
+  - bump to chromium 130 dependents
+  - config: use jsoncpp for configuration reader and writer
+  - net: apply tcp congestion only to connections between cli and server
+  - c-ares: backport some patches from upstream
 * Mon Sep 9 2024 Chilledheart <keeyou-cn@outlook.com> - 1.13.2-1
   - some trivial changes
 * Sun Sep 1 2024 Chilledheart <keeyou-cn@outlook.com> - 1.13.1-1

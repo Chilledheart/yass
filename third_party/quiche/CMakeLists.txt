@@ -245,9 +245,6 @@ set(quiche_SRCS
   src/quiche/oblivious_http/oblivious_http_client.h
   src/quiche/oblivious_http/oblivious_http_gateway.cc
   src/quiche/oblivious_http/oblivious_http_gateway.h
-  src/quiche/spdy/core/hpack/hpack_decoder_adapter.cc
-  src/quiche/spdy/core/hpack/hpack_decoder_adapter.h
-  src/quiche/spdy/core/hpack/hpack_encoder.h
   src/quiche/spdy/core/http2_frame_decoder_adapter.h
   src/quiche/spdy/core/http2_header_block.h
   src/quiche/spdy/core/spdy_alt_svc_wire_format.h
@@ -255,15 +252,6 @@ set(quiche_SRCS
   src/quiche/spdy/core/spdy_frame_builder.h
   src/quiche/spdy/core/spdy_framer.h
   src/quiche/spdy/core/spdy_protocol.h
-  src/quiche/web_transport/complete_buffer_visitor.cc
-  src/quiche/web_transport/complete_buffer_visitor.h
-  src/quiche/web_transport/encapsulated/encapsulated_web_transport.cc
-  src/quiche/web_transport/encapsulated/encapsulated_web_transport.h
-  src/quiche/web_transport/web_transport.h
-  src/quiche/web_transport/web_transport_headers.cc
-  src/quiche/web_transport/web_transport_headers.h
-  src/quiche/web_transport/web_transport_priority_scheduler.cc
-  src/quiche/web_transport/web_transport_priority_scheduler.h
   )
 
 set(quiche_quic_SOURCES
@@ -416,8 +404,6 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/frames/quic_crypto_frame.h
   src/quiche/quic/core/frames/quic_frame.cc
   src/quiche/quic/core/frames/quic_frame.h
-  src/quiche/quic/core/frames/quic_generic_session.cc
-  src/quiche/quic/core/frames/quic_generic_session.h
   src/quiche/quic/core/frames/quic_goaway_frame.cc
   src/quiche/quic/core/frames/quic_goaway_frame.h
   src/quiche/quic/core/frames/quic_handshake_done_frame.cc
@@ -463,6 +449,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/http/http_decoder.h
   src/quiche/quic/core/http/http_encoder.cc
   src/quiche/quic/core/http/http_encoder.h
+  src/quiche/quic/core/http/metadata_decoder.cc
+  src/quiche/quic/core/http/metadata_decoder.h
   src/quiche/quic/core/http/http_frames.h
   src/quiche/quic/core/http/quic_header_list.cc
   src/quiche/quic/core/http/quic_header_list.h
@@ -482,22 +470,22 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/http/quic_spdy_client_session_base.h
   src/quiche/quic/core/http/quic_spdy_client_stream.cc
   src/quiche/quic/core/http/quic_spdy_client_stream.h
+  src/quiche/quic/core/http/quic_spdy_server_stream_base.cc
+  src/quiche/quic/core/http/quic_spdy_server_stream_base.h
   src/quiche/quic/core/http/quic_spdy_session.cc
   src/quiche/quic/core/http/quic_spdy_session.h
   src/quiche/quic/core/http/quic_spdy_stream.cc
   src/quiche/quic/core/http/quic_spdy_stream.h
   src/quiche/quic/core/http/quic_spdy_stream_body_manager.cc
   src/quiche/quic/core/http/quic_spdy_stream_body_manager.h
-  src/quiche/quic/core/http/spdy_server_push_utils.cc
-  src/quiche/quic/core/http/spdy_server_push_utils.h
   src/quiche/quic/core/http/spdy_utils.cc
   src/quiche/quic/core/http/spdy_utils.h
   src/quiche/quic/core/http/web_transport_http3.cc
   src/quiche/quic/core/http/web_transport_http3.h
-  src/quiche/quic/core/internet_checksum.cc
-  src/quiche/quic/core/internet_checksum.h
   src/quiche/quic/core/http/web_transport_stream_adapter.cc
   src/quiche/quic/core/http/web_transport_stream_adapter.h
+  src/quiche/quic/core/internet_checksum.cc
+  src/quiche/quic/core/internet_checksum.h
   src/quiche/quic/core/legacy_quic_stream_id_manager.cc
   src/quiche/quic/core/legacy_quic_stream_id_manager.h
   src/quiche/quic/core/packet_number_indexed_queue.h
@@ -555,6 +543,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_blocked_writer_interface.h
   src/quiche/quic/core/quic_blocked_writer_list.h
   src/quiche/quic/core/quic_blocked_writer_list.cc
+  src/quiche/quic/core/quic_buffered_packet_store.cc
+  src/quiche/quic/core/quic_buffered_packet_store.h
   src/quiche/quic/core/quic_chaos_protector.cc
   src/quiche/quic/core/quic_chaos_protector.h
   src/quiche/quic/core/quic_clock.h
@@ -596,12 +586,20 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_data_writer.h
   src/quiche/quic/core/quic_datagram_queue.cc
   src/quiche/quic/core/quic_datagram_queue.h
+  src/quiche/quic/core/quic_default_clock.cc
+  src/quiche/quic/core/quic_default_clock.h
+  src/quiche/quic/core/quic_dispatcher.cc
+  src/quiche/quic/core/quic_dispatcher.h
+  src/quiche/quic/core/quic_dispatcher_stats.cc
+  src/quiche/quic/core/quic_dispatcher_stats.h
   src/quiche/quic/core/quic_error_codes.cc
   src/quiche/quic/core/quic_error_codes.h
   src/quiche/quic/core/quic_flow_controller.cc
   src/quiche/quic/core/quic_flow_controller.h
   src/quiche/quic/core/quic_framer.cc
   src/quiche/quic/core/quic_framer.h
+  src/quiche/quic/core/quic_generic_session.cc
+  src/quiche/quic/core/quic_generic_session.h
   src/quiche/quic/core/quic_idle_network_detector.cc
   src/quiche/quic/core/quic_idle_network_detector.h
   src/quiche/quic/core/quic_interval.h
@@ -654,6 +652,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_time.cc
   src/quiche/quic/core/quic_time.h
   src/quiche/quic/core/quic_time_accumulator.h
+  src/quiche/quic/core/quic_time_wait_list_manager.cc
+  src/quiche/quic/core/quic_time_wait_list_manager.h
   src/quiche/quic/core/quic_transmission_info.cc
   src/quiche/quic/core/quic_transmission_info.h
   src/quiche/quic/core/quic_types.cc
@@ -670,6 +670,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_write_blocked_list.h
   src/quiche/quic/core/session_notifier_interface.h
   src/quiche/quic/core/stream_delegate_interface.h
+  src/quiche/quic/core/tls_chlo_extractor.cc
+  src/quiche/quic/core/tls_chlo_extractor.h
   src/quiche/quic/core/tls_client_handshaker.cc
   src/quiche/quic/core/tls_client_handshaker.h
   src/quiche/quic/core/tls_handshaker.cc
@@ -681,7 +683,9 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/uber_received_packet_manager.cc
   src/quiche/quic/core/uber_received_packet_manager.h
   src/quiche/quic/core/web_transport_stats.cc
+  src/quiche/quic/core/web_transport_stats.h
   src/quiche/quic/core/web_transport_write_blocked_list.cc
+  src/quiche/quic/core/web_transport_write_blocked_list.h
   src/quiche/quic/core/web_transport_interface.h
   src/quiche/quic/platform/api/quic_bug_tracker.h
   src/quiche/quic/platform/api/quic_client_stats.h
@@ -698,6 +702,18 @@ set(quiche_quic_SOURCES
   src/quiche/quic/platform/api/quic_stack_trace.h
   src/quiche/quic/platform/api/quic_testvalue.h
   src/quiche/quic/platform/api/quic_thread.h
+  src/quiche/spdy/core/hpack/hpack_decoder_adapter.cc
+  src/quiche/spdy/core/hpack/hpack_decoder_adapter.h
+  src/quiche/spdy/core/hpack/hpack_encoder.h
+  src/quiche/web_transport/complete_buffer_visitor.cc
+  src/quiche/web_transport/complete_buffer_visitor.h
+  src/quiche/web_transport/encapsulated/encapsulated_web_transport.cc
+  src/quiche/web_transport/encapsulated/encapsulated_web_transport.h
+  src/quiche/web_transport/web_transport.h
+  src/quiche/web_transport/web_transport_headers.cc
+  src/quiche/web_transport/web_transport_headers.h
+  src/quiche/web_transport/web_transport_priority_scheduler.cc
+  src/quiche/web_transport/web_transport_priority_scheduler.h
   )
 
 set(quiche_nghttp2_SOURCES
@@ -726,12 +742,9 @@ set(quiche_protos
 set(PROTOBUF_IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src)
 protobuf_generate_cpp(quiche_protos_SRCS quiche_protos_HDRS ${quiche_protos})
 
-# TODO re-add quic code if http3 support is added
 add_library(quiche STATIC
   ${quiche_SRCS}
-  #${quiche_quic_SOURCES} #require zlib and protobuf
   ${quiche_nghttp2_SOURCES}
-  #${quiche_protos_SRCS}
   )
 
 if (USE_LTO_CMAKE)
@@ -750,10 +763,7 @@ target_include_directories(quiche PUBLIC
   src
   )
 
-# TODO re-add quic code if http3 support is added
 target_link_libraries(quiche PUBLIC
-  #libprotobuf-lite
-  ${ZLIB_LIBRARIES}
   crypto
   ssl
   url
@@ -787,6 +797,17 @@ if (USE_NGHTTP2)
   target_include_directories(quiche PUBLIC ${NGHTTP2_INCLUDE_DIRS})
   target_link_directories(quiche PUBLIC ${NGHTTP2_LIBRARY_DIRS})
   target_link_libraries(quiche PUBLIC ${NGHTTP2_LIBRARIES})
+endif()
+
+if (USE_HTTP3)
+  target_sources(quiche PRIVATE
+    ${quiche_quic_SOURCES} #require zlib and protobuf
+    ${quiche_protos_SRCS}
+  )
+  target_link_libraries(quiche PUBLIC
+    libprotobuf-lite
+    ${ZLIB_LIBRARIES}
+  )
 endif()
 
 if (COMPILER_CLANG)

@@ -33,7 +33,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 129-1
+  CACHE_EPOCH: 130-2
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
@@ -104,7 +104,7 @@ jobs:
       - name: Build
         run: |
           set VCToolsVersion=
-          set Winsdk=10.0.19041.0
+          set Winsdk=10.0.22621.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
@@ -353,7 +353,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14]
+        os: [macos-15]
         build_type: [Debug, Release]
     runs-on: ${{ matrix.os }}
     env:

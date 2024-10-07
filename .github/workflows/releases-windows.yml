@@ -24,11 +24,11 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 129-1
+  CACHE_EPOCH: 130-2
   GOPROXY: direct
 jobs:
   windows-release:
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
@@ -114,11 +114,11 @@ jobs:
           WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
       - name: Build
         run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
+          set VCToolsVersion=
+          set Winsdk=10.0.22621.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           set Platform=${{ matrix.arch }}
 
@@ -150,7 +150,7 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} *.msi
   windows-xp-release:
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
@@ -166,6 +166,28 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Install WinXP support (Visual Studio 2022)
+        # see https://github.com/actions/runner-images/issues/5143
+        shell: pwsh
+        run: |
+          Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
+          $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          $componentsToAdd = @(
+            "Microsoft.VisualStudio.Component.VC.v141.x86.x64",
+            "Microsoft.VisualStudio.Component.WinXP"
+          )
+          [string]$workloadArgs = $componentsToAdd | ForEach-Object {" --add " +  $_}
+          $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"",$workloadArgs, '--quiet', '--norestart', '--nocache')
+          $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -eq 0)
+          {
+              Write-Host "components have been successfully added"
+          }
+          else
+          {
+              Write-Host "components were not installed"
+              exit 1
+          }
       - name: Cache clang, nasm, nsis and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v4
@@ -207,7 +229,7 @@ jobs:
       - name: Build
         run: |
           set VCToolsVersion=14.16.27012
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
+          set "VCINSTALLDIR=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
 
