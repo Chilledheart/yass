@@ -36,8 +36,7 @@ ABSL_FLAG(bool,
           enable_post_quantum_kyber,
           false,
           "Enables post-quantum key-agreements in TLS 1.3 connections. "
-          "The use_ml_kem flag controls whether ML-KEM or Kyber is used. "
-          "(Client Only)");
+          "The use_ml_kem flag controls whether ML-KEM or Kyber is used.");
 ABSL_FLAG(bool,
           use_ml_kem,
           false,
@@ -45,8 +44,7 @@ ABSL_FLAG(bool,
           "Causes TLS 1.3 connections to use the ML-KEM standard instead of the Kyber "
           "draft standard for post-quantum key-agreement. "
           "The enable_post_quantum_kyber flag must be enabled "
-          "for this to have an effect. "
-          "(Client Only)");
+          "for this to have an effect.");
 
 namespace config {
 bool ReadTLSConfigFile() {

@@ -111,6 +111,12 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 * `--hide_via`:
   If true, the Via header will not be added.
 
+* `--enable_post_quantum_kyber`:
+  Enables post-quantum key-agreements in TLS 1.3 connections. The _use_ml_kem_ flag controls whether ML-KEM or Kyber is used.
+
+* `--use_ml_kem`:
+  Use ML-KEM in TLS 1.3. Causes TLS 1.3 connections to use the ML-KEM standard instead of the Kyber draft standard for post-quantum key-agreement. The _enable_post_quantum_kyber_ flag must be enabled for this to have an effect.
+
 * `--congestion_algorithm` _algo_:
   Specify _algo_ as TCP congestion control algorithm for underlying TCP connections (Linux Only)
 
