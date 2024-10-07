@@ -96,6 +96,13 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
 
   // True if the socket has been disconnected.
   bool disconnected_ = false;
+
+  // FIXME allow gtest_prod.h inclusion?
+ public:
+  static void TEST_set_post_quantumn_only_mode(bool enabled) { TEST_post_quantumn_only_mode = enabled; }
+
+ private:
+  static bool TEST_post_quantumn_only_mode;
 };
 
 }  // namespace net
