@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="zh_CN">
+<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="zh_CN">
 <context>
     <name>OptionDialog</name>
     <message>
@@ -24,8 +22,8 @@
         <translation>TCP 保活间隔</translation>
     </message>
     <message>
-        <source>Kyber post-quantum key agreement for TLS</source>
-        <translation>TLS的Kyber后量子密钥协商</translation>
+        <source>Enables post-quantum key-agreements in TLS 1.3 connections</source>
+        <translation>在 TLS 1.3 连接中启用后量子密钥协议</translation>
     </message>
     <message>
         <source>Okay</source>

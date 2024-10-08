@@ -24,7 +24,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Kyber post-quantum key agreement for TLS</source>
+        <source>Enables post-quantum key-agreements in TLS 1.3 connections</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

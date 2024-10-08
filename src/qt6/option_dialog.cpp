@@ -30,7 +30,7 @@ OptionDialog::OptionDialog(QWidget* parent) : QDialog(parent) {
   auto tcp_keep_alive_idle_timeout_label = new QLabel(tr("TCP keep alive after idle"));
   auto tcp_keep_alive_interval_label = new QLabel(tr("TCP keep alive interval"));
 
-  auto enable_post_quantum_kyber_label = new QLabel(tr("Kyber post-quantum key agreement for TLS"));
+  auto enable_post_quantum_kyber_label = new QLabel(tr("Enables post-quantum key-agreements in TLS 1.3 connections"));
   auto tcp_congestion_algorithm_label = new QLabel(tr("TCP Congestion Algorithm"));
 
   grid->addWidget(tcp_keep_alive_label, 0, 0);

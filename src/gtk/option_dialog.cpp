@@ -27,7 +27,7 @@ OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool mod
   auto tcp_keep_alive_idle_timeout_label = gtk_label_new(_("TCP keep alive after idle"));
   auto tcp_keep_alive_interval_label = gtk_label_new(_("TCP keep alive interval"));
 
-  auto enable_post_quantum_kyber_label = gtk_label_new(_("Kyber post-quantum key agreement for TLS"));
+  auto enable_post_quantum_kyber_label = gtk_label_new(_("Enables post-quantum key-agreements in TLS 1.3 connections"));
   auto tcp_congestion_algorithm = gtk_label_new(_("TCP Congestion Algorithm"));
 
   gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_label), 0, 0, 1, 1);

@@ -625,7 +625,7 @@
                                     <gridCell row="dEK-1Q-llb" column="hxb-rW-bCk" id="yXv-wF-rtT">
                                         <textField key="contentView" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3br-w1-dtI">
                                             <rect key="frame" x="-2" y="30" width="270" height="16"/>
-                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Kyber post-quantum key agreement for TLS" id="EY5-8C-G6C">
+                                            <textFieldCell key="cell" lineBreakMode="clipping" title="Enables post-quantum key-agreements in TLS 1.3 connections" id="EY5-8C-G6C">
                                                 <font key="font" usesAppearanceFont="YES"/>
                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
