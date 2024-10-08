@@ -23,7 +23,7 @@
     <string name="label_doh_url">DNS over HTTPS URL</string>
     <string name="label_dot_host">DNS over TLS Host</string>
     <string name="status_start_failed">Start Failed</string>
-    <string name="post_quantum_kyber">Kyber post-quantum key agreement for TLS</string>
+    <string name="post_quantum_kyber">Enables post-quantum key-agreements in TLS 1.3 connections</string>
     <string name="button_options">Options</string>
     <string name="title_options">Options</string>
     <string name="label_limit_rate">Limit Rate</string>

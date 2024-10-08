@@ -32,8 +32,8 @@
 /* Class = "NSTextFieldCell"; title = "TCP Keep Alive Idle Timeout"; ObjectID = "EnC-Oa-kda"; */
 "EnC-Oa-kda.title" = "TCP 在闲置以后的保活次数";
 
-/* Class = "NSTextFieldCell"; title = "Kyber post-quantum key agreement for TLS"; ObjectID = "EY5-8C-G6C"; */
-"EY5-8C-G6C.title" = "TLS的Kyber后量子密钥协商";
+/* Class = "NSTextFieldCell"; title = "Enables post-quantum key-agreements in TLS 1.3 connections"; ObjectID = "EY5-8C-G6C"; */
+"EY5-8C-G6C.title" = "在 TLS 1.3 连接中启用后量子密钥协议";
 
 /* Class = "NSButtonCell"; title = "Enable"; ObjectID = "aFJ-Zj-eao"; */
 "aFJ-Zj-eao.title" = "启用";
