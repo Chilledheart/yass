@@ -1,3 +1,10 @@
+yass (1.14.3-1) UNRELEASED; urgency=medium
+
+  * tls: support and enable ML-KEM by default.
+  * tls: support post quantumn key-agreements in server side.
+  * tls: fix crash due to dangling DoPeek call.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 8 Oct 2024 12:53:13 +0800
 yass (1.14.2-1) UNRELEASED; urgency=medium
 
   * systemd: update sample config files.
