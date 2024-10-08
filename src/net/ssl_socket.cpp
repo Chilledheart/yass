@@ -184,9 +184,6 @@ void SSLSocket::RetryAllOperations() {
     OnHandshakeIOComplete(OK, SSL_ERROR_NONE);
   }
 
-  if (disconnected_)
-    return;
-
   DoPeek();
 }
 
@@ -581,7 +578,8 @@ int SSLSocket::DoHandshakeComplete(int result) {
   //
   // TODO(https://crbug.com/958638): It is also a step in making TLS 1.3 client
   // certificate alerts less unreliable.
-  asio::post(*io_context_, [this]() { DoPeek(); });
+  scoped_refptr<SSLSocket> self(this);
+  asio::post(*io_context_, [this, self]() { DoPeek(); });
 
   return OK;
 }
@@ -779,9 +777,15 @@ int SSLSocket::DoPayloadWrite(std::shared_ptr<IOBuf> buf, int buf_len) {
 }
 
 void SSLSocket::DoPeek() {
+  if (disconnected_) {
+    return;
+  }
+
   if (!completed_connect_) {
     return;
   }
+
+  DCHECK(ssl_.get());
 
   if (early_data_enabled_ && !handled_early_data_result_) {
     // |SSL_peek| will implicitly run |SSL_do_handshake| if needed, but run it
