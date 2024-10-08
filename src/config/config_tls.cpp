@@ -39,7 +39,7 @@ ABSL_FLAG(bool,
           "The use_ml_kem flag controls whether ML-KEM or Kyber is used.");
 ABSL_FLAG(bool,
           use_ml_kem,
-          false,
+          true,
           "Use ML-KEM in TLS 1.3. "
           "Causes TLS 1.3 connections to use the ML-KEM standard instead of the Kyber "
           "draft standard for post-quantum key-agreement. "
