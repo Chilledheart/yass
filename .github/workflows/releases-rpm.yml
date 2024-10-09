@@ -48,9 +48,13 @@ jobs:
         - 'fedora39'
         - 'alpine320'
         - 'i386-alpine320'
+        - 'armhf-alpine320'
+        - 'aarch64-alpine320'
         - 'opensuse15'
     runs-on: ubuntu-22.04
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - uses: actions/checkout@v4
       - name: Cache docker files (dummy)
         id: docker-cache
@@ -190,6 +194,10 @@ jobs:
             arch: amd64
           - container: 'i386-alpine320'
             arch: i386
+          - container: 'aarch64-alpine320'
+            arch: aarch64
+          - container: 'armhf-alpine320'
+            arch: armhf
     runs-on: ubuntu-20.04
     needs: docker_publish
     steps:
@@ -217,11 +225,30 @@ jobs:
           cache-dependency-path: |
             tools/go.sum
             third_party/boringssl/src/go.sum
+      - name: Cache qemu-user
+        id: qemu-user-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            qemu-user*.deb
+          key: ${{ runner.os }}-qemu-9.1.0-ds-8
+      - name: "Install dependency: qemu user cache"
+        if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
+        run: |
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_9.1.0+ds-8_amd64.deb
+      - name: Populate depedencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build pkgconf gettext bubblewrap
+          # libc6-i386 interferes with x86 build
+          sudo apt remove libc6-i386
+
+          sudo dpkg -i qemu-user_*.deb
       - name: Populate sysroot from docker image
         run: |
           docker pull ghcr.io/chilledheart/${{ matrix.container }}
           mkdir -p "${{ env.SDK_ROOT }}"
-          docker export $(docker create ghcr.io/chilledheart/${{ matrix.container }}) | tar -C "${{ env.SDK_ROOT }}" -xf -
+          docker export $(docker create --platform ${{ matrix.arch }} ghcr.io/chilledheart/${{ matrix.container }}) | tar -C "${{ env.SDK_ROOT }}" -xf -
       - name: Build build tool
         run: |
           cd tools
@@ -252,7 +279,8 @@ jobs:
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -use-static-build -nc
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -use-static-build -nc
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -nc
-      - name: Run tests
+      - name: Run tests (i386 and amd64)
+        if: ${{ matrix.arch == 'i386' ||  matrix.arch == 'amd64' }}
         run: |
           bwrap --die-with-parent --bind "$SDK_ROOT" / \
             --ro-bind /sys /sys \
@@ -261,6 +289,16 @@ jobs:
             --unshare-all --share-net \
             --bind $PWD/build-linux-musl-${{ matrix.arch }} /tmp \
             /tmp/yass_test
+      - name: Run tests (non x86, under qemu emulation)
+        if: ${{ matrix.arch != 'i386' && matrix.arch != 'amd64' }}
+        run: |
+          # copy required resolv.conf from host
+          cp -fv /etc/resolv.conf "$SDK_ROOT/etc/resolv.conf"
+          # TMPDIR is required by leveldb unittests
+          qemu-${{ matrix.arch }} -L $SDK_ROOT \
+            -E TMPDIR=$PWD/build-linux-musl-${{ matrix.arch }} \
+            $PWD/build-linux-musl-${{ matrix.arch }}/yass_test \
+            --no_exec_proc_tests
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
