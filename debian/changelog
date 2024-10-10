@@ -1,3 +1,9 @@
+yass (1.14.4-1) UNRELEASED; urgency=medium
+
+  * net: fix http proxy integration with telegram.
+  * qt: fix translation with post quantumn key-agreements.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 10 Oct 2024 18:31:24 +0800
 yass (1.14.3-1) UNRELEASED; urgency=medium
 
   * tls: support and enable ML-KEM by default.
