@@ -532,6 +532,12 @@ asio::error_code CliConnection::OnReadRedirHandshake(std::shared_ptr<IOBuf> buf)
     memcpy(&in6->sin6_addr.s6_addr, &pnl.rdaddr.v6addr, sizeof pnl.rdaddr.v6addr);
     in6->sin6_port = pnl.rdxport.port;
   }
+
+  if (endpoint.address().is_unspecified() || endpoint.port() == 0u) {
+    LOG(WARNING) << "Connection (client) " << connection_id() << " redir: requested empty host or invalid port";
+    return asio::error::invalid_argument;
+  }
+
   VLOG(2) << "Connection (client) " << connection_id() << " redir stream from " << endpoint_ << " to " << endpoint;
   OnCmdConnect(endpoint);
 
@@ -561,6 +567,12 @@ asio::error_code CliConnection::OnReadRedirHandshake(std::shared_ptr<IOBuf> buf)
     endpoint.resize(ss_len);
     memcpy(endpoint.data(), &ss, ss_len);
   }
+
+  if (endpoint.address().is_unspecified() || endpoint.port() == 0u) {
+    LOG(WARNING) << "Connection (client) " << connection_id() << " redir: requested empty host or invalid port";
+    return asio::error::invalid_argument;
+  }
+
   if (ret == 0 && endpoint != endpoint_) {
     // no handshake required to be written
     SetState(state_stream);
@@ -692,7 +704,7 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
       memcpy(buf->mutable_data(), header.c_str(), header.size());
       http_is_keep_alive_ = absl::AsciiStrToLower(parser.connection()) == "keep-alive";
       http_keep_alive_remaining_bytes_ += parser.content_length() + header.size() - buf->length();
-      VLOG(3) << "Connection (client) " << connection_id() << " Host: " << http_host_ << " PORT: " << http_port_
+      VLOG(3) << "Connection (client) " << connection_id() << " Host: " << http_host_ << " Port: " << http_port_
               << " KEEPALIVE: " << std::boolalpha << http_is_keep_alive_;
       if (parser.transfer_encoding_is_chunked()) {
         // See #957
@@ -701,7 +713,7 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
         http_is_keep_alive_ = false;
       }
     } else {
-      VLOG(3) << "Connection (client) " << connection_id() << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+      VLOG(3) << "Connection (client) " << connection_id() << " CONNECT: " << http_host_ << " Port: " << http_port_;
     }
 
     SetState(state_http_handshake);
@@ -1735,6 +1747,14 @@ asio::error_code CliConnection::PerformCmdOpsV5(const socks5::request* request, 
 
   switch (request->command()) {
     case socks5::cmd_connect: {
+      if (request->port() == 0u || (request->address_type() == socks5::domain && request->domain_name().empty()) ||
+          (request->address_type() != socks5::domain && request->endpoint().address().is_unspecified())) {
+        LOG(WARNING) << "Connection (client) " << connection_id() << " socks5: requested invalid port or empty host";
+        reply->mutable_status() = socks5::reply::request_failed_network_unreachable;
+        ec = asio::error::invalid_argument;
+        break;
+      }
+
       asio::ip::tcp::endpoint endpoint;
       if (request->address_type() == socks5::domain) {
         endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
@@ -1769,6 +1789,14 @@ asio::error_code CliConnection::PerformCmdOpsV4(const socks4::request* request, 
 
   switch (request->command()) {
     case socks4::cmd_connect: {
+      if (request->port() == 0u || (request->is_socks4a() && request->domain_name().empty()) ||
+          (!request->is_socks4a() && request->endpoint().address().is_unspecified())) {
+        LOG(WARNING) << "Connection (client) " << connection_id() << " socks4: requested invalid port or empty host";
+        reply->mutable_status() = socks4::reply::request_failed;
+        ec = asio::error::invalid_argument;
+        break;
+      }
+
       asio::ip::tcp::endpoint endpoint{asio::ip::tcp::v4(), 0};
       reply->set_endpoint(endpoint);
       reply->mutable_status() = socks4::reply::request_granted;
@@ -1802,6 +1830,11 @@ asio::error_code CliConnection::PerformCmdOpsV4(const socks4::request* request, 
 asio::error_code CliConnection::PerformCmdOpsHttp() {
   if (http_host_.size() > TLSEXT_MAXLEN_host_name) {
     LOG(WARNING) << "Connection (client) " << connection_id() << " http: too long domain name: " << http_host_;
+    return asio::error::invalid_argument;
+  }
+
+  if (http_host_.empty() || http_port_ == 0u) {
+    LOG(WARNING) << "Connection (client) " << connection_id() << " https: requested empty host or invalid port";
     return asio::error::invalid_argument;
   }
 
@@ -1915,6 +1948,8 @@ void CliConnection::ProcessSentData(asio::error_code ec, size_t bytes_transferre
 }
 
 void CliConnection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
+  DCHECK(!endpoint.address().is_unspecified());
+  DCHECK_NE(0u, endpoint.port());
   ss_request_ = std::make_unique<ss::request>(endpoint);
   OnConnect();
 }
@@ -1951,7 +1986,12 @@ void CliConnection::OnCmdConnect(const std::string& domain_name, uint16_t port) 
             endpoint = iter->endpoint();
             break;
           }
-          DCHECK(!endpoint.address().is_unspecified());
+          if (endpoint.address().is_unspecified() || endpoint.port() == 0u) {
+            LOG(WARNING) << "Connection (client) " << connection_id() << " failed to resolve domain name "
+                         << domain_name;
+            OnDisconnect(asio::error::invalid_argument);
+            return;
+          }
           VLOG(1) << "Connection (client) " << connection_id() << " resolved domain name " << domain_name << " to "
                   << endpoint.address();
           ss_request_ = std::make_unique<ss::request>(endpoint);
@@ -1959,6 +1999,8 @@ void CliConnection::OnCmdConnect(const std::string& domain_name, uint16_t port) 
         });
     return;
   }
+  DCHECK(!domain_name.empty());
+  DCHECK_NE(0u, port);
   ss_request_ = std::make_unique<ss::request>(domain_name, port);
   OnConnect();
 }

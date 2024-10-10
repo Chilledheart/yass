@@ -331,8 +331,15 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
     hostname = hostname.substr(1, hostname.size() - 2);
   }
 
+  if (hostname.empty() || portnum == 0u) {
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
+              << " http2: requested invalid port or empty host";
+    return false;
+  }
+
   if (hostname.size() > TLSEXT_MAXLEN_host_name) {
-    LOG(WARNING) << "Connection (server) " << connection_id() << " too long domain name: " << hostname;
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
+              << " http2: too long domain name: " << hostname;
     return false;
   }
 
@@ -525,12 +532,19 @@ void ServerConnection::ReadHandshake() {
       buf->trimStart(request_.length());
       buf->retreat(request_.length());
       DCHECK_LE(request_.length(), bytes_transferred);
+
+      if (request_.port() == 0u || (request_.address_type() == ss::domain && request_.domain_name().empty()) ||
+          (request_.address_type() != ss::domain && request_.endpoint().address().is_unspecified())) {
+        LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_
+                  << " ss: requested invalid port or empty host";
+        OnDisconnect(asio::error::invalid_argument);
+        return;
+      }
+
       ProcessReceivedData(buf, ec, buf->length());
     } else {
-      LOG(INFO) << "Connection (server) " << connection_id() << " malformed ss request.";
-      // FIXME better error code?
-      ec = asio::error::connection_refused;
-      OnDisconnect(ec);
+      LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_ << " malformed ss request";
+      OnDisconnect(asio::error::invalid_argument);
     }
   });
 }
@@ -598,20 +612,28 @@ void ServerConnection::OnReadHandshakeViaHttps() {
     http_port_ = parser.port();
     http_is_connect_ = parser.is_connect();
 
+    if (http_port_ == 0u || http_host_.empty()) {
+      LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_
+                << " https: requested invalid port or empty host";
+      OnDisconnect(asio::error::invalid_argument);
+      return;
+    }
+
     if (http_host_.size() > TLSEXT_MAXLEN_host_name) {
-      LOG(INFO) << "Connection (server) " << connection_id() << " too long domain name: " << http_host_;
-      ec = asio::error::invalid_argument;
-      OnDisconnect(ec);
+      LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_
+                << " https: too long domain name: " << http_host_;
+      OnDisconnect(asio::error::invalid_argument);
       return;
     }
 
     bool auth_required = !absl::GetFlag(FLAGS_username).empty() && !absl::GetFlag(FLAGS_password).empty();
     if (auth_required && !VerifyProxyAuthorizationIdentity(parser.proxy_authorization())) {
       LOG(INFO) << "Connection (server) " << connection_id() << " Unexpected auth token.";
-      ec = asio::error::invalid_argument;
-      OnDisconnect(ec);
+      OnDisconnect(asio::error::invalid_argument);
       return;
     }
+
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_ << " https handshake";
 
     request_ = {http_host_, http_port_};
 
@@ -633,15 +655,13 @@ void ServerConnection::OnReadHandshakeViaHttps() {
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());
-      VLOG(3) << "Connection (server) " << connection_id() << " Host: " << http_host_ << " PORT: " << http_port_;
+      VLOG(3) << "Connection (server) " << connection_id() << " Host: " << http_host_ << " Port: " << http_port_;
     } else {
-      VLOG(3) << "Connection (server) " << connection_id() << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+      VLOG(3) << "Connection (server) " << connection_id() << " CONNECT: " << http_host_ << " Port: " << http_port_;
     }
     ProcessReceivedData(buf, ec, buf->length());
   } else {
-    // FIXME better error code?
-    ec = asio::error::connection_refused;
-    OnDisconnect(ec);
+    OnDisconnect(asio::error::invalid_argument);
   }
 }
 
@@ -707,17 +727,26 @@ void ServerConnection::OnReadHandshakeViaSocks() {
         buf->trimStart(request.length());
         buf->retreat(request.length());
       } else {
-        LOG(INFO) << "Connection (server) " << connection_id() << " malformed socks4/socks4a request.";
+        LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_
+                  << " malformed socks4/socks4a request.";
         OnDisconnect(asio::error::invalid_argument);
         return;
       }
+      if (request.port() == 0u || (request.is_socks4a() && request.domain_name().empty()) ||
+          (!request.is_socks4a() && request.endpoint().address().is_unspecified())) {
+        LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_
+                  << " socks4: requested invalid port or empty host";
+        OnDisconnect(asio::error::invalid_argument);
+        return;
+      }
+
       if (request.is_socks4a()) {
         static_assert(UINT8_MAX /* socks4's variable addr size*/ <= TLSEXT_MAXLEN_host_name);
         request_ = {request.domain_name(), request.port()};
       } else {
         request_ = {request.endpoint()};
       }
-      VLOG(2) << "Connection (server) " << connection_id() << " socks4 handshake";
+      LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_ << " socks4 handshake";
       handshake_pending_buf_ = buf;
       WriteHandshakeResponse();
       break;
@@ -1018,12 +1047,23 @@ void ServerConnection::OnReadHandshakeViaSocks5() {
     DCHECK_LE(request.length(), buf->length());
     buf->trimStart(request.length());
     buf->retreat(request.length());
-    VLOG(2) << "Connection (server) " << connection_id() << " socks5 handshake";
   } else {
-    LOG(INFO) << "Connection (server) " << connection_id() << " malformed socks5 request.";
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_
+              << " malformed socks5 request.";
     OnDisconnect(asio::error::invalid_argument);
     return;
   }
+
+  if (request.port() == 0u || (request.address_type() == socks5::domain && request.domain_name().empty()) ||
+      (request.address_type() != socks5::domain && request.endpoint().address().is_unspecified())) {
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_
+              << " socks5: requested invalid port or empty host";
+    OnDisconnect(asio::error::invalid_argument);
+    return;
+  }
+
+  LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint_ << " socks5 handshake";
+
   if (request.address_type() == socks5::domain) {
     static_assert(UINT8_MAX /* socks5's variable addr size*/ <= TLSEXT_MAXLEN_host_name);
     request_ = {request.domain_name(), request.port()};
