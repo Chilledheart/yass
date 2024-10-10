@@ -48,10 +48,10 @@ static void ReforgeHttpRequestImpl(std::string* header,
   ss << method_str << " "  // NOLINT(google-*)
      << canon_uri << " " << version << "\r\n";
   for (auto [key, value] : headers) {
-    if (key == "Proxy-Connection") {
+    if (absl::AsciiStrToLower(key) == "proxy-connection") {
       continue;
     }
-    if (key == "Proxy-Authorization") {
+    if (absl::AsciiStrToLower(key) == "proxy-authorization") {
       continue;
     }
     if (additional_headers) {
@@ -238,12 +238,12 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     std::string_view key = key_value.first;
     std::string_view value = key_value.second;
     http_headers_[std::string(key)] = std::string(value);
-    if (key == "Cookie") {
+    if (absl::AsciiStrToLower(key) == "cookie") {
       value = "(masked)";
     }
     VLOG(2) << "HTTP Request Header: " << key << "=" << value;
 
-    if (key == "Host" && !http_is_connect_) {
+    if (absl::AsciiStrToLower(key) == "host" && !http_is_connect_) {
       std::string authority = std::string(value);
       std::string hostname;
       uint16_t portnum;
@@ -261,16 +261,16 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
       http_host_ = hostname;
       http_port_ = portnum;
     }
-    if (key == "Content-Type") {
+    if (absl::AsciiStrToLower(key) == "content-type") {
       content_type_ = std::string(value);
     }
-    if (key == "Connection") {
+    if (absl::AsciiStrToLower(key) == "connection") {
       connection_ = std::string(value);
     }
-    if (key == "Proxy-Connection") {
+    if (absl::AsciiStrToLower(key) == "proxy-connection") {
       connection_ = std::string(value);
     }
-    if (key == "Proxy-Authorization") {
+    if (absl::AsciiStrToLower(key) == "proxy-authorization") {
       proxy_authorization_ = std::string(value);
     }
   }
@@ -290,7 +290,7 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
     error_message_ = "HPE_INVALID_METHOD";
     return;
   }
-  const bool is_connect = method_input == "CONNECT";
+  const bool is_connect = absl::AsciiStrToUpper(method_input) == "CONNECT";
   http_is_connect_ = is_connect;
   method_ = std::string(method_input);
   if (!isUrlValid(request_uri, is_connect)) {
@@ -324,7 +324,7 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
     error_message_ = "HPE_INVALID_VERSION";
     return;
   }
-  if (version_input == "HTTP/1.1") {
+  if (absl::AsciiStrToUpper(version_input) == "HTTP/1.1") {
     connection_ = "Keep-Alive";
   } else {
     connection_ = "Close";
@@ -523,7 +523,7 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   HttpRequestParser* self = reinterpret_cast<HttpRequestParser*>(parser->data);
   self->http_value_ = std::string(buf, len);
   self->http_headers_[self->http_field_] = self->http_value_;
-  if (self->http_field_ == "Host" && !self->http_is_connect_) {
+  if (absl::AsciiStrToLower(self->http_field_) == "host" && !self->http_is_connect_) {
     std::string authority = std::string(buf, len);
     std::string hostname;
     uint16_t portnum;
@@ -541,10 +541,10 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
     self->http_port_ = portnum;
   }
 
-  if (self->http_field_ == "Content-Type") {
+  if (absl::AsciiStrToLower(self->http_field_) == "content-type") {
     self->content_type_ = std::string(buf, len);
   }
-  if (self->http_field_ == "Proxy-Authorization") {
+  if (absl::AsciiStrToLower(self->http_field_) == "proxy-authorization") {
     self->proxy_authorization_ = std::string(buf, len);
   }
   return 0;
