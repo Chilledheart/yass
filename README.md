@@ -130,6 +130,9 @@ See [ChatGPT capable caddy Server](https://github.com/Chilledheart/yass/wiki/Usa
 
 [Report here if you want to add new server-side optimization/cooperation][frs]
 
+### Debug Guide
+Start from wiki's [Guide](https://github.com/Chilledheart/yass/wiki/Debug-Guide)
+
 ## Build Status
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
