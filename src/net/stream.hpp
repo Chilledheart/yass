@@ -124,6 +124,12 @@ class stream : public RefCountedThreadSafe<stream> {
     DCHECK(callback);
     user_connect_callback_ = std::move(callback);
 
+    if (port_ == 0u) {
+      closed_ = true;
+      on_async_connect_callback(asio::error::network_unreachable);
+      return;
+    }
+
     if (!host_ips_.empty()) {
       auto host_ips = absl::StrSplit(host_ips_, ';');
       for (const auto& host_ip : host_ips) {
@@ -403,6 +409,15 @@ class stream : public RefCountedThreadSafe<stream> {
   }
 
   void on_resolve(Channel* channel) {
+    if (endpoint_.address().is_unspecified() || endpoint_.address().is_multicast()) {
+      if (!endpoints_.empty()) {
+        on_try_next_endpoint(channel);
+        return;
+      }
+      closed_ = true;
+      on_async_connect_callback(asio::error::network_unreachable);
+      return;
+    }
     asio::error_code ec;
     socket_.open(endpoint_.protocol(), ec);
     if (ec) {
