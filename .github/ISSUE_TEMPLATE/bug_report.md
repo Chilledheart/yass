@@ -43,3 +43,9 @@ It is advised to enable
 # Your yass debug log here
 ```
 or share the debug log in [gist](https://gist.github.com/).
+
+#### yass coredump (optional)
+
+See [the guide](https://github.com/Chilledheart/yass/wiki/Debug-Guide#check-coredump) to enable coredump in your system.
+
+Attach your coredump file in the issue
