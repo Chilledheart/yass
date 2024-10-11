@@ -790,6 +790,12 @@ void CliConnection::WriteHandshake() {
                           if (closed_) {
                             return;
                           }
+                          // mark eof
+                          if (s5_reply_.status() != socks5::reply::request_granted) {
+                            shutdown_ = true;
+                            asio::error_code ec;
+                            downlink_->shutdown(ec);
+                          }
                           ProcessSentData(ec, bytes_transferred);
                         });
       break;
@@ -799,6 +805,12 @@ void CliConnection::WriteHandshake() {
                         [this, self](asio::error_code ec, size_t bytes_transferred) {
                           if (closed_) {
                             return;
+                          }
+                          // mark eof
+                          if (s4_reply_.status() != socks4::reply::request_granted) {
+                            shutdown_ = true;
+                            asio::error_code ec;
+                            downlink_->shutdown(ec);
                           }
                           ProcessSentData(ec, bytes_transferred);
                         });
@@ -1863,19 +1875,23 @@ void CliConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_
         break;
       case state_socks5_handshake:
         ec = PerformCmdOpsV5(&s5_request_, &s5_reply_);
-        if (ec) {
-          break;
-        }
         WriteHandshake();
-        VLOG(2) << "Connection (client) " << connection_id() << " socks5 handshake finished: ec: " << ec;
+        if (ec) {
+          // ready to read eof after send handshake
+          ReadStream(true);
+          return;
+        }
+        VLOG(2) << "Connection (client) " << connection_id() << " socks5 handshake finished";
         goto handle_stream;
       case state_socks4_handshake:
         ec = PerformCmdOpsV4(&s4_request_, &s4_reply_);
-        if (ec) {
-          break;
-        }
         WriteHandshake();
-        VLOG(2) << "Connection (client) " << connection_id() << " socks4 handshake finished: ec:" << ec;
+        if (ec) {
+          // ready to read eof after send handshake
+          ReadStream(true);
+          return;
+        }
+        VLOG(2) << "Connection (client) " << connection_id() << " socks4 handshake finished";
         goto handle_stream;
       case state_http_handshake:
         ec = PerformCmdOpsHttp();
@@ -1883,7 +1899,7 @@ void CliConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_
           break;
         }
         WriteHandshake();
-        VLOG(2) << "Connection (client) " << connection_id() << " http handshake finished: ec: " << ec;
+        VLOG(2) << "Connection (client) " << connection_id() << " http handshake finished";
         goto handle_stream;
       case state_stream:
       handle_stream:
