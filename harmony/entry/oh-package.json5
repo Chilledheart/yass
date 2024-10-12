@@ -1,6 +1,6 @@
 {
   "name": "entry",
-  "version": "1.6.0",
+  "version": "1.14.4",
   "description": "lightweight and efficient, socks5/http packet proxy.",
   "main": "",
   "author": "Chilledheart",

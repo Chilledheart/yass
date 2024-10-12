@@ -2,8 +2,8 @@
   "app": {
     "bundleName": "it.gui.yass",
     "vendor": "Chilledheart",
-    "versionCode": 1006000,
-    "versionName": "1.6.0",
+    "versionCode": 1014004,
+    "versionName": "1.14.4",
     "icon": "$media:app_icon",
     "label": "$string:app_name"
   }
