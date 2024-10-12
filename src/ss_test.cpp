@@ -786,6 +786,10 @@ static constexpr const cipher_method kCiphersHttps[] = {
 #undef XX
 };
 
+// FIXME don't exclude debug build with msan
+// Currently github actions limit the maximum of build step to 6hr,
+// so these tests might get timed out.
+#if !(defined(MEMORY_SANITIZER) && !defined(NDEBUG))
 TEST_P(EndToEndTestPostQuantumnMLKEM, 4K) {
   GenerateRandContent(4096);
   SendRequestAndCheckResponse();
@@ -807,6 +811,8 @@ INSTANTIATE_TEST_SUITE_P(Ss,
                          [](const ::testing::TestParamInfo<cipher_method>& info) -> std::string {
                            return std::string(to_cipher_method_name(info.param));
                          });
+
+#endif  // !(defined(MEMORY_SANITIZER) && !defined(NDEBUG))
 
 #if BUILDFLAG(IS_IOS)
 extern "C" int xc_main();
