@@ -34,7 +34,7 @@ struct DetailPage {
   @State private start_btn_status: boolean = true;
   @State private stop_btn_status: boolean = false;
 
-  private timer_id: number;
+  private timer_id: number = -1;
 
   aboutToAppear() {
     this.titleParam = $r('app.string.title_name');
@@ -184,7 +184,7 @@ struct DetailPage {
     }, 1000);
   }
 
-  onStartFailedWithMsg(err_msg) {
+  onStartFailedWithMsg(err_msg: string) {
     this.state = StartState.STOPPED;
     this.status = $r('app.string.status_started_with_error_msg', err_msg);
     this.start_btn_status = true;

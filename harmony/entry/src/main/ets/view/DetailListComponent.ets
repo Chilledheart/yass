@@ -105,8 +105,8 @@ export struct DetailListComponent {
         TextPicker({range: yass.getCipherStrings(), selected: yass.getCipherStrings().indexOf(this.dataItem.cipher)})
           .width(CommonConstants.DETAIL_INPUT_WIDTH_PERCENT)
           .height($r('app.float.list_height'))
-          .onChange((value: string, index: number) => {
-            this.dataItem.cipher = value;
+          .onChange((value: string | string[], index: number | number[]) => {
+            this.dataItem.cipher = String(value);
           })
       }
       .width(CommonConstants.ROW_WIDTH_PERCENT)
