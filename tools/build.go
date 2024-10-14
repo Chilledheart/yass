@@ -211,7 +211,7 @@ func InitFlag() {
 	flag.StringVar(&androidSdkDir, "android-sdk-dir", getEnv("ANDROID_SDK_ROOT", ""), "Android SDK Home Path")
 	flag.StringVar(&androidNdkVer, "android-ndk-ver", getEnv("ANDROID_NDK_VER", "26.3.11579264"), "Android NDK Version")
 
-	flag.StringVar(&harmonyNdkDir, "harmony-ndk-dir", getEnv("HARMONY_NDK_ROOT", ""), "OpenHarmony NDK Home Path")
+	flag.StringVar(&harmonyNdkDir, "harmony-ndk-dir", getEnv("HARMONY_NDK_ROOT", ""), "OpenHarmony NDK (toolchain) Path")
 
 	flag.Parse()
 
@@ -1065,9 +1065,10 @@ func buildStageGenerateBuildScript() {
 
 	if systemNameFlag == "harmony" {
 		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
-		if harmonyNdkDir == "" {
-			glog.Fatalf("Harmony Ndk Directory demanded")
+		if _, err := os.Stat(harmonyNdkDir); errors.Is(err, os.ErrNotExist) {
+			glog.Fatalf("Harmony Ndk Directory at %s demanded", harmonyNdkDir)
 		}
+		glog.Infof("Using harmony ndk dir %s", harmonyNdkDir)
 		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
 		// hard-coded
