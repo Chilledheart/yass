@@ -1950,6 +1950,24 @@ func archiveFiles(output string, prefix string, paths []string) {
 	}
 }
 
+func signOrCopyHapFile(inFile string, outFile string) error {
+	hapSignTool := fmt.Sprintf("%s/toolchains/lib/hap-sign-tool.jar", harmonyNdkDir)
+	keyAlias := getEnv("HARMONY_SIGNING_KEY_ALIAS", "")
+	keyPwd := getEnv("HARMONY_SIGNING_KEY_PASSWORD", "")
+	appCertFile := getEnv("HARMONY_SIGNING_CERTFILE", "")
+	profileFile := getEnv("HARMONY_SIGNING_PROFILE", "")
+	keystoreFile := getEnv("HARMONY_SIGNING_STORE_PATH", "")
+	keystorePwd := getEnv("HARMONY_SIGNING_STORE_PASSWORD", "")
+
+	if len(appCertFile) != 0 && len(profileFile) != 0 {
+		cmdRun([]string{
+			"java", "-jar", hapSignTool, "sign-app", "-keyAlias", keyAlias, "-signAlg", "SHA256withECDSA", "-mode", "localSign", "-appCertFile", appCertFile, "-profileFile", profileFile, "-inFile", inFile, "-keystoreFile", keystoreFile, "-outFile", outFile, "-keyPwd", keyPwd, "-keystorePwd", keystorePwd, "-signCode", "1"}, true)
+	} else {
+		return os.Rename(inFile, outFile)
+	}
+	return nil
+}
+
 func archiveMainFile(output string, prefix string, paths []string, dllPaths []string) {
 	if systemNameFlag == "darwin" {
 		var eulaRtf []byte
@@ -2085,7 +2103,8 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 
 		cmdRun([]string{"hvigorw", "assembleHap", "--mode", "module",
 			"-p", "product=default", "-p", fmt.Sprintf("buildMode=%s", build_type), "--no-daemon"}, true)
-		err = os.Rename("./entry/build/default/outputs/default/entry-default-unsigned.hap", output)
+		// optional signning step
+		err = signOrCopyHapFile("./entry/build/default/outputs/default/entry-default-unsigned.hap", output)
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
