@@ -3,6 +3,7 @@ set -x
 set -e
 PWD=$(dirname "${BASH_SOURCE[0]}")
 cd $PWD/..
+PROJECT_HOME="$PWD"
 
 # update LAST_CHANGE
 if [ -d '.git' ]; then
@@ -87,7 +88,7 @@ fi
 
 pushd $HOME/rpmbuild/SPECS/
 rpmbuild --define "_topdir $HOME/rpmbuild" -v $rpm_options -bs yass.spec
-rpmlint "$HOME/rpmbuild/SRPMS/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.src.rpm"
+rpmlint --verbose --file "$PROJECT_HOME/rpmlintrc" "$HOME/rpmbuild/SRPMS/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.src.rpm"
 rpmbuild --define "_topdir $HOME/rpmbuild" -v $rpm_options -bb yass.spec
 popd
 
