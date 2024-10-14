@@ -8,8 +8,7 @@ import { YassDataItem } from '../viewmodel/YassDataItem';
 import YassViewModel from '../viewmodel/YassViewModel';
 import hilog from '@ohos.hilog';
 import yass from 'libyass.so';
-// import wifiManager from '@ohos.wifiManager';
-import wifi from '@ohos.wifi';
+import { wifiManager } from '@kit.ConnectivityKit';
 import UIAbility from '@ohos.app.ability.UIAbility';
 
 /**
@@ -208,14 +207,9 @@ struct DetailPage {
   }
 
   getWifiAddress() {
-    if (wifi.isConnected()) {
-      return wifi.getIpInfo().ipAddress.toString();
-    }
-    /* FIXME crash on emulator
     if (wifiManager.isConnected()) {
       return wifiManager.getIpInfo().ipAddress.toString();
     }
-    */
     return "0.0.0.0";
   }
 }

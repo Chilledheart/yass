@@ -10,7 +10,7 @@ import yass from 'libyass.so';
  */
 @Component
 export struct DetailListComponent {
-  @Link private dataItem: YassDataItem;
+  @Link dataItem: YassDataItem;
 
   build() {
     Column() {
