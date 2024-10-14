@@ -44,6 +44,7 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 - CLI [download tgz for riscv64][cli_tgz_riscv64_url] or [download tgz for riscv32][cli_tgz_riscv32_url] (require glibc >= 2.36)
 - CLI(openwrt) [download tgz for amd64][cli_openwrt_amd64_url] or [download tgz for i486][cli_openwrt_i486_url] or [download tgz for aarch64 generic][cli_openwrt_aarch64_url] (require openwrt >= 23.05.3)
 - CLI(musl) [download tgz for amd64][cli_musl_amd64_url] or [download tgz for i386][cli_musl_i386_url] (static build)
+- CLI(musl) [download tgz for aarch64][cli_musl_aarch64_url] or [download tgz for armhf][cli_musl_armhf_url] (static build)
 
 [![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
@@ -192,6 +193,8 @@ Start from wiki's [Guide](https://github.com/Chilledheart/yass/wiki/Debug-Guide)
 
 [cli_musl_amd64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.4/yass_cli-linux-musl-release-amd64-1.14.4.tgz
 [cli_musl_i386_url]: https://github.com/Chilledheart/yass/releases/download/1.14.4/yass_cli-linux-musl-release-i386-1.14.4.tgz
+[cli_musl_aarch64_url]: https://github.com/Chilledheart/yass/releases/download/1.14.4/yass_cli-linux-musl-release-aarch64-1.14.4.tgz
+[cli_musl_armhf_url]: https://github.com/Chilledheart/yass/releases/download/1.14.4/yass_cli-linux-musl-release-armhf-1.14.4.tgz
 
 [android_64_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.14.4/yass-android-release-arm64-1.14.4.apk
 [android_32_apk_url]: https://github.com/Chilledheart/yass/releases/download/1.14.4/yass-android-release-arm-1.14.4.apk
