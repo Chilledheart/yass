@@ -88,15 +88,10 @@ var variantFlag string
 var mingwDir string
 var mingwAllowXpFlag bool
 
-var androidAppAbi string
-var androidAbiTarget string
 var androidApiLevel int
 
 var androidSdkDir string
 var androidNdkVer string
-
-var harmonyAppAbi string
-var harmonyAbiTarget string
 
 var harmonyNdkDir string
 
@@ -1047,7 +1042,7 @@ func buildStageGenerateBuildScript() {
 			glog.Fatalf("Android Ndk Directory at %s demanded", NdkDir)
 		}
 		glog.Infof("Using android ndk dir %s", NdkDir)
-		androidAbiTarget, androidAppAbi = getAndroidTargetAndAppAbi(archFlag)
+		androidAbiTarget, androidAppAbi := getAndroidTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Android.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI_TARGET=%s", androidAbiTarget))
@@ -1069,10 +1064,8 @@ func buildStageGenerateBuildScript() {
 			glog.Fatalf("Harmony Ndk Directory at %s demanded", harmonyNdkDir)
 		}
 		glog.Infof("Using harmony ndk dir %s", harmonyNdkDir)
-		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
+		_, harmonyAppAbi := getHarmonyTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
-		// hard-coded
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_APILEVEL=%s", "9"))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_ARCH=%s", harmonyAppAbi))
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_SDK_NATIVE=%s/native", harmonyNdkDir))
