@@ -1,5 +1,5 @@
 diff --git a/include/__condition_variable/condition_variable.h b/include/__condition_variable/condition_variable.h
-index de35aaca1..864134812 100644
+index 61412541b..ddd7714bc 100644
 --- a/include/__condition_variable/condition_variable.h
 +++ b/include/__condition_variable/condition_variable.h
 @@ -43,7 +43,11 @@ class _LIBCPP_EXPORTED_FROM_ABI condition_variable {
@@ -12,13 +12,13 @@ index de35aaca1..864134812 100644
 +  condition_variable() _NOEXCEPT;
 +#  endif
  
- #  ifdef _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
+ #  if _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
    ~condition_variable() = default;
 diff --git a/include/__config b/include/__config
-index 0d7126461..8282a5d2f 100644
+index fcba56f7e..acf3996cc 100644
 --- a/include/__config
 +++ b/include/__config
-@@ -860,8 +860,7 @@ typedef __char32_t char32_t;
+@@ -891,8 +891,7 @@ typedef __char32_t char32_t;
  //               respective stakeholders.
  // clang-format off
  #  if (defined(_LIBCPP_HAS_THREAD_API_PTHREAD) && defined(__GLIBC__)) ||                                               \
@@ -26,19 +26,19 @@ index 0d7126461..8282a5d2f 100644
 -       defined(_LIBCPP_HAS_THREAD_API_WIN32)
 +      (defined(_LIBCPP_HAS_THREAD_API_C11) && defined(__Fuchsia__))
  // clang-format on
- #    define _LIBCPP_HAS_TRIVIAL_MUTEX_DESTRUCTION
- #  endif
-@@ -874,7 +873,7 @@ typedef __char32_t char32_t;
+ #    define _LIBCPP_HAS_TRIVIAL_MUTEX_DESTRUCTION 1
+ #  else
+@@ -907,7 +906,7 @@ typedef __char32_t char32_t;
  //
  // TODO(EricWF): This is potentially true for some pthread implementations
  // as well.
 -#  if (defined(_LIBCPP_HAS_THREAD_API_C11) && defined(__Fuchsia__)) || defined(_LIBCPP_HAS_THREAD_API_WIN32)
-+#  if (defined(_LIBCPP_HAS_THREAD_API_C11) && defined(__Fuchsia__))
- #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
- #  endif
- 
++#  if defined(_LIBCPP_HAS_THREAD_API_C11) && defined(__Fuchsia__)
+ #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION 1
+ #  else
+ #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION 0
 diff --git a/include/__mutex/mutex.h b/include/__mutex/mutex.h
-index 1ed015471..8c41fb7fa 100644
+index 9c0c9ad6b..5d027a135 100644
 --- a/include/__mutex/mutex.h
 +++ b/include/__mutex/mutex.h
 @@ -25,7 +25,11 @@ class _LIBCPP_EXPORTED_FROM_ABI _LIBCPP_THREAD_SAFETY_ANNOTATION(capability("mut
@@ -333,7 +333,7 @@ index db60571cf..9904a4760 100644
  
  void condition_variable::notify_one() noexcept { __libcpp_condvar_signal(&__cv_); }
 diff --git a/src/condition_variable_destructor.cpp b/src/condition_variable_destructor.cpp
-index 59811ed7f..15de32f2e 100644
+index f6ffe3368..70299b53e 100644
 --- a/src/condition_variable_destructor.cpp
 +++ b/src/condition_variable_destructor.cpp
 @@ -26,7 +26,11 @@ class _LIBCPP_EXPORTED_FROM_ABI condition_variable {
@@ -446,7 +446,7 @@ index 2f8504d60..545c0a06c 100644
  
  void mutex::lock() {
 diff --git a/src/mutex_destructor.cpp b/src/mutex_destructor.cpp
-index a6ceaaaf2..ca91d8980 100644
+index 9f991721f..eef321001 100644
 --- a/src/mutex_destructor.cpp
 +++ b/src/mutex_destructor.cpp
 @@ -30,9 +30,13 @@ class _LIBCPP_EXPORTED_FROM_ABI mutex {
