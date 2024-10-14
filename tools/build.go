@@ -112,6 +112,11 @@ func getAppName() string {
 			return "lib" + APPNAME + ".so"
 		}
 		return APPNAME
+	} else if systemNameFlag == "harmony" {
+		if APPNAME == "yass" {
+			return "lib" + APPNAME + ".so"
+		}
+		return APPNAME
 	} else {
 		return APPNAME
 	}
@@ -2066,6 +2071,34 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
+	} else if systemNameFlag == "harmony" && variantFlag == "gui" {
+		harmonyDir := "../harmony"
+		err := os.Chdir(harmonyDir)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		var build_type string
+		if cmakeBuildTypeFlag == "Release" || cmakeBuildTypeFlag == "MinSizeRel" {
+			build_type = "release"
+		} else {
+			build_type = "debug"
+		}
+		cmdRun([]string{"hvigorw", "clean", "--no-daemon"}, true)
+		cmdRun([]string{"rm", "-rf", "entry/libs"}, true)
+		_, abi := getHarmonyTargetAndAppAbi(archFlag)
+		cmdRun([]string{"mkdir", "-p", fmt.Sprintf("entry/libs/%s", abi)}, true)
+		cmdRun([]string{"cp", "-fv", fmt.Sprintf("../build-harmony-%s/libyass.so", archFlag), fmt.Sprintf("entry/libs/%s/", abi)}, true)
+
+		cmdRun([]string{"hvigorw", "assembleHap", "--mode", "module",
+			"-p", "product=default", "-p", fmt.Sprintf("buildMode=%s", build_type), "--no-daemon"}, true)
+		err = os.Rename("./entry/build/default/outputs/default/entry-default-unsigned.hap", output)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		err = os.Chdir(buildDir)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	} else {
 		paths = append(paths, dllPaths...)
 		archiveFiles(output, prefix, paths)
@@ -2247,6 +2280,9 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "ios" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".ipa")
 	}
+	if systemNameFlag == "harmony" {
+		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".hap")
+	}
 	hasCrashpadExe := true
 	if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
 		hasCrashpadExe = false
@@ -2380,7 +2416,7 @@ func get7zPath() string {
 func inspectArchive(file string, files []string) {
 	if strings.HasSuffix(file, ".dmg") {
 		cmdRun([]string{"hdiutil", "imageinfo", file}, false)
-	} else if strings.HasSuffix(file, ".zip") || strings.HasSuffix(file, ".msi") || strings.HasSuffix(file, ".exe") || strings.HasSuffix(file, ".apk") || strings.HasSuffix(file, ".ipa") {
+	} else if strings.HasSuffix(file, ".zip") || strings.HasSuffix(file, ".msi") || strings.HasSuffix(file, ".exe") || strings.HasSuffix(file, ".apk") || strings.HasSuffix(file, ".ipa") || strings.HasSuffix(file, ".hap") {
 		p7z := get7zPath()
 		cmdRun([]string{p7z, "l", file}, false)
 		if strings.HasSuffix(file, ".apk") {

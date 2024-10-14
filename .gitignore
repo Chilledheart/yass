@@ -85,3 +85,7 @@ local.properties
 /third_party/rust-ohos
 /*-alpine320-sysroot
 *.flatpak
+*.hap
+*.hsp
+*.har
+*.app
