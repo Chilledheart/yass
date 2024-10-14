@@ -1,0 +1,8 @@
+# -*- python -*-
+
+# Override rpmlint default configuration.
+
+from Config import *
+
+# for old rpmlint such as 1.10 (centos 8)
+setOption("NetworkEnabled", False)
