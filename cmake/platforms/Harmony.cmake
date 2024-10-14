@@ -1,6 +1,29 @@
-set(OHOS TRUE)
-set(CMAKE_SYSTEM_NAME OHOS)
 set(CMAKE_SYSTEM_VERSION 1)
+
+# Set OHOS_SDK_NATIVE, ignore if we are running try-compile tasks
+if (DEFINED OHOS_SDK_NATIVE)
+  file(TO_CMAKE_PATH "${OHOS_SDK_NATIVE}" OHOS_SDK_NATIVE)
+endif()
+
+# Sdk native version, ignore if we are running try-compile tasks
+if (DEFINED OHOS_SDK_NATIVE)
+  file(STRINGS "${OHOS_SDK_NATIVE}/oh-uni-package.json" NATIVE_VER REGEX "\"version\":.*")
+  string(REGEX REPLACE "\"version\":(.*)$" "\\1" SDK_NATIVE_VERSION "${NATIVE_VER}")
+  string(STRIP "${SDK_NATIVE_VERSION}" SDK_NATIVE_VERSION)
+  string(REGEX REPLACE "^\"(.*)\"$" "\\1" SDK_NATIVE_VERSION "${SDK_NATIVE_VERSION}")
+endif()
+
+# Sdk api level, ignore if we are running try-compile tasks (uOHOS_APILEVEL
+if (DEFINED OHOS_SDK_NATIVE)
+  file(STRINGS "${OHOS_SDK_NATIVE}/oh-uni-package.json" API_VER REGEX "\"apiVersion\":.*")
+  string(REGEX REPLACE "\"apiVersion\":(.*),$" "\\1" OHOS_APILEVEL "${API_VER}")
+  string(STRIP "${OHOS_APILEVEL}" OHOS_APILEVEL)
+  string(REGEX REPLACE "^\"(.*)\"$" "\\1" OHOS_APILEVEL "${OHOS_APILEVEL}")
+endif()
+
+# Common default settings
+set(OHOS OHOS)
+set(CMAKE_SYSTEM_NAME OHOS)
 
 if(NOT DEFINED OHOS_PLATFORM_LEVEL)
   set(OHOS_PLATFORM_LEVEL 1)
@@ -201,7 +224,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "${OHOS_RELEASE_COMPILER_FLAGS} ${CMAKE_CXX_FLAGS_RE
 
 # set the cmake global asmflags
 set(CMAKE_ASM_FLAGS "" CACHE STRING "Flags for all build types.")
-#set(CMAKE_ASM_FLAGS "-mrelax-relocations=no" CACHE STRING "Flags for all build types.")
 set(CMAKE_ASM_FLAGS "${OHOS_ASM_COMPILER_FLAGS} ${CMAKE_ASM_FLAGS} -D__MUSL__")
 
 set(CMAKE_ASM_FLAGS_DEBUG "" CACHE STRING "Flags for debug variant builds.")
@@ -245,3 +267,4 @@ set(CMAKE_AR                "${OHOS_AR}" CACHE FILEPATH "Archiver")
 set(CMAKE_CXX_COMPILER_AR   "${OHOS_AR}" CACHE FILEPATH "Archiver")
 set(CMAKE_RANLIB            "${OHOS_RANLIB}" CACHE FILEPATH "Ranlib")
 set(CMAKE_CXX_COMPILER_RANLIB "${OHOS_RANLIB}" CACHE FILEPATH "Ranlib")
+set(UNIX TRUE CACHE BOOL FROCE)
