@@ -50,8 +50,7 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 - Flatpak for Linux (Qt6) [download flatpak][qt6_flatpak_x86_64_url] for _x86_64_ only.
 
-[Flathub][flathub_url]: available at latest version (Qt5, [report if you need Qt6 version][frs]). Do the following commands if you don't know how to start:
-> `flatpak install --user io.github.chilledheart.yass`
+[Flathub][flathub_url]: available at latest version (Qt5, [report if you need Qt6 version][frs]), require [Flatpak][flatpak_setup_url] installed).
 
 [![Flathub Version](https://img.shields.io/flathub/v/io.github.chilledheart.yass)][flathub_url]
 [![Flathub Downloads](https://img.shields.io/flathub/downloads/io.github.chilledheart.yass)][flathub_url]
@@ -160,6 +159,7 @@ Start from wiki's [Guide](https://github.com/Chilledheart/yass/wiki/Debug-Guide)
 [Report here if you want to connect to new CI infrastructure][frs]
 
 [flathub_url]: https://flathub.org/apps/io.github.chilledheart.yass
+[flatpak_setup_url]: https://flatpak.org/setup/
 [ios_testflight_invitation]: https://testflight.apple.com/join/6AkiEq09
 [ios_testflight_appstore_url]: https://apps.apple.com/us/app/testflight/id899247664
 [KB2999226]: https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c
