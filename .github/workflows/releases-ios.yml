@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, arm64]
-        build_type: [MinSizeRel]
+        build_type: [Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
