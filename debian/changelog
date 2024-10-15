@@ -1,3 +1,16 @@
+yass (1.15.0-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 131 dependents.
+  * net: optimize yield algorithm.
+  * net: fix http proxy integration with qt 6.8.
+  * tls: support and enable ML-KEM by default.
+  * tls: support post quantumn key-agreements in server side.
+  * tls: fix crash due to dangling DoPeek call.
+  * cli: add stats for yield event.
+  * systemd: update sample config files.
+  * systemd: increase RestartSec to 5s.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 15 Oct 2024 13:04:44 +0800
 yass (1.14.4-1) UNRELEASED; urgency=medium
 
   * net: fix http proxy integration with telegram.

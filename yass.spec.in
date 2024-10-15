@@ -318,6 +318,16 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Tue Oct 15 2024 Chilledheart <keeyou-cn@outlook.com> - 1.15.0-1
+  - bump to chromium 131 dependents
+  - net: optimize yield algorithm
+  - net: fix http proxy integration with qt 6.8
+  - tls: support and enable ML-KEM by default
+  - tls: support post quantumn key-agreements in server side
+  - tls: fix crash due to dangling DoPeek call
+  - cli: add stats for yield event
+  - systemd: update sample config files
+  - systemd: increase RestartSec to 5s
 * Thu Oct 10 2024 Chilledheart <keeyou-cn@outlook.com> - 1.14.4-1
   - net: fix http proxy integration with telegram
   - qt: fix translation with post quantumn key-agreements
