@@ -177,9 +177,9 @@ jobs:
       - name: Build TGZ packages
         run: |
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
-            --cmake-build-type Release -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
+            --cmake-build-type MinSizeRel -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
-            --cmake-build-type Release -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
+            --cmake-build-type MinSizeRel -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch_name == 'x86' || matrix.arch_name == 'x86_64' }}
         run: |
