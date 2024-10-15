@@ -157,7 +157,7 @@ jobs:
         run: |
           # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
-            -cmake-build-type MinSizeRel -no-build -no-configure \
+            -cmake-build-type Release -no-build -no-configure \
             -android-sdk-dir "${ANDROID_SDK_ROOT}" -android-ndk-ver "${ANDROID_NDK_VER}"
       - name: Download and Build Crashpad (include depot_tools)
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
@@ -194,7 +194,7 @@ jobs:
           echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type Release \
             -build-benchmark -build-test \
             -android-sdk-dir "${ANDROID_SDK_ROOT}" -android-ndk-ver "${ANDROID_NDK_VER}"
       - name: Clean up keychain and provisioning profile
