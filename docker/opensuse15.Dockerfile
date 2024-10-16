@@ -15,7 +15,7 @@ RUN zypper cc -a && \
     http-parser-devel mbedtls-devel && \
   zypper cc -a
 
-# Install cmake 3.28.6
-RUN curl -L https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz | \
+# Install cmake 3.29.8
+RUN curl -L https://github.com/Kitware/CMake/releases/download/v3.29.8/cmake-3.29.8-linux-x86_64.tar.gz | \
   tar -C /usr/local --strip-components=1 --gz -xf - && \
   cmake --version
