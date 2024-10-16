@@ -26,7 +26,6 @@ if [ $SUBVERSION == 0 ]; then
 fi
 
 ARCH=${ARCH:-arm64}
-BUILD_TYPE=${BUILD_TYPE:-release}
 
 case "$ARCH" in
   arm64)
@@ -40,6 +39,23 @@ case "$ARCH" in
     ;;
   *)
     echo "Invalid ARCH: $ARCH"
+    exit -1
+    ;;
+esac
+
+BUILD_TYPE=${BUILD_TYPE:-release}
+
+case "$BUILD_TYPE" in
+  debug)
+    HVIGORW_BUILD_TYPE=debug
+    BUILD_TYPE=Debug
+    ;;
+  release)
+    HVIGORW_BUILD_TYPE=release
+    BUILD_TYPE=Release
+    ;;
+  *)
+    echo "Invalid BUILD_TYPE: $BUILD_TYPE, expected debug or release"
     exit -1
     ;;
 esac
@@ -80,27 +96,27 @@ popd
 
 function package_unsign_hap() {
 pushd harmony
-hvigorw assembleHap --mode module -p product=default -p buildMode=${BUILD_TYPE} --no-daemon
+hvigorw assembleHap --mode module -p product=default -p buildMode=${HVIGORW_BUILD_TYPE} --no-daemon
 cp -fv entry/build/default/outputs/default/entry-default-unsigned.hap \
-  ../yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap
+  ../yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap
 popd
 }
 
 function package_sign_hap() {
 pushd harmony
-hvigorw assembleHap --mode module -p product=default -p buildMode=${BUILD_TYPE} --no-daemon
+hvigorw assembleHap --mode module -p product=default -p buildMode=${HVIGORW_BUILD_TYPE} --no-daemon
 java -jar "${HARMONY_NDK_ROOT}/toolchains/lib/hap-sign-tool.jar" sign-app \
   -keyAlias "${HARMONY_SIGNING_KEY_ALIAS}" -keyPwd "${HARMONY_SIGNING_KEY_PASSWORD}" \
   -appCertFile "${HARMONY_SIGNING_CERTFILE}" -profileFile "${HARMONY_SIGNING_PROFILE}" \
   -keystoreFile "${HARMONY_SIGNING_STORE_PATH}" -keystorePwd "${HARMONY_SIGNING_STORE_PASSWORD}" \
   -inFile entry/build/default/outputs/default/entry-default-unsigned.hap \
-  -outFile ../yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap \
+  -outFile ../yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap \
   -signAlg SHA256withECDSA -mode localSign -signCode 1
 popd
 }
 
 function package_hap() {
-if [ -z "${HARMONY_SIGNING_STORE_PATH}" -o -z "${HARMONY_SIGNING_PROFILE}" ]; then
+if [ -z "${HARMONY_SIGNING_CERTFILE}" -o -z "${HARMONY_SIGNING_PROFILE}" ]; then
 package_unsign_hap
 else
 package_sign_hap
@@ -109,18 +125,18 @@ fi
 
 function package_debuginfo() {
 pushd build-harmony-${ARCH}
-rm -rf yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
-mkdir yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
-cp -fv libyass.so.dbg yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}/
-tar cfz ../yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}-debuginfo.tgz \
-  yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
-rm -rf yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
+rm -rf yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
+mkdir yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
+cp -fv libyass.so.dbg yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}/
+tar cfz ../yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}-debuginfo.tgz \
+  yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
+rm -rf yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}
 popd
 }
 
 function inspect_pkgs() {
-7z l yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap
-tar tvf yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}-debuginfo.tgz
+7z l yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap
+tar tvf yass-harmony-${HVIGORW_BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}-debuginfo.tgz
 }
 
 cleanup
