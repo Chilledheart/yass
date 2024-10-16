@@ -175,7 +175,7 @@ jobs:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
-          key: ${{ runner.os }}-22.04-schroot-${{ matrix.distro }}-${{ matrix.arch }}-mix-v1
+          key: ${{ runner.os }}-22.04-schroot-${{ matrix.distro }}-${{ matrix.arch }}-mix-v2
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
@@ -275,18 +275,6 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt-get install -y perl gcc g++ ninja-build
-      - name: Populate dependencie (base, TODO remove me, fix for trixie's broken libc6-riscv64-cross < 2.40)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'riscv64' && matrix.distro == 'trixie' }}
-        run: |
-          # https://launchpad.net/ubuntu/oracular/amd64/libc6-dev-riscv64-cross
-          curl -O http://launchpadlibrarian.net/749345307/libc6-dev-riscv64-cross_2.40-1ubuntu3cross1_all.deb
-          # https://launchpad.net/ubuntu/oracular/amd64/libc6-riscv64-cross
-          curl -O http://launchpadlibrarian.net/749345318/libc6-riscv64-cross_2.40-1ubuntu3cross1_all.deb
-          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
-            dpkg --force-depends -i $PWD/*.deb || true
-          sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
-            apt-get install -y -f
-          rm -f *.deb
       - name: Populate dependencie (zlib)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
