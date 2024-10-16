@@ -264,9 +264,9 @@ jobs:
       - name: Populate dependencie (cmake, overwrite)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz
+          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.29.8/cmake-3.29.8-linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
-            tar -C /usr/local --strip-components=1 -xf cmake-3.28.6-linux-x86_64.tar.gz
+            tar -C /usr/local --strip-components=1 -xf cmake-3.29.8-linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             cmake --version
           rm -f *.tar.gz
