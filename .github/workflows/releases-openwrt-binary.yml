@@ -45,31 +45,37 @@ jobs:
         include:
           - arch_name: x86_64
             arch: x86_64
+            build_type: MinSizeRel
             extra_flags: ''
             openwrt: 'target=x86 subtarget=64 abi=musl'
             qemu_suffix: i386
           - arch_name: x86
             arch: i486
+            build_type: MinSizeRel
             extra_flags: ''
             openwrt: 'target=x86 subtarget=generic abi=musl'
             qemu_suffix: amd64
           - arch_name: aarch64_cortex-a53
             arch: aarch64
+            build_type: MinSizeRel
             extra_flags: '--arm-cpu=cortex-a53'
             openwrt: 'target=sunxi subtarget=cortexa53 abi=musl'
             qemu_suffix: aarch64
           - arch_name: aarch64_cortex-a72
             arch: aarch64
+            build_type: MinSizeRel
             extra_flags: '--arm-cpu=cortex-a72'
             openwrt: 'target=mvebu subtarget=cortexa72 abi=musl'
             qemu_suffix: aarch64
           - arch_name: aarch64_generic
             arch: aarch64
+            build_type: MinSizeRel
             extra_flags: ''
             openwrt: 'target=rockchip subtarget=armv8 abi=musl'
             qemu_suffix: aarch64
     runs-on: ubuntu-20.04
     env:
+      BUILD_TYPE: ${{ matrix.build_type }}
       OPENWRT_FLAGS: arch=${{ matrix.arch_name }} release=23.05.3 gcc_ver=12.3.0 ${{ matrix.openwrt }}
       SDK_ROOT: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch_name }}
       SDK_HOME: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch_name }}-home
@@ -177,9 +183,9 @@ jobs:
       - name: Build TGZ packages
         run: |
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
-            --cmake-build-type MinSizeRel -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
+            -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
-            --cmake-build-type MinSizeRel -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
+            -build-benchmark -build-test -nc ${{ matrix.extra_flags }}
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch_name == 'x86' || matrix.arch_name == 'x86_64' }}
         run: |

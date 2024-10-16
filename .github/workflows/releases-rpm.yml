@@ -192,13 +192,19 @@ jobs:
         include:
           - container: 'alpine320'
             arch: amd64
+            build_type: MinSizeRel
           - container: 'i386-alpine320'
             arch: i386
+            build_type: MinSizeRel
           - container: 'aarch64-alpine320'
             arch: aarch64
+            build_type: MinSizeRel
           - container: 'armhf-alpine320'
             arch: armhf
+            build_type: MinSizeRel
     runs-on: ubuntu-20.04
+    env:
+      BUILD_TYPE: ${{ matrix.build_type }}
     needs: docker_publish
     steps:
       - uses: actions/checkout@v4
@@ -276,9 +282,9 @@ jobs:
           rm -f *.tar.gz
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -use-static-build -nc
-          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -use-static-build -nc
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test --cmake-build-type MinSizeRel -nc
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test -use-static-build -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test -use-static-build -nc
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot "${{ env.SDK_ROOT }}" -build-test -nc
       - name: Run tests (i386 and amd64)
         if: ${{ matrix.arch == 'i386' ||  matrix.arch == 'amd64' }}
         run: |
