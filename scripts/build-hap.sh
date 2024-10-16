@@ -78,12 +78,33 @@ cp -fv ../build-harmony-${ARCH}/libyass.so entry/libs/${ABI}
 popd
 }
 
-function package_hap() {
+function package_unsign_hap() {
 pushd harmony
 hvigorw assembleHap --mode module -p product=default -p buildMode=${BUILD_TYPE} --no-daemon
 cp -fv entry/build/default/outputs/default/entry-default-unsigned.hap \
   ../yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap
 popd
+}
+
+function package_sign_hap() {
+pushd harmony
+hvigorw assembleHap --mode module -p product=default -p buildMode=${BUILD_TYPE} --no-daemon
+java -jar "${HARMONY_NDK_ROOT}/toolchains/lib/hap-sign-tool.jar" sign-app \
+  -keyAlias "${HARMONY_SIGNING_KEY_ALIAS}" -keyPwd "${HARMONY_SIGNING_KEY_PASSWORD}" \
+  -appCertFile "${HARMONY_SIGNING_CERTFILE}" -profileFile "${HARMONY_SIGNING_PROFILE}" \
+  -keystoreFile "${HARMONY_SIGNING_STORE_PATH}" -keystorePwd "${HARMONY_SIGNING_STORE_PASSWORD}" \
+  -inFile entry/build/default/outputs/default/entry-default-unsigned.hap \
+  -outFile ../yass-harmony-${BUILD_TYPE}-${ARCH}-${VERSION}${SUBVERSION_SUFFIX}.hap \
+  -signAlg SHA256withECDSA -mode localSign -signCode 1
+popd
+}
+
+function package_hap() {
+if [ -z "${HARMONY_SIGNING_STORE_PATH}" -o -z "${HARMONY_SIGNING_PROFILE}" ]; then
+package_unsign_hap
+else
+package_sign_hap
+fi
 }
 
 function package_debuginfo() {
