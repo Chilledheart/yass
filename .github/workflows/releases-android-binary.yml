@@ -89,7 +89,7 @@ jobs:
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-16k-alignment
+          key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-16k-alignment-no-stripped
       - name: Cache cargo build stage
         id: cargo-cache
         uses: actions/cache@v4
@@ -151,7 +151,7 @@ jobs:
           sudo tar -C /usr/local --strip-components=1 -xf cmake-3.29.8-linux-x86_64.tar.gz
           cmake --version
           rm -f *.tar.gz
-      - name: Build TGZ packages (no build, for patching)
+      - name: Build Binary (no build, for patching)
         run: |
           # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
@@ -160,7 +160,7 @@ jobs:
       - name: Download and Build Crashpad
         if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         run: |
-          WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
+          WITH_OS=android WITH_CPU=${{ matrix.arch }} SKIP_STRIP=1 ./scripts/build-crashpad.sh
       - name: "Install dependency: qemu user cache"
         if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -177,30 +177,10 @@ jobs:
           sudo apt remove libc6-i386
 
           sudo dpkg -i qemu-user_*.deb
-      - name: Install the Release certificate
-        if: ${{ github.event_name == 'release' }}
-        env:
-          SIGNING_STORE_BASE64: ${{ secrets.SIGNING_STORE_BASE64 }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: |
-          echo -n "$SIGNING_STORE_BASE64" | base64 --decode > $RUNNER_TEMP/release.jks
-          echo "SIGNING_STORE_PATH=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
-          echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD" >> $GITHUB_ENV
-          echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS" >> $GITHUB_ENV
-          echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD" >> $GITHUB_ENV
-      - name: Build TGZ packages
+      - name: Build Binary
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
-            -build-benchmark -build-test \
-            -android-sdk-dir "${ANDROID_SDK_ROOT}" -android-ndk-ver "${ANDROID_NDK_VER}"
-      - name: Clean up keychain and provisioning profile
-        if: ${{ always() }}
-        run: |
-          if [ ! -z $SIGNING_STORE_PATH ]; then
-            rm -f $SIGNING_STORE_PATH
-          fi
+            -build-benchmark -build-test -nc -no-packaging
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -224,9 +204,36 @@ jobs:
           qemu-${{ matrix.qemu_suffix }} -L $SYSROOT \
             -E TMPDIR=$PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} \
             $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }}/yass_test
+      - name: Install the Release certificate
+        if: ${{ github.event_name == 'release' }}
+        env:
+          SIGNING_STORE_BASE64: ${{ secrets.SIGNING_STORE_BASE64 }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          echo -n "$SIGNING_STORE_BASE64" | base64 --decode > $RUNNER_TEMP/release.jks
+          echo "SIGNING_STORE_PATH=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
+          echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD" >> $GITHUB_ENV
+          echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS" >> $GITHUB_ENV
+          echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD" >> $GITHUB_ENV
+      - name: Build AAB bundle
+        run: |
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
+            -build-benchmark -build-test -nc -android-aab
+      - name: Build APK package
+        run: |
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
+            -build-benchmark -build-test -nc
+      - name: Clean up keychain and provisioning profile
+        if: ${{ always() }}
+        run: |
+          if [ ! -z $SIGNING_STORE_PATH ]; then
+            rm -f $SIGNING_STORE_PATH
+          fi
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.tgz yass*.apk
+          gh release upload ${{ github.event.release.tag_name }} yass*.tgz yass*.apk yass*.aab yass*.aab.idsig

@@ -2893,7 +2893,9 @@ if (UNIX AND (${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATC
 
   if (NOT IOS)
     file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
-    file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.dbg" DESTINATION ${CMAKE_BINARY_DIR})
+    if (EXISTS "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.dbg")
+      file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.dbg" DESTINATION ${CMAKE_BINARY_DIR})
+    endif()
     set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
   endif()
 endif()

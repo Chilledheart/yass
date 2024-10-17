@@ -104,7 +104,7 @@ jobs:
         if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
-          WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
+          WITH_CPU=${{ matrix.arch }} SKIP_STRIP=1 ./scripts/build-crashpad.sh
       - name: Build
         run: |
           set VCToolsVersion=
