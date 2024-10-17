@@ -10,6 +10,7 @@ android {
         applicationId 'it.gui.yass'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        ndkVersion properties.getProperty("android.ndkVersion", "26.3.11579264").trim()
         versionCode properties.getProperty("YASS_VERSION", "1").trim().toInteger()
         versionName properties.getProperty("YASS_VERSION_NAME", "1.0").trim()
     }
