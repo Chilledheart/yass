@@ -71,7 +71,10 @@ def extract_tarfile(tar, sysroot=".", filters=[]):
         filtered_members.append(member)
     if not filtered_members:
       return
-    package_tar.extractall(sysroot, filtered_members)
+    if sys.version_info >= (3, 12):
+      package_tar.extractall(sysroot, filtered_members, filter='tar')
+    else:
+      package_tar.extractall(sysroot, filtered_members)
 
 
 def GetSha256(filename):

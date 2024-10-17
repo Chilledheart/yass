@@ -59,7 +59,10 @@ def GetSha1(filename):
 def extract_tarfile(tar, sysroot):
   print('Extracting %s' % tar)
   with tarfile.open(tar) as package_tar:
-    package_tar.extractall(sysroot)
+    if sys.version_info >= (3, 12):
+      package_tar.extractall(sysroot, filter='tar')
+    else:
+      package_tar.extractall(sysroot)
 def main(args):
   parser = optparse.OptionParser('usage: %prog [OPTIONS]', description=__doc__)
   parser.add_option('--arch',

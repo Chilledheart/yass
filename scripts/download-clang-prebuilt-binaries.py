@@ -37,7 +37,10 @@ def download_url(url, tarball):
 def extract_tarfile(tar):
   print('Extracting %s' % tar)
   with tarfile.open(tar) as package_tar:
-    package_tar.extractall()
+    if sys.version_info >= (3, 12):
+      package_tar.extractall(filter='tar')
+    else:
+      package_tar.extractall()
 
 def mkdir_p(path):
   try:
