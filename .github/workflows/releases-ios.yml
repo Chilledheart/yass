@@ -40,13 +40,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache toolchain
-        id: toolchain-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-arm64-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache cargo build stage
         id: cargo-cache
         uses: actions/cache@v4
@@ -74,11 +67,6 @@ jobs:
           source "$HOME/.cargo/env"
           ./scripts/setup-ios-rust.sh
           WITH_OS=ios-sim WITH_CPU=${{ matrix.arch }} ./scripts/build-tun2proxy.sh
-      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
-        run: |
-          ./scripts/download-clang-prebuilt-binaries.py
-          rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Populate depedencies
         run: |
           # brew update
