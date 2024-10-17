@@ -994,9 +994,12 @@ if (NOT MSVC)
     add_definitions(-D__GNU_SOURCE=1)
   endif()
   # support for 16k page size
-  # https://developer.android.com/guide/practices/page-sizes#compile-r26-lower
+  # see ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES for ndk >= 27
   if (ANDROID)
-    add_link_options(-Wl,-z,max-page-size=16384)
+    add_definitions(-D__BIONIC_NO_PAGE_SIZE_MACRO)
+    if(ANDROID_ABI STREQUAL arm64-v8a OR ANDROID_ABI STREQUAL x86_64)
+      add_link_options(-Wl,-z,max-page-size=16384)
+    endif()
   endif()
 
   ## optimization flags

@@ -517,8 +517,8 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 	return "", ""
 }
 
-func getLLVMVersion() string {
-	entries, err := ioutil.ReadDir(filepath.Join(clangPath, "lib", "clang"))
+func getClangVersion(llvmBaseDir string) string {
+	entries, err := ioutil.ReadDir(filepath.Join(llvmBaseDir, "lib", "clang"))
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
@@ -527,38 +527,25 @@ func getLLVMVersion() string {
 		llvm_version = entry.Name()
 	}
 	if llvm_version == "" {
-		glog.Fatalf("toolchain not found")
-	}
-	return llvm_version
-}
-
-func getMinGWLLVMVersion(mingwDir string) string {
-	entries, err := ioutil.ReadDir(filepath.Join(mingwDir, "lib", "clang"))
-	if err != nil {
-		glog.Fatalf("%v", err)
-	}
-	var llvm_version string
-	for _, entry := range entries {
-		llvm_version = entry.Name()
-	}
-	if llvm_version == "" {
-		glog.Fatalf("toolchain not found")
+		glog.Fatalf("toolchain not found under directory %s", llvmBaseDir)
 	}
 	return llvm_version
 }
 
 func getAndFixMinGWLibunwind(mingwDir string) {
-	getAndFixLibunwind(fmt.Sprintf("%s/lib/clang/%s/lib/windows", mingwDir, getMinGWLLVMVersion(mingwDir)), "windows")
+	getAndFixLibunwind(fmt.Sprintf("%s/lib/clang/%s/lib/windows", mingwDir, getClangVersion(mingwDir)), "windows")
 }
 
 func getAndFixAndroidLibunwind(ndkDir string) {
-	getAndFixLibunwind(fmt.Sprintf("%s/toolchains/llvm/prebuilt/%s-x86_64/lib/clang/17/lib/linux", ndkDir, runtime.GOOS), "linux")
+	llvmBaseDir := fmt.Sprintf("%s/toolchains/llvm/prebuilt/%s-x86_64", ndkDir, runtime.GOOS)
+	getAndFixLibunwind(fmt.Sprintf("%s/lib/clang/%s/lib/linux", llvmBaseDir, getClangVersion(llvmBaseDir)), "linux")
 }
 
 func getAndFixHarmonyLibunwind() {
-	// FIX Runtime
-	getAndFixLibunwind(fmt.Sprintf("%s/native/llvm/lib/clang/15.0.4/lib", harmonyNdkDir), "")
-	// FIX libunwind
+	// Fix Runtime
+	llvmBaseDir := fmt.Sprintf("%s/native/llvm", harmonyNdkDir)
+	getAndFixLibunwind(fmt.Sprintf("%s/lib/clang/%s/lib", llvmBaseDir, getClangVersion(llvmBaseDir)), "")
+	// Fix libunwind
 	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib"))
 	source_path := fmt.Sprintf("%s/native/llvm/lib", harmonyNdkDir)
 	entries, err := ioutil.ReadDir(source_path)
@@ -589,23 +576,8 @@ func getAndFixLibunwind(source_path string, subdir string) {
 		glog.Fatalf("Symbolic link is not supported on windows")
 	}
 	// ln -sf $PWD/third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux/i386 third_party/llvm-build/Release+Asserts/lib/clang/18/lib/linux
-	entries, err := ioutil.ReadDir(filepath.Join(clangPath, "lib", "clang"))
-	if err != nil {
-		glog.Fatalf("%v", err)
-	}
-	var llvm_version string
-	for _, entry := range entries {
-		llvm_version = entry.Name()
-	}
-	if llvm_version == "" {
-		glog.Fatalf("toolchain not found")
-	}
-	source_path, err = filepath.Abs(source_path)
-	if err != nil {
-		glog.Fatalf("%v", err)
-	}
-	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib", "clang", llvm_version, "lib", subdir))
-	entries, err = ioutil.ReadDir(source_path)
+	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib", "clang", getClangVersion(clangPath), "lib", subdir))
+	entries, err := ioutil.ReadDir(source_path)
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
@@ -973,7 +945,7 @@ func buildStageGenerateBuildScript() {
 			if targetAbi == "i686" {
 				cmakeArgs = append(cmakeArgs, "-DMINGW_MSVCRT100=ON")
 			}
-			llvm_version := getLLVMVersion()
+			llvm_version := getClangVersion(clangPath)
 			clang_rt_suffix := targetAbi
 			if targetAbi == "i686" {
 				clang_rt_suffix = "i386"
