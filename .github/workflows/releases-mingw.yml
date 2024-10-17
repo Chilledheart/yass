@@ -45,14 +45,14 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache mingw64 toolchain
-        id: mingw64-cache
+      - name: Cache mingw64 sysroot
+        id: sysroot-cache
         uses: actions/cache@v4
         with:
           path: |
             third_party/mingw64
             third_party/mingw32
-          key: ${{ runner.os }}-mingw64-${{ matrix.arch }}-toolchain-v1
+          key: ${{ runner.os }}-mingw64-sysroot-${{ matrix.arch }}-v1
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v4
@@ -65,8 +65,8 @@ jobs:
         run: |
           REM choco upgrade -y llvm --version=18.1.8
           clang -v
-      - name: "Download dependency: mingw64"
-        if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
+      - name: "Download dependency: mingw64 sysroot"
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain-mingw.bat ${{ matrix.arch }}
       - name: "Download dependency: curl"

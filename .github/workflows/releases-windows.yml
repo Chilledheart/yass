@@ -44,8 +44,8 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm, nsis and wixtoolset 3
-        id: clang-cache
+      - name: Cache toolchain, nasm, nsis and wixtoolset 3
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -81,7 +81,7 @@ jobs:
           cd tools
           go build
       - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
       - name: "Download dependency: curl"
@@ -181,8 +181,8 @@ jobs:
               Write-Host "components were not installed"
               exit 1
           }
-      - name: Cache clang, nasm, nsis and wixtoolset 3
-        id: clang-cache
+      - name: Cache toolchain, nasm, nsis and wixtoolset 3
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -202,7 +202,7 @@ jobs:
           cd tools
           go build
       - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
       - name: "Download dependency: cmake (chocolatey)"

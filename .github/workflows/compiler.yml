@@ -56,8 +56,8 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm, nsis and wixtoolset 3
-        id: clang-cache
+      - name: Cache toolchain, nasm, nsis and wixtoolset 3
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -86,7 +86,7 @@ jobs:
           cd tools
           go build
       - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
       - name: "Download dependency: curl"
@@ -147,8 +147,8 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang
-        id: clang-cache
+      - name: Cache toolchain
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -157,13 +157,13 @@ jobs:
             third_party/wix311
             third_party/nsis
           key: ${{ runner.os }}-toolchain-nsis-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache mingw64 llvm
-        id: mingw-cache
+      - name: Cache mingw64 llvm sysroot
+        id: sysroot-cache
         uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64
-          key: ${{ runner.os }}-mingw64-third_party-llvm-20240619-ucrt
+          key: ${{ runner.os }}-mingw64-sysroot-third_party-llvm-20240619-ucrt-v1
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v4
@@ -188,12 +188,12 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Download dependency: llvm-mingw"
-        if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
+      - name: "Download dependency: llvm-mingw sysroot"
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
           curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
@@ -282,7 +282,7 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang (v17.0.6)
+      - name: Cache toolchain (v17.0.6)
         id: clang17-cache
         uses: actions/cache@v4
         with:
