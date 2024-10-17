@@ -59,8 +59,8 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang
-        id: clang-cache
+      - name: Cache toolchain
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -78,13 +78,13 @@ jobs:
         with:
           path: |
             freebsd-${{ matrix.abi }}-${{ matrix.arch }}-toolchain
-          key: freebsd-${{ matrix.abi }}-${{ matrix.arch }}-14-1-and-13-3-v1
+          key: freebsd-sysroot-${{ matrix.abi }}-${{ matrix.arch }}-${{ hashFiles('scripts/install-sysroot-freebsd.py') }}-v1
       - name: Build build tool
         run: |
           cd tools
           go build
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
@@ -107,7 +107,9 @@ jobs:
           rm -f *.tar.gz
       - name: Build TGZ packages
         run: |
-          ./tools/build --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-${{ matrix.arch }}-toolchain -build-benchmark -build-test
+          ./tools/build --system freebsd --arch ${{ matrix.arch }} --freebsd-abi ${{ matrix.abi }} \
+            --sysroot $PWD/freebsd-${{ matrix.abi }}-${{ matrix.arch }}-toolchain \
+            -build-benchmark -build-test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

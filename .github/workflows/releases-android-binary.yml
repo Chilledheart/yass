@@ -76,13 +76,13 @@ jobs:
         run: |
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
-      - name: Cache clang
-        id: clang-cache
+      - name: Cache toolchain
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-android-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v4
@@ -141,7 +141,7 @@ jobs:
           ./scripts/setup-android-rust.sh
           WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-tun2proxy.sh
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz

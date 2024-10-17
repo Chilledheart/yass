@@ -91,8 +91,8 @@ jobs:
         run: |
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
-      - name: Cache clang
-        id: clang-cache
+      - name: Cache toolchain
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -111,21 +111,21 @@ jobs:
           path: |
             qemu-user*.deb
           key: ${{ runner.os }}-qemu-9.1.0-ds-8
-      - name: Cache openwrt sdk home
-        id: openwrt-sdkhome-cache
+      - name: Cache openwrt sdkhome (sysroot)
+        id: sysroot-cache
         uses: actions/cache@v4
         with:
           path: |
             openwrt-sdk-*.Linux-x86_64
             ${{ env.SDK_ROOT }}
             ${{ env.SDK_HOME }}
-          key: openwrt-sdkhome-${{ matrix.arch_name }}-23-05-03
+          key: openwrt-sysroot-${{ matrix.arch_name }}-23-05-03-v1
       - name: Build build tool
         run: |
           cd tools
           go build
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
@@ -137,8 +137,8 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: "Install dependency: openwrt sdkhome"
-        if: ${{ steps.openwrt-sdkhome-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: openwrt sdkhome (sysroot)"
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           eval "$OPENWRT_FLAGS"
 

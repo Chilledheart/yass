@@ -84,8 +84,8 @@ jobs:
         if: ${{ matrix.arch == 'riscv64' || matrix.arch == 'riscv32' }}
         run: |
           echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot/sysroot" >> $GITHUB_ENV
-      - name: Cache clang
-        id: clang-cache
+      - name: Cache toolchain
+        id: toolchain-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -124,7 +124,7 @@ jobs:
           cd tools
           go build
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
