@@ -103,7 +103,7 @@ jobs:
           cache-dependency-path: |
             tools/go.sum
             third_party/boringssl/src/go.sum
-      - name: Gradle cache
+      - name: Cache gradle
         uses: actions/cache@v4
         with:
           path: ~/.gradle
