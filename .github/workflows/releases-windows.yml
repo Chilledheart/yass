@@ -63,20 +63,6 @@ jobs:
             third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
           key: ${{ runner.os }}-msvc-dynamic-curl-vc16-${{ matrix.arch }}-v2
-      - name: Cache depot_tools
-        id: depot-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            third_party/depot_tools
-          key: ${{ runner.os }}-depot_tools-v1
-      - name: Cache crashpad build stage
-        id: crashpad-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            third_party/crashpad
-          key: ${{ runner.os }}-msvc-dynamic-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-stripped
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.20.0'
@@ -104,11 +90,11 @@ jobs:
           choco install -y ninja
           ninja --version
       - uses: actions/setup-python@v5
-        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         with:
           python-version: '>=3.8'
-      - name: Download and Build Crashpad (include depot_tools)
-        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
+      - name: Download and Build Crashpad
+        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
