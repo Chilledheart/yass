@@ -83,6 +83,13 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-android-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache depot_tools
+        id: depot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/depot_tools
+          key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v4
@@ -157,8 +164,8 @@ jobs:
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
             -no-build -no-configure \
             -android-sdk-dir "${ANDROID_SDK_ROOT}" -android-ndk-ver "${ANDROID_NDK_VER}"
-      - name: Download and Build Crashpad
-        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
+      - name: Download and Build Crashpad (include depot_tools)
+        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         run: |
           WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
       - name: "Install dependency: qemu user cache"

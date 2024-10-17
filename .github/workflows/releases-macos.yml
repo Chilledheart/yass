@@ -67,6 +67,13 @@ jobs:
           cache-dependency-path: |
             tools/go.sum
             third_party/boringssl/src/go.sum
+      - name: Cache depot_tools
+        id: depot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/depot_tools
+          key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v4
@@ -93,8 +100,8 @@ jobs:
       - name: Set up Xcode to 16.0
         run: |
           sudo xcode-select -s /Applications/Xcode_16.0.app
-      - name: Download and Build Crashpad
-        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
+      - name: Download and Build Crashpad (include depot_tools)
+        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
