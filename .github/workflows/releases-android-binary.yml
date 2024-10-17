@@ -89,7 +89,7 @@ jobs:
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-16k-alignment
+          key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-16k-alignment-no-stripped
       - name: Cache cargo build stage
         id: cargo-cache
         uses: actions/cache@v4
@@ -160,7 +160,7 @@ jobs:
       - name: Download and Build Crashpad
         if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         run: |
-          WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
+          WITH_OS=android WITH_CPU=${{ matrix.arch }} SKIP_STRIP=1 ./scripts/build-crashpad.sh
       - name: "Install dependency: qemu user cache"
         if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
