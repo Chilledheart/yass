@@ -43,10 +43,18 @@ android {
         }
     }
     buildTypes {
+        debug {
+            ndk {
+                debugSymbolLevel 'FULL' // 'SYMBOL_TABLE' for smaller size
+            }
+        }
         release {
             signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk {
+                debugSymbolLevel 'FULL' // 'SYMBOL_TABLE' for smaller size
+            }
         }
     }
     // https://developer.android.com/build/configure-apk-splits
