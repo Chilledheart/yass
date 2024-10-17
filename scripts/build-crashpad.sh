@@ -82,8 +82,8 @@ OBJCOPY="$PWD/llvm-build/Release+Asserts/bin/llvm-objcopy"
 
 # strip debug symbols (ignore msvc build which generating pdbs already)
 function strip_binary {
-if [ "$WITH_OS" = "win" ]; then
-  echo 'omit calling llvm-objcopy on msvc binary'
+if [ ! -z "$SKIP_STRIP" ]; then
+  echo 'omit calling llvm-objcopy as required'
   return
 fi
 
