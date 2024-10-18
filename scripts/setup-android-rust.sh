@@ -20,8 +20,8 @@ NDK_ROOT="${ANDROID_SDK_ROOT}/ndk/${ANDROID_NDK_VER}"
 
 echo "Adding rustup toolchain..."
 
-rustup toolchain install 1.81.0
-rustup default 1.81.0
+rustup toolchain install 1.82.0
+rustup default 1.82.0
 
 echo "Adding rustup toolchain...done"
 
