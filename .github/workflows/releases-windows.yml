@@ -96,12 +96,12 @@ jobs:
         run: |
           choco install -y ninja
           ninja --version
-      - name: Download and Build Crashpad
+      - name: Build Binary (crashpad)
         if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           WITH_CPU=${{ matrix.arch }} SKIP_STRIP=1 ./scripts/build-crashpad.sh
-      - name: Build
+      - name: Build Binary
         run: |
           set VCToolsVersion=
           set Winsdk=10.0.22621.0

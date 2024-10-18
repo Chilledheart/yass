@@ -61,12 +61,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-arm64-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.20.0'
-          cache-dependency-path: |
-            tools/go.sum
-            third_party/boringssl/src/go.sum
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v4
@@ -74,6 +68,12 @@ jobs:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-mac-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-stripped
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build build tool
         run: |
           cd tools
@@ -93,7 +93,7 @@ jobs:
       - name: Set up Xcode to 16.0
         run: |
           sudo xcode-select -s /Applications/Xcode_16.0.app
-      - name: Download and Build Crashpad
+      - name: Build Binary (crashpad)
         if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
@@ -123,7 +123,7 @@ jobs:
 
           echo "CODESIGN_IDENTITY=Developer ID Application" >> $GITHUB_ENV
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
-      - name: Build
+      - name: Build Binary
         run: |
           ./tools/build --arch ${{ matrix.arch }} -build-test -build-benchmark
       - name: Clean up keychain and provisioning profile

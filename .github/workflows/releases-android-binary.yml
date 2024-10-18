@@ -46,18 +46,22 @@ jobs:
           - arch: x86
             build_type: Release
             qemu_suffix: i386
+            rust_target: i686-linux-android
             apilevel: 24
           - arch: x64
             build_type: Release
             qemu_suffix: amd64
+            rust_target: x86_64-linux-android
             apilevel: 24
           - arch: arm
             build_type: Release
             qemu_suffix: armel
+            rust_target: armv7-linux-androideabi
             apilevel: 24
           - arch: arm64
             build_type: Release
             qemu_suffix: aarch64
+            rust_target: aarch64-linux-android
             apilevel: 24
     runs-on: ubuntu-20.04
     env:
@@ -83,6 +87,13 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache tun2proxy build stage
+        id: tun2proxy-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/tun2proxy/target/${{ matrix.rust_target }}/release/libtun2proxy.a
+          key: ${{ runner.os }}-rust-${{ matrix.rust_target }}-tun2proxy-${{ hashFiles('RUST_REVISION') }}-${{ hashFiles('RUST_CARGO_REVISION') }}-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-v${{ env.CACHE_EPOCH }}-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v4
@@ -90,19 +101,6 @@ jobs:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}-16k-alignment-no-stripped
-      - name: Cache cargo build stage
-        id: cargo-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo
-          key: ${{ runner.os }}-android-cargo-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-${{ hashFiles('third_party/tun2proxy/Cargo.lock') }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.20.0'
-          cache-dependency-path: |
-            tools/go.sum
-            third_party/boringssl/src/go.sum
       - name: Cache gradle
         uses: actions/cache@v4
         with:
@@ -122,6 +120,12 @@ jobs:
           path: |
             ${{ env.SYSROOT }}
           key: android-sysroot-${{ matrix.arch }}-v1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build build tool
         run: |
           cd tools
@@ -136,31 +140,11 @@ jobs:
       - name: Replace Android NDK (pin to r26c)
         run: |
           echo "ANDROID_NDK_VER=26.3.11579264" >> $GITHUB_ENV
-      - name: "Install dependency: tun2proxy"
-        run: |
-          ./scripts/setup-android-rust.sh
-          WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-tun2proxy.sh
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: Populate dependencie (cmake, overwrite)
-        run: |
-          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.29.8/cmake-3.29.8-linux-x86_64.tar.gz
-          sudo tar -C /usr/local --strip-components=1 -xf cmake-3.29.8-linux-x86_64.tar.gz
-          cmake --version
-          rm -f *.tar.gz
-      - name: Build Binary (no build, for patching)
-        run: |
-          # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
-            -no-build -no-configure \
-            -android-sdk-dir "${ANDROID_SDK_ROOT}" -android-ndk-ver "${ANDROID_NDK_VER}"
-      - name: Download and Build Crashpad
-        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
-        run: |
-          WITH_OS=android WITH_CPU=${{ matrix.arch }} SKIP_STRIP=1 ./scripts/build-crashpad.sh
       - name: "Install dependency: qemu user cache"
         if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -177,6 +161,27 @@ jobs:
           sudo apt remove libc6-i386
 
           sudo dpkg -i qemu-user_*.deb
+      - name: Populate dependencie (cmake, overwrite)
+        run: |
+          curl -L -O https://github.com/Kitware/CMake/releases/download/v3.29.8/cmake-3.29.8-linux-x86_64.tar.gz
+          sudo tar -C /usr/local --strip-components=1 -xf cmake-3.29.8-linux-x86_64.tar.gz
+          cmake --version
+          rm -f *.tar.gz
+      - name: Build Binary (tun2proxy)
+        if: ${{ steps.tun2proxy-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/setup-android-rust.sh
+          WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-tun2proxy.sh
+      - name: Build Binary (prebuild stage for crashpad)
+        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
+        run: |
+          # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
+            -no-build -no-configure
+      - name: Build Binary (crashpad)
+        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
+        run: |
+          WITH_OS=android WITH_CPU=${{ matrix.arch }} SKIP_STRIP=1 ./scripts/build-crashpad.sh
       - name: Build Binary
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \

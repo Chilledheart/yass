@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 set -x
+PWD=$(dirname "${BASH_SOURCE[0]}")
+cd $PWD/..
+
+RUST_VER=$(< RUST_REVISION)
 
 if [ -z "$(which rustup)" ]; then
   echo "rustup not found"
@@ -9,8 +13,8 @@ fi
 
 echo "Adding rustup toolchain..."
 
-rustup toolchain install 1.82.0
-rustup default 1.82.0
+rustup toolchain install $RUST_VER
+rustup default $RUST_VER
 
 echo "Adding rustup toolchain...done"
 

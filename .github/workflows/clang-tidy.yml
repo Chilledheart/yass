@@ -139,10 +139,6 @@ jobs:
         run: |
           cd tools
           go build
-      - name: Change ubuntu mirror
-        run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
-          sudo apt-get update -qq
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -156,6 +152,10 @@ jobs:
           tar -xf llvm-mingw-20240619-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
           rm -vf llvm-mingw-*.xz
           popd
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq

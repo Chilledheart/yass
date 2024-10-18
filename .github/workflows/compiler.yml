@@ -183,10 +183,6 @@ jobs:
         run: |
           cd tools
           go build
-      - name: Change ubuntu mirror
-        run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
-          sudo apt-get update -qq
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -206,6 +202,10 @@ jobs:
           ./scripts/download-curl-mingw.sh i686
           ./scripts/download-curl-mingw.sh x86_64
           ./scripts/download-curl-mingw.sh aarch64
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
@@ -299,10 +299,6 @@ jobs:
         run: |
           cd tools
           go build
-      - name: Change ubuntu mirror
-        run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
-          sudo apt-get update -qq
       - name: "Install dependency: clang 17"
         if: ${{ steps.clang17-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -311,6 +307,10 @@ jobs:
             clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/lib/clang/17/include \
             clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/{clang,clang++,clang-17,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq

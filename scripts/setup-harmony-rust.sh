@@ -4,6 +4,8 @@ set -x
 PWD=$(dirname "${BASH_SOURCE[0]}")
 cd $PWD/..
 
+RUST_VER=$(< RUST_REVISION)
+
 if [ -z "$(which rustup)" ]; then
   echo "rustup not found"
   exit -1

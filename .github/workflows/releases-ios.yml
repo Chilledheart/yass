@@ -29,8 +29,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
-        build_type: [Release]
+        include:
+          - arch: x64
+            build_type: Release
+            rust_target: x86_64-apple-ios
+          - arch: arm64
+            build_type: Release
+            rust_target: aarch64-apple-ios-sim
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -40,13 +45,13 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache cargo build stage
-        id: cargo-cache
+      - name: Cache tun2proxy build stage
+        id: tun2proxy-cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo
-          key: ${{ runner.os }}-ios-cargo-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-${{ hashFiles('third_party/tun2proxy/Cargo.lock') }}
+            third_party/tun2proxy/target/${{ matrix.rust_target }}/release/libtun2proxy.a
+          key: ${{ runner.os }}-rust-${{ matrix.rust_target }}-tun2proxy-${{ hashFiles('RUST_REVISION') }}-${{ hashFiles('RUST_CARGO_REVISION') }}-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-v${{ env.CACHE_EPOCH }}-v1
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.20.0'
@@ -57,12 +62,13 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Install dependency: tun2proxy"
+      - name: Build Binary (tun2proxy)
+        if: ${{ steps.tun2proxy-cache.outputs.cache-hit != 'true' }}
         run: |
           # required by m1 runner
           # https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/install-rust.sh
           rm -rf $HOME/.cargo
-          brew install rustup
+          # brew install rustup
           rustup-init -y --no-modify-path --default-toolchain=stable --profile=minimal
           source "$HOME/.cargo/env"
           ./scripts/setup-ios-rust.sh
