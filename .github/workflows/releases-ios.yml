@@ -81,11 +81,11 @@ jobs:
       - name: Set up Xcode to 16.0
         run: |
           sudo xcode-select -s /Applications/Xcode_16.0.app
-      - name: Build and Run tests (arm64)
+      - name: Build Binary and Run tests (arm64)
         if: ${{ matrix.arch == 'arm64' }}
         run: |
           ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -run-test
-      - name: Build (non-arm64)
+      - name: Build Binary and Skip tests (non-arm64)
         if: ${{ matrix.arch != 'arm64' }}
         run: |
           ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -build-test -build-benchmark

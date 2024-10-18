@@ -56,10 +56,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y libarchive-tools zstd xz-utils
-      - name: Build tarball and zip archive
+      - name: Build source tarballs
         run: |
           ./scripts/build-src.sh
-      - name: Upload tarball and zip archive
+      - name: Upload tarballs
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

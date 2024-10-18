@@ -61,28 +61,28 @@ jobs:
             third_party/curl-8.4.0_7-win64-mingw
             third_party/curl-8.4.0_7-win32-mingw
           key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v1
-      - name: "Download dependency: clang (chocolatey)"
+      - name: "Install dependency: clang (chocolatey)"
         run: |
           REM choco upgrade -y llvm --version=18.1.8
           clang -v
-      - name: "Download dependency: mingw64 sysroot"
+      - name: "Install dependency: mingw64 sysroot"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain-mingw.bat ${{ matrix.arch }}
-      - name: "Download dependency: curl"
+      - name: "Install dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           ./scripts/download-curl-mingw.sh ${{ matrix.arch }}
-      - name: "Download dependency: nasm (chocolatey)"
+      - name: "Install dependency: nasm (chocolatey)"
         run: |
           choco install -y nasm
           "C:\Program Files\NASM\nasm" --version
-      - name: "Download dependency: cmake (chocolatey)"
+      - name: "Install dependency: cmake (chocolatey)"
         run: |
           REM choco install -y cmake.portable --version=3.29.8
           cmake --version
-      - name: "Download dependency: ninja (chocolatey)"
+      - name: "Install dependency: ninja (chocolatey)"
         run: |
           choco install -y ninja
           ninja --version
@@ -96,7 +96,7 @@ jobs:
           patch -p1 < ../winxp.patch
           popd
           echo "CMAKE_OPTIONS=-DALLOW_XP=on" >> $GITHUB_ENV
-      - name: Build
+      - name: Build Binary
         run: |
           set CC=clang
           set CXX=clang++

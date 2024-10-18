@@ -105,7 +105,7 @@ jobs:
           sudo tar -C /usr/local --strip-components=1 -xf cmake-3.29.8-linux-x86_64.tar.gz
           cmake --version
           rm -f *.tar.gz
-      - name: Build TGZ packages
+      - name: Build Binary
         run: |
           ./tools/build --system freebsd --arch ${{ matrix.arch }} --freebsd-abi ${{ matrix.abi }} \
             --sysroot $PWD/freebsd-${{ matrix.abi }}-${{ matrix.arch }}-toolchain \

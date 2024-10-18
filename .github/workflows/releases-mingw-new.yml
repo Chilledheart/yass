@@ -97,7 +97,7 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Download dependency: llvm-mingw sysroot"
+      - name: "Install dependency: llvm-mingw sysroot"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
@@ -105,7 +105,7 @@ jobs:
           tar -xf llvm-mingw-20240619-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
           rm -vf llvm-mingw-*.xz
           popd
-      - name: "Download dependency: curl"
+      - name: "Install dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-curl-mingw.sh i686
@@ -146,7 +146,7 @@ jobs:
           patch -p1 < ../winxp.patch
           popd
           echo "BUILD_OPTIONS=-mingw-allow-xp -enable-lto=false" >> $GITHUB_ENV
-      - name: Build
+      - name: Build Binary
         run: |
           # fix cpack error on C.UTF-8 locale
           # see https://github.com/lightspark/lightspark/discussions/604#discussioncomment-1034262

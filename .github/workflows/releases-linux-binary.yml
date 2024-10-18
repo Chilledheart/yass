@@ -166,11 +166,11 @@ jobs:
           sudo tar -C /usr/local --strip-components=1 -xf cmake-3.29.8-linux-x86_64.tar.gz
           cmake --version
           rm -f *.tar.gz
-      - name: Build TGZ packages (CLI and Server)
+      - name: Build Binary (CLI and Server)
         run: |
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc ${{ env.EXTRA_BUILD_FLAGS }}
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc ${{ env.EXTRA_BUILD_FLAGS }}
-      - name: Build TGZ packages (GUI)
+      - name: Build Binary (GUI)
         if: ${{ matrix.arch != 'riscv64' && matrix.arch != 'riscv32' }}
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc ${{ env.EXTRA_BUILD_FLAGS }}
