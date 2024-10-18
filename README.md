@@ -58,7 +58,7 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 [Report here if you need new features][frs]
 
-### Prebuilt binaries (Legacy supported platforms)
+### Prebuilt binaries (Supported legacy platforms)
 
 - Legacy Android [download 64-bit apk][android_64_apk_url] or [download 32-bit apk][android_32_apk_url] (require _Android 7.0_ or above)
 - Legacy iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
@@ -96,8 +96,9 @@ Cipher http over TLS are compatible.
 
 If you need custom Certificate Authority support in GUI or add other TLS-related features, [report here][frs].
 
-### Post Quantum Kyber Support (TLS)
-Post Quantum Kyber Support (not enabled by default) is added on all of supported Platforms.
+### Post Quantum key-agreements for TLS 1.3
+[ML-KEM Post Quantum key-agreements][mlkem] (not enabled by default) for TLS 1.3 is supported on all platforms
+in place of deprecated [Kyber768 hybrid key-agreements][kyber].
 
 See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
@@ -169,6 +170,9 @@ Start from wiki's [Guide](https://github.com/Chilledheart/yass/wiki/Debug-Guide)
 
 [bugs]: https://github.com/Chilledheart/yass/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=
 [frs]: https://github.com/Chilledheart/yass/issues/new?assignees=&labels=feature&projects=&template=feature_request.md&title=
+
+[mlkem]: https://datatracker.ietf.org/doc/draft-connolly-tls-mlkem-key-agreement/
+[kyber]: https://datatracker.ietf.org/doc/draft-tls-westerbaan-xyber768d00/
 
 [gtk3_rpm_url]: https://github.com/Chilledheart/yass/releases/download/1.15.0/yass-gtk3.el8.x86_64.1.15.0.rpm
 [gtk3_deb_url]: https://github.com/Chilledheart/yass/releases/download/1.15.0/yass-gtk3-ubuntu-16.04-xenial_amd64.1.15.0.deb
