@@ -13,6 +13,7 @@
 #include "net/iobuf.hpp"
 #include "net/net_errors.hpp"
 #include "net/openssl_util.hpp"
+#include "net/protocol.hpp"
 
 namespace net {
 
@@ -47,6 +48,8 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
   void WaitRead(WaitCallback&& cb);
   void WaitWrite(WaitCallback&& cb);
+
+  NextProto negotiated_protocol() const { return negotiated_protocol_; }
 
  protected:
   void OnWaitRead(asio::error_code ec);
@@ -87,6 +90,8 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
 
   // Whether we received any data in early data.
   bool early_data_received_ = false;
+
+  NextProto negotiated_protocol_ = kProtoUnknown;
 
   enum State {
     STATE_NONE,

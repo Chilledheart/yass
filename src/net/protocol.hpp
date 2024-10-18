@@ -9,6 +9,7 @@
 #endif
 
 #include <functional>
+#include <string_view>
 #include <utility>
 
 #include <build/build_config.h>
@@ -21,6 +22,17 @@
 #define SS_FRAME_SIZE (16384 - 128)
 
 namespace net {
+
+// This enum is used in Net.SSLNegotiatedAlpnProtocol histogram.
+// Do not change or re-use values.
+enum NextProto { kProtoUnknown = 0, kProtoHTTP11 = 1, kProtoHTTP2 = 2, kProtoQUIC = 3, kProtoLast = kProtoQUIC };
+
+// List of protocols to use for ALPN, used for configuring HttpNetworkSessions.
+typedef std::vector<NextProto> NextProtoVector;
+
+NextProto NextProtoFromString(std::string_view proto_string);
+
+std::string_view NextProtoToString(NextProto next_proto);
 
 #ifndef NDEBUG
 inline void DumpHex_Impl(const char* file, int line, const char* prefix, const uint8_t* data, uint32_t length) {
