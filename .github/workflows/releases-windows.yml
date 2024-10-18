@@ -96,10 +96,6 @@ jobs:
         run: |
           choco install -y ninja
           ninja --version
-      - uses: actions/setup-python@v5
-        if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
-        with:
-          python-version: '>=3.8'
       - name: Download and Build Crashpad
         if: ${{ steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
