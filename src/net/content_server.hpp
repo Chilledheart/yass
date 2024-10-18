@@ -480,13 +480,13 @@ class ContentServer {
         *outlen = in[0];
         return SSL_TLSEXT_ERR_OK;
       }
-      LOG(WARNING) << "Connection (" << T::Name << ") " << connection_id << " Unexpected alpn: " << alpn;
+      VLOG(2) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) skipped: " << alpn;
       inlen -= 1u + in[0];
       in += 1u + in[0];
     }
 
   err:
-    LOG(WARNING) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) fatal error";
+    LOG(WARNING) << "Connection (" << T::Name << ") " << connection_id << " fatal error due to unexpected alpn protos";
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
