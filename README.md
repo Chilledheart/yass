@@ -58,7 +58,7 @@ See [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-o
 
 [Report here if you need new features][frs]
 
-### Prebuilt binaries (Legacy supported platforms)
+### Prebuilt binaries (Supported legacy platforms)
 
 - Legacy Android [download 64-bit apk][android_64_apk_url] or [download 32-bit apk][android_32_apk_url] (require _Android 7.0_ or above)
 - Legacy iOS [Continue to accept TestFlight invitation][ios_testflight_invitation] (require [TestFlight][ios_testflight_appstore_url] from _AppStore_, and _iOS 13.0_ or above)
@@ -96,8 +96,8 @@ Cipher http over TLS are compatible.
 
 If you need custom Certificate Authority support in GUI or add other TLS-related features, [report here][frs].
 
-### Post Quantum Kyber Support (TLS)
-Post Quantum Kyber Support (not enabled by default) is added on all of supported Platforms.
+### Post Quantum key-agreements Support (TLS)
+Post Quantum ML-KEM key-agreements in TLS 1.3 (not enabled by default) is added on all of supported Platforms.
 
 See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
