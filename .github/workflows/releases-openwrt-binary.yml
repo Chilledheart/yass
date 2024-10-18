@@ -98,12 +98,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.20.0'
-          cache-dependency-path: |
-            tools/go.sum
-            third_party/boringssl/src/go.sum
       - name: Cache qemu-user
         id: qemu-user-cache
         uses: actions/cache@v4
@@ -120,6 +114,12 @@ jobs:
             ${{ env.SDK_ROOT }}
             ${{ env.SDK_HOME }}
           key: openwrt-sysroot-${{ matrix.arch_name }}-23-05-03-v1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build build tool
         run: |
           cd tools
@@ -133,10 +133,6 @@ jobs:
         if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
           wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_9.1.0+ds-8_amd64.deb
-      - name: Change ubuntu mirror
-        run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
-          sudo apt-get update -qq
       - name: "Install dependency: openwrt sdkhome (sysroot)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -166,6 +162,10 @@ jobs:
           ln -sf $full_root ${{ env.SDK_ROOT }}
 
           rm -rf ${{ env.SDK_ROOT }}/bin ${{ env.SDK_ROOT }}/libexec
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq

@@ -138,12 +138,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.20.0'
-          cache-dependency-path: |
-            tools/go.sum
-            third_party/boringssl/src/go.sum
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -176,6 +170,12 @@ jobs:
         if: ${{ matrix.gui_variant == 'gtk4' }}
         run: |
           echo "USE_GTK4=1" >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build RPM packages
         run: |
           ./scripts/build-rpm.sh
@@ -225,12 +225,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.20.0'
-          cache-dependency-path: |
-            tools/go.sum
-            third_party/boringssl/src/go.sum
       - name: Cache qemu-user
         id: qemu-user-cache
         uses: actions/cache@v4
@@ -255,6 +249,12 @@ jobs:
           docker pull ghcr.io/chilledheart/${{ matrix.container }}
           mkdir -p "${{ env.SDK_ROOT }}"
           docker export $(docker create --platform ${{ matrix.arch }} ghcr.io/chilledheart/${{ matrix.container }}) | tar -C "${{ env.SDK_ROOT }}" -xf -
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.20.0'
+          cache-dependency-path: |
+            tools/go.sum
+            third_party/boringssl/src/go.sum
       - name: Build build tool
         run: |
           cd tools
