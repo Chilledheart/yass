@@ -85,23 +85,23 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
+      - name: "Install dependency: clang, nasm, nsis and wixtoolset 3"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
-      - name: "Download dependency: curl"
+      - name: "Install dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-curl-msvc.bat ${{ matrix.arch }}
-      - name: "Download dependency: cmake (chocolatey)"
+      - name: "Install dependency: cmake (chocolatey)"
         run: |
           REM choco install -y cmake.portable --version=3.29.8
           cmake --version
-      - name: "Download dependency: ninja (chocolatey)"
+      - name: "Install dependency: ninja (chocolatey)"
         run: |
           choco install -y ninja
           ninja --version
-      - name: Build
+      - name: Build Binary
         run: |
           set VCToolsVersion=
           set Winsdk=10.0.22621.0
@@ -188,7 +188,7 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Download dependency: llvm-mingw sysroot"
+      - name: "Install dependency: llvm-mingw sysroot"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
@@ -196,7 +196,7 @@ jobs:
           tar -xf llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
           rm -vf llvm-mingw-*.xz
           popd
-      - name: "Download dependency: curl"
+      - name: "Install dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-curl-mingw.sh i686
@@ -237,7 +237,7 @@ jobs:
           patch -p1 < ../winxp.patch
           popd
           echo "BUILD_OPTIONS=-mingw-allow-xp -enable-lto=false" >> $GITHUB_ENV
-      - name: Build
+      - name: Build Binary
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
             --clang-path $PWD/third_party/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64 -no-packaging \
@@ -334,7 +334,7 @@ jobs:
           else
             echo build_opts="${{ env.build_opts }} -use-libcxx=0" >> $GITHUB_ENV
           fi
-      - name: Build
+      - name: Build Binary
         run: |
           ./tools/build -no-packaging ${{ env.build_opts }} -build-test
       - name: Run tests
@@ -383,7 +383,7 @@ jobs:
       - name: Set up Xcode to 16.0
         run: |
           sudo xcode-select -s /Applications/Xcode_16.0.app
-      - name: Build
+      - name: Build Binary
         run: |
           export CC=$(xcrun --find clang)
           export CXX=$(xcrun --find clang++)

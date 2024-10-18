@@ -62,19 +62,19 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
+      - name: "Install dependency: clang, nasm, nsis and wixtoolset 3"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
-      - name: "Download dependency: cmake (chocolatey)"
+      - name: "Install dependency: cmake (chocolatey)"
         run: |
           REM choco install -y cmake.portable --version=3.29.8
           cmake --version
-      - name: "Download dependency: ninja (chocolatey)"
+      - name: "Install dependency: ninja (chocolatey)"
         run: |
           choco install -y ninja
           ninja --version
-      - name: Build
+      - name: Build Binary
         run: |
           set VCToolsVersion=
           set Winsdk=10.0.22621.0
@@ -144,7 +144,7 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Download dependency: llvm-mingw sysroot"
+      - name: "Install dependency: llvm-mingw sysroot"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
@@ -176,7 +176,7 @@ jobs:
           patch -p1 < ../winxp.patch
           popd
           echo "BUILD_OPTIONS=-mingw-allow-xp -enable-lto=false" >> $GITHUB_ENV
-      - name: Build
+      - name: Build Binary
         run: |
           # fix cpack error on C.UTF-8 locale
           # see https://github.com/lightspark/lightspark/discussions/604#discussioncomment-1034262
@@ -237,7 +237,7 @@ jobs:
           rm -f *.tar.gz
       - name: Populate depedencies (test purposes)
         run: sudo apt-get update -qq && sudo apt-get install -y libcurl4-openssl-dev
-      - name: Build
+      - name: Build Binary
         run: |
           ./tools/build -clang-tidy-mode -build-test -build-benchmark -no-packaging
   mac-clang-tidy:
@@ -280,6 +280,6 @@ jobs:
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Populate depedencies
         run: brew install ninja cmake p7zip
-      - name: Build
+      - name: Build Binary
         run: |
           ./tools/build -clang-tidy-mode -build-test -build-benchmark -no-packaging

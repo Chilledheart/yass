@@ -335,7 +335,7 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ matrix.distro }}-${{ env.BUILD_ARCH }}-${{ matrix.arch }}" --user root -- \
             apt list --upgradeable || true
-      - name: Build deb
+      - name: Build deb package
         run: |
           export DEB_BUILD_PROFILES
           export DH_QUIET

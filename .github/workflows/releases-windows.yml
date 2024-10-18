@@ -80,19 +80,19 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
+      - name: "Install dependency: clang, nasm, nsis and wixtoolset 3"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
-      - name: "Download dependency: curl"
+      - name: "Install dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-curl-msvc.bat ${{ matrix.arch }}
-      - name: "Download dependency: cmake (chocolatey)"
+      - name: "Install dependency: cmake (chocolatey)"
         run: |
           REM choco install -y cmake.portable --version=3.29.8
           cmake --version
-      - name: "Download dependency: ninja (chocolatey)"
+      - name: "Install dependency: ninja (chocolatey)"
         run: |
           choco install -y ninja
           ninja --version
@@ -197,15 +197,15 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Download dependency: clang, nasm, nsis and wixtoolset 3"
+      - name: "Install dependency: clang, nasm, nsis and wixtoolset 3"
         if: ${{ steps.toolchain-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
-      - name: "Download dependency: cmake (chocolatey)"
+      - name: "Install dependency: cmake (chocolatey)"
         run: |
           REM choco install -y cmake.portable --version=3.29.8
           cmake --version
-      - name: "Download dependency: ninja (chocolatey)"
+      - name: "Install dependency: ninja (chocolatey)"
         run: |
           choco install -y ninja
           ninja --version
@@ -215,7 +215,7 @@ jobs:
           pushd third_party/libc++/trunk
           patch -p1 < ../winxp.patch
           popd
-      - name: Build
+      - name: Build Binary
         run: |
           set VCToolsVersion=14.16.27012
           set "VCINSTALLDIR=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC"
