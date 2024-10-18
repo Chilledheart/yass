@@ -92,6 +92,20 @@ class SSLDownlink : public Downlink {
       auto callback = std::move(handshake_callback_);
       DCHECK(!handshake_callback_);
       asio::error_code ec = result == OK ? asio::error_code() : asio::error::connection_refused;
+      if (!ec) {
+        auto alpn = ssl_socket_->negotiated_protocol();
+        switch (alpn) {
+          case kProtoHTTP2:
+            DCHECK(!https_fallback_) << " unexpected alpn: " << NextProtoToString(alpn);
+            break;
+          case kProtoHTTP11:
+            DCHECK(https_fallback_) << " unexpected alpn: " << NextProtoToString(alpn);
+            break;
+          default:
+            LOG(WARNING) << "Alpn unexpected: " << NextProtoToString(alpn);
+        }
+        VLOG(2) << "Alpn selected (server): " << NextProtoToString(alpn);
+      }
       if (callback) {
         callback(ec);
       }

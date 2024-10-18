@@ -301,6 +301,13 @@ int SSLServerSocket::DoHandshake(int* openssl_result) {
   int rv = SSL_do_handshake(ssl_.get());
   *openssl_result = SSL_ERROR_NONE;
   if (rv == 1) {
+    const uint8_t* alpn_proto = nullptr;
+    unsigned alpn_len = 0;
+    SSL_get0_alpn_selected(ssl_.get(), &alpn_proto, &alpn_len);
+    if (alpn_len > 0) {
+      std::string_view proto(reinterpret_cast<const char*>(alpn_proto), alpn_len);
+      negotiated_protocol_ = NextProtoFromString(proto);
+    }
 #if 0
     const STACK_OF(CRYPTO_BUFFER)* certs =
         SSL_get0_peer_certificates(ssl_.get());
@@ -308,15 +315,6 @@ int SSLServerSocket::DoHandshake(int* openssl_result) {
       client_cert_ = x509_util::CreateX509CertificateFromBuffers(certs);
       if (!client_cert_)
         return ERR_SSL_CLIENT_AUTH_CERT_BAD_FORMAT;
-    }
-
-    const uint8_t* alpn_proto = nullptr;
-    unsigned alpn_len = 0;
-    SSL_get0_alpn_selected(ssl_.get(), &alpn_proto, &alpn_len);
-    if (alpn_len > 0) {
-      base::StringPiece proto(reinterpret_cast<const char*>(alpn_proto),
-                              alpn_len);
-      negotiated_protocol_ = NextProtoFromString(proto);
     }
 
     if (context_->ssl_server_config_.alert_after_handshake_for_testing) {
