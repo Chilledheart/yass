@@ -23,6 +23,7 @@
 #include "net/asio.hpp"
 #include "net/connection.hpp"
 #include "net/network.hpp"
+#include "net/protocol.hpp"
 #include "net/ssl_socket.hpp"
 #include "net/x509_util.hpp"
 
@@ -459,23 +460,27 @@ class ContentServer {
       if (in[0] + 1u > inlen) {
         goto err;
       }
-      using std::string_view_literals::operator""sv;
       auto alpn = std::string_view(reinterpret_cast<const char*>(in + 1), in[0]);
-      if (!server->https_fallback_ && alpn == "h2"sv) {
+      if (!server->https_fallback_ && NextProtoFromString(alpn) == kProtoHTTP2) {
         VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, false);
         *out = in + 1;
         *outlen = in[0];
+
+        // Enable ALPS for HTTP/2 with empty data.
+        std::vector<uint8_t> data;
+        SSL_add_application_settings(ssl, reinterpret_cast<const uint8_t*>(alpn.data()), alpn.size(), data.data(),
+                                     data.size());
         return SSL_TLSEXT_ERR_OK;
       }
-      if (alpn == "http/1.1"sv) {
+      if (NextProtoFromString(alpn) == kProtoHTTP11) {
         VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, true);
         *out = in + 1;
         *outlen = in[0];
         return SSL_TLSEXT_ERR_OK;
       }
-      LOG(WARNING) << "Unexpected alpn: " << alpn;
+      LOG(WARNING) << "Connection (" << T::Name << ") " << connection_id << " Unexpected alpn: " << alpn;
       inlen -= 1u + in[0];
       in += 1u + in[0];
     }
@@ -590,21 +595,6 @@ class ContentServer {
 
       VLOG(1) << "Using upstream certificate (in-memory)";
     }
-
-    int ret;
-    std::vector<unsigned char> alpn_vec = {2, 'h', '2', 8, 'h', 't', 't', 'p', '/', '1', '.', '1'};
-    if (upstream_https_fallback_) {
-      alpn_vec = {8, 'h', 't', 't', 'p', '/', '1', '.', '1'};
-    }
-    ret = SSL_CTX_set_alpn_protos(ctx, alpn_vec.data(), alpn_vec.size());
-    static_cast<void>(ret);
-    DCHECK_EQ(ret, 0);
-    if (ret) {
-      print_openssl_error();
-      ec = asio::error::access_denied;
-      return;
-    }
-    VLOG(1) << "Alpn support (client) enabled";
 
     client_instance_ = this;
     ssl_socket_data_index_ = SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);

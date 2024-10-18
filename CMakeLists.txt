@@ -4152,6 +4152,7 @@ set(files
     src/net/http_parser.cpp
     src/net/padding.cpp
     src/net/resolver.cpp
+    src/net/protocol.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp

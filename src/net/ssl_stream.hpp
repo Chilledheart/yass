@@ -84,12 +84,9 @@ class ssl_stream : public stream {
         return;
       }
 
-      using std::string_view_literals::operator""sv;
-      std::string_view alpn = ssl_socket_->negotiated_protocol();
-      if (!alpn.empty()) {
-        VLOG(2) << "Alpn selected (client): " << alpn;
-      }
-      https_fallback_ |= alpn == "http/1.1"sv;
+      auto alpn = ssl_socket_->negotiated_protocol();
+      VLOG(2) << "Alpn selected (client): " << NextProtoToString(alpn);
+      https_fallback_ |= alpn == kProtoHTTP11;
       if (https_fallback_) {
         VLOG(2) << "Alpn fallback to https protocol (client)";
       }

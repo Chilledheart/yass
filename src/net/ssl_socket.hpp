@@ -14,6 +14,7 @@
 #include "net/iobuf.hpp"
 #include "net/net_errors.hpp"
 #include "net/openssl_util.hpp"
+#include "net/protocol.hpp"
 
 namespace net {
 
@@ -79,7 +80,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   void WaitRead(WaitCallback&& cb);
   void WaitWrite(WaitCallback&& cb);
 
-  const std::string& negotiated_protocol() const { return negotiated_protocol_; }
+  NextProto negotiated_protocol() const { return negotiated_protocol_; }
 
   int NewSessionCallback(SSL_SESSION* session);
 
@@ -170,14 +171,13 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   // ERR_SSL_CLIENT_AUTH_CERT_NEEDED.
   bool send_client_cert_;
 
-  std::string negotiated_protocol_;
+  NextProto negotiated_protocol_ = kProtoUnknown;
 
   bool IsRenegotiationAllowed() const {
-    using std::string_literals::operator""s;
     // Prior to HTTP/2 and SPDY, some servers use TLS renegotiation to request
     // TLS client authentication after the HTTP request was sent. Allow
     // renegotiation for only those connections.
-    if (negotiated_protocol_ == "http/1.1"s) {
+    if (negotiated_protocol_ == kProtoHTTP11) {
       return true;
     }
     // True if renegotiation should be allowed for the default application-level

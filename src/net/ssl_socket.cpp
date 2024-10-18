@@ -24,6 +24,27 @@ const int kDefaultOpenSSLBufferSize = 17 * 1024;
 static constexpr const int kMaximumSSLCache = 1024;
 static absl::flat_hash_map<asio::ip::address, bssl::UniquePtr<SSL_SESSION>> g_ssl_lru_cache;
 
+static std::vector<uint8_t> SerializeNextProtos(const NextProtoVector& next_protos) {
+  std::vector<uint8_t> wire_protos;
+  for (const NextProto next_proto : next_protos) {
+    const std::string_view proto = NextProtoToString(next_proto);
+    if (proto.size() > 255) {
+      LOG(WARNING) << "Ignoring overlong ALPN protocol: " << proto;
+      continue;
+    }
+    if (proto.size() == 0) {
+      LOG(WARNING) << "Ignoring empty ALPN protocol";
+      continue;
+    }
+    wire_protos.push_back(proto.size());
+    for (const char ch : proto) {
+      wire_protos.push_back(static_cast<uint8_t>(ch));
+    }
+  }
+
+  return wire_protos;
+}
+
 SSLSocket::SSLSocket(int ssl_socket_data_index,
                      asio::io_context* io_context,
                      asio::ip::tcp::socket* socket,
@@ -118,13 +139,22 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
     LOG(FATAL) << "SSL_set_verify_algorithm_prefs failed";
   }
 
-  // ALPS TLS extension is enabled and corresponding data is sent to client if
-  // client also enabled ALPS, for each NextProto in |application_settings|.
-  // Data might be empty.
-  const std::string_view proto_string = https_fallback ? "http/1.1"sv : "h2"sv;
-  std::vector<uint8_t> data;
-  SSL_add_application_settings(ssl_.get(), reinterpret_cast<const uint8_t*>(proto_string.data()), proto_string.size(),
-                               data.data(), data.size());
+  NextProtoVector alpn_protos = {kProtoHTTP2, kProtoHTTP11};
+  if (https_fallback) {
+    alpn_protos = {kProtoHTTP11};
+  }
+  std::vector<uint8_t> wire_protos = SerializeNextProtos(alpn_protos);
+  SSL_set_alpn_protos(ssl_.get(), wire_protos.data(), wire_protos.size());
+
+  // Enable ALPS for HTTP/2 with empty data.
+  if (!https_fallback) {
+    std::string_view proto_string = NextProtoToString(kProtoHTTP2);
+    std::vector<uint8_t> data;
+    if (!SSL_add_application_settings(ssl_.get(), reinterpret_cast<const uint8_t*>(proto_string.data()),
+                                      proto_string.size(), data.data(), data.size())) {
+      LOG(FATAL) << "SSL_add_application_settings failed";
+    };
+  }
 
   SSL_enable_signed_cert_timestamps(ssl_.get());
   SSL_enable_ocsp_stapling(ssl_.get());
@@ -512,7 +542,8 @@ int SSLSocket::DoHandshakeComplete(int result) {
   unsigned alpn_len = 0;
   SSL_get0_alpn_selected(ssl_.get(), &alpn_proto, &alpn_len);
   if (alpn_len > 0) {
-    negotiated_protocol_ = std::string(reinterpret_cast<const char*>(alpn_proto), alpn_len);
+    std::string_view proto(reinterpret_cast<const char*>(alpn_proto), alpn_len);
+    negotiated_protocol_ = NextProtoFromString(proto);
   }
 
   const uint8_t* ocsp_response_raw;
