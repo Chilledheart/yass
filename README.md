@@ -98,7 +98,7 @@ If you need custom Certificate Authority support in GUI or add other TLS-related
 
 ### Post Quantum key-agreements for TLS 1.3
 [ML-KEM Post Quantum key-agreements][mlkem] (not enabled by default) for TLS 1.3 is supported on all platforms
-in place of deprecated [Kyber768 hybrid key-agreements][kyber].
+in place of obsolete [Kyber768 hybrid key-agreements][kyber].
 
 See [Protecting Chrome Traffic with Hybrid Kyber KEM](https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html) for more.
 
