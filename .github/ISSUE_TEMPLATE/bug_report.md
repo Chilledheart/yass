@@ -44,6 +44,12 @@ It is advised to enable
 ```
 or share the debug log in [gist](https://gist.github.com/).
 
+#### Re-run with assertions (optional)
+
+See [the guide](https://github.com/Chilledheart/yass/blob/develop/BUILDING.md) to build *Debug* or *RelWithDebInfo* version.
+
+If you face some crash and the log is somehow incomplete, this variant will run more checks and produce more useful logs.
+
 #### yass coredump (optional)
 
 See [the guide](https://github.com/Chilledheart/yass/wiki/Debug-Guide#check-coredump) to enable coredump in your system.
