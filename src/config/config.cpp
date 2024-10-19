@@ -21,7 +21,6 @@ namespace config {
 bool ReadConfig() {
   auto config_impl = config::ConfigImpl::Create();
   bool required_fields_loaded = true;
-  bool client_required_fields_loaded = true;
 
   if (!config_impl->Open(false)) {
     if (config_impl->GetEnforceRead()) {
@@ -36,11 +35,10 @@ bool ReadConfig() {
   required_fields_loaded &= config_impl->Read("method", &FLAGS_method);
   required_fields_loaded &= config_impl->Read("username", &FLAGS_username);
   required_fields_loaded &= config_impl->Read("password", &FLAGS_password, true);
-  client_required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
-  client_required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
 
   if (pType_IsClient()) {
-    required_fields_loaded &= client_required_fields_loaded;
+    required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
+    required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
   }
 
   /* optional fields */
