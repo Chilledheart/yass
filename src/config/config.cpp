@@ -75,8 +75,8 @@ bool ReadConfig() {
   }
   if (pType_IsClient()) {
     config_impl->Read("insecure_mode", &FLAGS_insecure_mode);
-    config_impl->Read("enable_post_quantum_kyber", &FLAGS_enable_post_quantum_kyber);
   }
+  config_impl->Read("enable_post_quantum_kyber", &FLAGS_enable_post_quantum_kyber);
   config_impl->Read("tls13_early_data", &FLAGS_tls13_early_data);
 
 #if BUILDFLAG(IS_MAC)
