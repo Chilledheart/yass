@@ -8,6 +8,7 @@
 
 #include <absl/strings/ascii.h>
 #include <absl/strings/str_cat.h>
+#include <base/strings/string_util.h>
 
 #ifndef HAVE_BALSA_HTTP_PARSER
 #include <http_parser.h>
@@ -16,6 +17,10 @@
 #ifndef HTTP_MAX_HEADER_SIZE
 #define HTTP_MAX_HEADER_SIZE (80 * 1024)
 #endif
+
+using namespace gurl_base;
+
+using std::string_view_literals::operator""sv;
 
 namespace net {
 
@@ -48,10 +53,10 @@ static void ReforgeHttpRequestImpl(std::string* header,
   ss << method_str << " "  // NOLINT(google-*)
      << canon_uri << " " << version << "\r\n";
   for (auto [key, value] : headers) {
-    if (absl::AsciiStrToLower(key) == "proxy-connection") {
+    if (CompareCaseInsensitiveASCII(key, "Proxy-Connection"sv) == 0) {
       continue;
     }
-    if (absl::AsciiStrToLower(key) == "proxy-authorization") {
+    if (CompareCaseInsensitiveASCII(key, "Proxy-Authorization"sv) == 0) {
       continue;
     }
     if (additional_headers) {
@@ -238,12 +243,12 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     std::string_view key = key_value.first;
     std::string_view value = key_value.second;
     http_headers_[std::string(key)] = std::string(value);
-    if (absl::AsciiStrToLower(key) == "cookie") {
+    if (CompareCaseInsensitiveASCII(key, "Cookie"sv) == 0) {
       value = "(masked)";
     }
     VLOG(2) << "HTTP Request Header: " << key << "=" << value;
 
-    if (absl::AsciiStrToLower(key) == "host" && !http_is_connect_) {
+    if (CompareCaseInsensitiveASCII(key, "Host"sv) == 0 && !http_is_connect_) {
       std::string authority = std::string(value);
       std::string hostname;
       uint16_t portnum;
@@ -261,16 +266,16 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
       http_host_ = hostname;
       http_port_ = portnum;
     }
-    if (absl::AsciiStrToLower(key) == "content-type") {
+    if (CompareCaseInsensitiveASCII(key, "Content-Type"sv) == 0) {
       content_type_ = std::string(value);
     }
-    if (absl::AsciiStrToLower(key) == "connection") {
+    if (CompareCaseInsensitiveASCII(key, "Connection"sv) == 0) {
       connection_ = std::string(value);
     }
-    if (absl::AsciiStrToLower(key) == "proxy-connection") {
+    if (CompareCaseInsensitiveASCII(key, "Proxy-Connection"sv) == 0) {
       connection_ = std::string(value);
     }
-    if (absl::AsciiStrToLower(key) == "proxy-authorization") {
+    if (CompareCaseInsensitiveASCII(key, "Proxy-Authorization"sv) == 0) {
       proxy_authorization_ = std::string(value);
     }
   }
@@ -290,7 +295,7 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
     error_message_ = "HPE_INVALID_METHOD";
     return;
   }
-  const bool is_connect = absl::AsciiStrToUpper(method_input) == "CONNECT";
+  const bool is_connect = CompareCaseInsensitiveASCII(method_input, "CONNECT"sv) == 0;
   http_is_connect_ = is_connect;
   method_ = std::string(method_input);
   if (!isUrlValid(request_uri, is_connect)) {
@@ -324,7 +329,7 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
     error_message_ = "HPE_INVALID_VERSION";
     return;
   }
-  if (absl::AsciiStrToUpper(version_input) == "HTTP/1.1") {
+  if (CompareCaseInsensitiveASCII(version_input, "HTTP/1.1"sv) == 0) {
     connection_ = "Keep-Alive";
   } else {
     connection_ = "Close";
@@ -523,7 +528,7 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   HttpRequestParser* self = reinterpret_cast<HttpRequestParser*>(parser->data);
   self->http_value_ = std::string(buf, len);
   self->http_headers_[self->http_field_] = self->http_value_;
-  if (absl::AsciiStrToLower(self->http_field_) == "host" && !self->http_is_connect_) {
+  if (CompareCaseInsensitiveASCII(self->http_field_, "Host"sv) == 0 && !self->http_is_connect_) {
     std::string authority = std::string(buf, len);
     std::string hostname;
     uint16_t portnum;
@@ -541,10 +546,10 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
     self->http_port_ = portnum;
   }
 
-  if (absl::AsciiStrToLower(self->http_field_) == "content-type") {
+  if (CompareCaseInsensitiveASCII(self->http_field_, "Content-Type"sv) == 0) {
     self->content_type_ = std::string(buf, len);
   }
-  if (absl::AsciiStrToLower(self->http_field_) == "proxy-authorization") {
+  if (CompareCaseInsensitiveASCII(self->http_field_, "Proxy-Authorization"sv) == 0) {
     self->proxy_authorization_ = std::string(buf, len);
   }
   return 0;
