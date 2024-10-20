@@ -132,10 +132,8 @@ add_library(url STATIC
   googleurl/base/strings/utf_string_conversion_utils.h
   googleurl/base/win/win_handle_types.h
   googleurl/base/debug/crash_logging.cc
-  #googleurl/base/strings/string_util.h
-  #googleurl/base/strings/string_util.cc
-  googleurl-override/base/strings/string_util.h # overrided
-  googleurl-override/base/strings/string_util.cc # overrided
+  googleurl/base/strings/string_util.h
+  googleurl/base/strings/string_util.cc
   googleurl/base/strings/string_util_constants.cc
   # FIXME vs2022 doesn't even compile
   # googleurl/base/strings/utf_ostream_operators.cc
@@ -177,6 +175,10 @@ add_library(url STATIC
 if (WIN32)
   target_sources(url PRIVATE
     googleurl/base/strings/sys_string_conversions_win.cc)
+
+  target_sources(url PRIVATE
+    googleurl/base/strings/string_util_win.h
+    googleurl/base/strings/string_util_win.cc)
 elseif(NOT APPLE)
   target_sources(url PRIVATE
     googleurl/base/strings/sys_string_conversions_posix.cc)

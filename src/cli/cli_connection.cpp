@@ -5,6 +5,7 @@
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <base/strings/string_util.h>
 
 #include "config/config.hpp"
 #include "core/rand_util.hpp"
@@ -702,7 +703,7 @@ asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());
-      http_is_keep_alive_ = absl::AsciiStrToLower(parser.connection()) == "keep-alive";
+      http_is_keep_alive_ = gurl_base::CompareCaseInsensitiveASCII(parser.connection(), "Keep-Alive"sv) == 0;
       http_keep_alive_remaining_bytes_ += parser.content_length() + header.size() - buf->length();
       VLOG(3) << "Connection (client) " << connection_id() << " Host: " << http_host_ << " Port: " << http_port_
               << " KEEPALIVE: " << std::boolalpha << http_is_keep_alive_;

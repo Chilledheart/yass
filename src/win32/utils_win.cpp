@@ -27,7 +27,6 @@
 #include "core/utils.hpp"
 #include "net/asio.hpp"
 
-#include <absl/strings/ascii.h>
 #include <array>
 #include <sstream>
 #include <vector>
@@ -488,6 +487,38 @@ class ScopedHKEY {
   HKEY hkey_;
 };
 
+// Windows specific implementation of file string comparisons.
+//
+// from base/files/file_path.cc
+//
+int FilePath_CompareIgnoreCase(std::wstring_view string1, std::wstring_view string2) {
+  // CharUpperW within user32 is used here because it will provide unicode
+  // conversions regardless of locale. The STL alternative, towupper, has a
+  // locale consideration that prevents it from converting all characters by
+  // default.
+  CHECK(EnsureUser32Loaded() != INVALID_HANDLE_VALUE && EnsureGdi32Loaded() != INVALID_HANDLE_VALUE);
+  // Perform character-wise upper case comparison rather than using the
+  // fully Unicode-aware CompareString(). For details see:
+  // http://blogs.msdn.com/michkap/archive/2005/10/17/481600.aspx
+  std::wstring_view::const_iterator i1 = string1.begin();
+  std::wstring_view::const_iterator i2 = string2.begin();
+  std::wstring_view::const_iterator string1end = string1.end();
+  std::wstring_view::const_iterator string2end = string2.end();
+  for (; i1 != string1end && i2 != string2end; ++i1, ++i2) {
+    wchar_t c1 = (wchar_t)LOWORD(::CharUpperW((LPWSTR)(DWORD_PTR)MAKELONG(*i1, 0)));
+    wchar_t c2 = (wchar_t)LOWORD(::CharUpperW((LPWSTR)(DWORD_PTR)MAKELONG(*i2, 0)));
+    if (c1 < c2)
+      return -1;
+    if (c1 > c2)
+      return 1;
+  }
+  if (i1 != string1end)
+    return 1;
+  if (i2 != string2end)
+    return -1;
+  return 0;
+}
+
 }  // namespace
 
 static bool OpenKey(HKEY* hkey, bool isWrite) {
@@ -842,7 +873,7 @@ static int get_yass_auto_start() {
 
   VLOG(2) << "[autostart] previous autostart entry: " << SysWideToUTF8(output);
 
-  if (absl::AsciiStrToLower(SysWideToUTF8(GetAutoStartCmdline())) != absl::AsciiStrToLower(SysWideToUTF8(output))) {
+  if (FilePath_CompareIgnoreCase(GetAutoStartCmdline(), output) != 0) {
     return -1;
   }
 
