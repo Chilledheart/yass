@@ -18,7 +18,7 @@
 #endif
 
 // Based on CHECK_WILL_STREAM() defined in base/check.h
-#if defined(NDEBUG) && defined(OFFICIAL_BUILD)
+#if defined(OFFICIAL_BUILD) && !defined(DCHECK_ALWAYS_ON)
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
