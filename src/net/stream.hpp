@@ -503,7 +503,7 @@ class stream : public RefCountedThreadSafe<stream> {
     if (ec) {
       VLOG(2) << "data transfer failed with " << endpoint_ << " due to " << ec << " stats: readed "
               << rbytes_transferred_ << " written: " << wbytes_transferred_;
-#ifndef NDEBUG
+#if DCHECK_IS_ON()
       const char* file;
       int line;
       while (uint32_t error = ERR_get_error_line(&file, &line)) {

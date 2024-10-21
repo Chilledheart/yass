@@ -11,7 +11,7 @@
 // In debug builds only, log OpenSSL error stack. Then clear OpenSSL error
 // stack.
 static void DLogOpenSslErrors() {
-#ifdef NDEBUG
+#if !DCHECK_IS_ON()
   ERR_clear_error();
 #else
   while (uint32_t error = ERR_get_error()) {

@@ -94,7 +94,7 @@ class CheckError {
   LogMessage* log_message_;
 };
 
-#if defined(OFFICIAL_BUILD) && defined(NDEBUG)
+#if defined(OFFICIAL_BUILD) && !DCHECK_IS_ON()
 
 // Discard log strings to reduce code bloat.
 //

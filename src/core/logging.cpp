@@ -209,16 +209,6 @@ typedef FILE* FileHandle;
 #include <absl/strings/str_split.h>
 #include <absl/synchronization/mutex.h>
 
-#if !defined(NDEBUG) || defined(_DEBUG)
-#define DEFAULT_LOGBUFLEVEL -1
-#define DEFAULT_VERBOSE_LEVEL 1
-#define DEFAULT_LOGSTDERRTHRESHOLD LOGGING_WARNING
-#else
-#define DEFAULT_LOGBUFLEVEL 0
-#define DEFAULT_VERBOSE_LEVEL 0
-#define DEFAULT_LOGSTDERRTHRESHOLD LOGGING_ERROR
-#endif
-
 namespace {
 // simple init once flag
 std::atomic<bool> g_log_init;
@@ -302,7 +292,7 @@ ABSL_FLAG(bool,
 // when they run a program without having to look in another file.
 ABSL_FLAG(int32_t,
           stderrthreshold,
-          DEFAULT_LOGSTDERRTHRESHOLD,
+          LOGGING_ERROR,
           "log messages at or above this level are copied to stderr in "
           "addition to logfiles.  This flag obsoletes --alsologtostderr.");
 ABSL_FLAG(int32_t,
@@ -312,7 +302,7 @@ ABSL_FLAG(int32_t,
           "actually get logged anywhere");
 ABSL_FLAG(int32_t,
           logbuflevel,
-          DEFAULT_LOGBUFLEVEL,
+          0,
           "Buffer log messages logged at this level or lower"
           " (-1 means don't buffer; 0 means buffer INFO only;"
           " ...)");
@@ -355,7 +345,7 @@ ABSL_FLAG(bool, stop_logging_if_full_disk, false, "Stop attempting to log to dis
 
 ABSL_FLAG(std::string, log_backtrace_at, "", "Emit a backtrace when logging at file:linenum.");
 
-ABSL_FLAG(int32_t, v, DEFAULT_VERBOSE_LEVEL, "verboselevel");
+ABSL_FLAG(int32_t, v, 0, "verboselevel");
 
 ABSL_FLAG(std::string,
           vmodule,
