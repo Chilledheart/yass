@@ -643,18 +643,6 @@ else()
   message(STATUS "Debug Build")
 endif()
 
-if (upper_CMAKE_BUILD_TYPE MATCHES "RELWITHDEBINFO|DEBUG" OR NOT OFFICIAL_BUILD)
-  option(ENABLE_ASSERTIONS "Enable assertions" ON)
-else()
-  option(ENABLE_ASSERTIONS "Enable assertions" OFF)
-endif()
-
-if (ENABLE_ASSERTIONS)
-  message(STATUS "Enabled Assertions")
-  list(APPEND YASS_APP_FEATURES "assertions")
-  add_definitions(-DDCHECK_ALWAYS_ON=1)
-endif()
-
 if (ENABLE_LTO AND IS_RELEASE_BUILD)
   if (COMPILER_CLANG)
     if (USE_MOLD AND UNIX AND NOT APPLE)
