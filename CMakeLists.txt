@@ -4092,11 +4092,6 @@ add_library(yass_core STATIC
     src/core/rand_util.cpp
     src/core/rand_util.hpp
     src/core/scoped_clear_last_error_win.cpp
-    src/core/ref_counted.cpp
-    src/core/ref_counted.hpp
-    src/core/thread_collision_warner.hpp
-    src/core/thread_collision_warner.cpp
-    src/core/atomic_ref_count.hpp
   )
 
 if (WIN32)

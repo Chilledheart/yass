@@ -14,7 +14,7 @@ class ssl_stream : public stream {
   /// construct a ssl_stream object
   template <typename... Args>
   static scoped_refptr<ssl_stream> create(Args&&... args) {
-    return MakeRefCounted<ssl_stream>(std::forward<Args>(args)...);
+    return gurl_base::MakeRefCounted<ssl_stream>(std::forward<Args>(args)...);
   }
 
   /// construct a ssl stream object with ss protocol

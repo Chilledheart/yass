@@ -5,10 +5,10 @@
 #define H_NET_SSL_SERVER_SOCKET
 
 #include <absl/functional/any_invocable.h>
+#include <base/memory/ref_counted.h>
+#include <base/memory/scoped_refptr.h>
 #include "third_party/boringssl/src/include/openssl/ssl.h"
 
-#include "core/ref_counted.hpp"
-#include "core/scoped_refptr.hpp"
 #include "net/asio.hpp"
 #include "net/iobuf.hpp"
 #include "net/net_errors.hpp"
@@ -22,7 +22,7 @@ namespace net {
 using CompletionOnceCallback = absl::AnyInvocable<void(int)>;
 using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 
-class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
+class SSLServerSocket : public gurl_base::RefCountedThreadSafe<SSLServerSocket> {
  public:
   SSLServerSocket(asio::io_context* io_context, asio::ip::tcp::socket* socket, SSL_CTX* ssl_ctx);
   ~SSLServerSocket();
@@ -32,7 +32,7 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
 
   template <typename... Args>
   static scoped_refptr<SSLServerSocket> Create(Args&&... args) {
-    return MakeRefCounted<SSLServerSocket>(std::forward<Args>(args)...);
+    return gurl_base::MakeRefCounted<SSLServerSocket>(std::forward<Args>(args)...);
   }
 
   int Handshake(CompletionOnceCallback callback);

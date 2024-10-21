@@ -5,11 +5,11 @@
 #define H_NET_SSL_SOCKET
 
 #include <absl/functional/any_invocable.h>
+#include <base/memory/ref_counted.h>
+#include <base/memory/scoped_refptr.h>
 #include <string_view>
 #include "third_party/boringssl/src/include/openssl/ssl.h"
 
-#include "core/ref_counted.hpp"
-#include "core/scoped_refptr.hpp"
 #include "net/asio.hpp"
 #include "net/iobuf.hpp"
 #include "net/net_errors.hpp"
@@ -48,7 +48,7 @@ enum class SSLHandshakeDetails {
 using CompletionOnceCallback = absl::AnyInvocable<void(int)>;
 using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 
-class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
+class SSLSocket : public gurl_base::RefCountedThreadSafe<SSLSocket> {
  public:
   SSLSocket(int ssl_socket_data_index,
             asio::io_context* io_context,
@@ -63,7 +63,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
 
   template <typename... Args>
   static scoped_refptr<SSLSocket> Create(Args&&... args) {
-    return MakeRefCounted<SSLSocket>(std::forward<Args>(args)...);
+    return gurl_base::MakeRefCounted<SSLSocket>(std::forward<Args>(args)...);
   }
 
   // StreamSocket implementation

@@ -1,15 +1,26 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_ATOMIC_REF_COUNT_H_
-#define CORE_ATOMIC_REF_COUNT_H_
+// This is a low level implementation of atomic semantics for reference
+// counting.  Please use base/memory/ref_counted.h directly instead.
+
+#ifndef BASE_ATOMIC_REF_COUNT_H_
+#define BASE_ATOMIC_REF_COUNT_H_
 
 #include <atomic>
+
+namespace gurl_base {
+
+namespace subtle {
+class RefCountedOverflowTest;
+}  // namespace subtle
 
 class AtomicRefCount {
  public:
   constexpr AtomicRefCount() : ref_count_(0) {}
-  explicit constexpr AtomicRefCount(int initial_value) : ref_count_(initial_value) {}
+  explicit constexpr AtomicRefCount(int initial_value)
+      : ref_count_(initial_value) {}
 
   // Increment a reference count.
   // Returns the previous value of the count.
@@ -17,7 +28,9 @@ class AtomicRefCount {
 
   // Increment a reference count by "increment", which must exceed 0.
   // Returns the previous value of the count.
-  int Increment(int increment) { return ref_count_.fetch_add(increment, std::memory_order_relaxed); }
+  int Increment(int increment) {
+    return ref_count_.fetch_add(increment, std::memory_order_relaxed);
+  }
 
   // Decrement a reference count, and return whether the result is non-zero.
   // Insert barriers to ensure that state written before the reference count
@@ -41,14 +54,22 @@ class AtomicRefCount {
   // Return whether the reference count is zero.  With conventional object
   // referencing counting, the object will be destroyed, so the reference count
   // should never be zero.  Hence this is generally used for a debug check.
-  bool IsZero() const { return ref_count_.load(std::memory_order_acquire) == 0; }
+  bool IsZero() const {
+    return ref_count_.load(std::memory_order_acquire) == 0;
+  }
 
   // Returns the current reference count (with no barriers). This is subtle, and
   // should be used only for debugging.
-  int SubtleRefCountForDebug() const { return ref_count_.load(std::memory_order_relaxed); }
+  int SubtleRefCountForDebug() const {
+    return ref_count_.load(std::memory_order_relaxed);
+  }
 
  private:
+  friend subtle::RefCountedOverflowTest;
+
   std::atomic_int ref_count_;
 };
+
+}  // namespace base
 
 #endif  // BASE_ATOMIC_REF_COUNT_H_
