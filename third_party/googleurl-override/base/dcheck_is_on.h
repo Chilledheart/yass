@@ -13,4 +13,6 @@
 
 #define EXPENSIVE_DCHECKS_ARE_ON() false
 
+#define GURL_DCHECK_IS_ON() DCHECK_IS_ON()
+
 #endif  // POLYFILLS_BASE_DCHECK_IS_ON_H_

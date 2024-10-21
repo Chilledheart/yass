@@ -292,7 +292,7 @@ ABSL_FLAG(bool,
 // when they run a program without having to look in another file.
 ABSL_FLAG(int32_t,
           stderrthreshold,
-          LOGGING_ERROR,
+          gurl_base::logging::LOGGING_ERROR,
           "log messages at or above this level are copied to stderr in "
           "addition to logfiles.  This flag obsoletes --alsologtostderr.");
 ABSL_FLAG(int32_t,
@@ -358,7 +358,8 @@ ABSL_FLAG(std::string,
 
 ABSL_FLAG(bool, symbolize_stacktrace, true, "Symbolize the stack trace in the tombstone");
 
-namespace yass {
+namespace gurl_base {
+namespace logging {
 
 // TODO(hamaji): consider windows
 #define PATH_SEPARATOR '/'
@@ -2986,7 +2987,7 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
   DWORD len = FormatMessageA(flags, nullptr, error_code, 0, msgbuf, sizeof(msgbuf) / sizeof(msgbuf[0]), nullptr);
   if (len) {
     // Messages returned by system end with line breaks.
-    return gurl_base::CollapseWhitespaceASCII(msgbuf, true) + absl::StrFormat(" (0x%lX)", error_code);
+    return CollapseWhitespaceASCII(msgbuf, true) + absl::StrFormat(" (0x%lX)", error_code);
   }
   return absl::StrFormat("Error (0x%lX) while retrieving error. (0x%lX)", GetLastError(), error_code);
 #elif BUILDFLAG(IS_POSIX)
@@ -3047,4 +3048,5 @@ void RawLog(int level, const char* message) {
     BreakDebuggerAsyncSafe();
 }
 
-}  // namespace yass
+}  // namespace logging
+}  // namespace gurl_base

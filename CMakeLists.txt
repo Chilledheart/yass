@@ -4077,10 +4077,6 @@ add_library(yass_core STATIC
     src/config/config_impl_windows.hpp
     src/core/logging.cpp
     src/core/logging.hpp
-    src/core/check_op.cpp
-    src/core/check_op.hpp
-    src/core/check.cpp
-    src/core/check.hpp
     src/core/process_utils.hpp
     src/core/process_utils.cpp
     src/crypto/crypter_export.cpp
@@ -4130,6 +4126,7 @@ if (APPLE)
 endif()
 
 target_include_directories(yass_core PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override/polyfills
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl

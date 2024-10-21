@@ -1,17 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2024 Chilledheart  */
+// Copyright 2020 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#include "core/check.hpp"
+#include "base/check.h"
 
 // check.h is a widely included header and its size has significant impact on
 // build time. Try not to raise this limit unless absolutely necessary. See
 // https://chromium.googlesource.com/chromium/src/+/HEAD/docs/wmax_tokens.md
 #pragma clang max_tokens_here 17000
 
-#include "core/check_op.hpp"
-#include "core/logging.hpp"
+#include "base/check_op.h"
+#include "base/logging.h"
 
-namespace yass {
+namespace gurl_base {
+namespace logging {
 
 CheckError CheckError::Check(const char* file, int line, const char* condition) {
   CheckError check_error(new LogMessage(file, line, LOGGING_FATAL));
@@ -94,4 +96,5 @@ void RawError(const char* message) {
   RawLog(LOGGING_ERROR, message);
 }
 
-}  // namespace yass
+}  // namespace logging
+}  // namespace gurl_base
