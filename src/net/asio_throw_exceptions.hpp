@@ -4,8 +4,8 @@
 #ifndef H_NET_ASIO_THROW_EXCEPTIONS
 #define H_NET_ASIO_THROW_EXCEPTIONS
 
+#include "base/immediate_crash.h"
 #include "core/debug.hpp"
-#include "core/immediate_crash.hpp"
 #include "core/logging.hpp"
 
 namespace asio {
@@ -16,7 +16,7 @@ namespace detail {
 template <typename Exception>
 void throw_exception(const Exception& e) {
   Alias(&e);
-  ImmediateCrash();
+  gurl_base::ImmediateCrash();
 }
 #endif  // ASIO_NO_EXCEPTIONS
 

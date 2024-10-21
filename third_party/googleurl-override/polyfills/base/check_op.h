@@ -1,17 +1,46 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2020 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_CHECK_OP_H_
-#define CORE_CHECK_OP_H_
+#ifndef POLYFILLS_BASE_CHECK_OP_H_
+#define POLYFILLS_BASE_CHECK_OP_H_
 
 #include <cstddef>
 #include <string>
 #include <type_traits>
 
-#include "core/check.hpp"
-#include "core/template_util.hpp"
+#include "polyfills/base/logging.h"
+#include "base/template_util.h"
 
-namespace yass {
+#include "base/check.h"
+#include "base/compiler_specific.h"
+
+// template_util.hpp
+#include <stddef.h>
+#include <iosfwd>
+#include <iterator>
+#include <type_traits>
+#include <utility>
+
+namespace gurl_base {
+
+namespace internal {
+
+// Uses expression SFINAE to detect whether using operator<< would work.
+template <typename T, typename = void>
+struct SupportsOstreamOperator : std::false_type {};
+template <typename T>
+struct SupportsOstreamOperator<T, decltype(void(std::declval<std::ostream&>() << std::declval<T>()))> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct SupportsToString : std::false_type {};
+template <typename T>
+struct SupportsToString<T, decltype(void(std::declval<T>().ToString()))> : std::true_type {};
+
+}  // namespace internal
+
+namespace logging {
 
 // This header defines the (DP)CHECK_EQ etc. macros.
 //
@@ -139,10 +168,10 @@ class CheckOpResult {
   switch (0)                                                                                                       \
   case 0:                                                                                                          \
   default:                                                                                                         \
-    if (::yass::CheckOpResult true_if_passed = ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
+    if (::gurl_base::logging::CheckOpResult true_if_passed = ::gurl_base::logging::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
       ;                                                                                                            \
     else                                                                                                           \
-      ::yass::CheckError::CheckOp(__FILE__, __LINE__, &true_if_passed).stream()
+      ::gurl_base::logging::CheckError::CheckOp(__FILE__, __LINE__, &true_if_passed).stream()
 
 #endif
 
@@ -184,16 +213,16 @@ DEFINE_CHECK_OP_IMPL(GT, > )
   switch (0)                                                                                                       \
   case 0:                                                                                                          \
   default:                                                                                                         \
-    if (::yass::CheckOpResult true_if_passed = ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
+    if (::gurl_base::logging::CheckOpResult true_if_passed = ::gurl_base::logging::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
       ;                                                                                                            \
     else                                                                                                           \
-      ::yass::CheckError::DCheckOp(__FILE__, __LINE__, &true_if_passed).stream()
+      ::gurl_base::logging::CheckError::DCheckOp(__FILE__, __LINE__, &true_if_passed).stream()
 
 #else
 
 // Don't do any evaluation but still reference the same stuff as when enabled.
 #define DCHECK_OP(name, op, val1, val2) \
-  EAT_CHECK_STREAM_PARAMS((::yass::CheckOpValueStr(val1), ::yass::CheckOpValueStr(val2), (val1)op(val2)))
+  EAT_CHECK_STREAM_PARAMS((::gurl_base::logging::CheckOpValueStr(val1), ::gurl_base::logging::CheckOpValueStr(val2), (val1)op(val2)))
 
 #endif
 
@@ -206,6 +235,20 @@ DEFINE_CHECK_OP_IMPL(GT, > )
 #define DCHECK_GT(val1, val2) DCHECK_OP(GT, > , val1, val2)
 // clang-format on
 
-}  // namespace yass
+}  // namespace logging
+}  // namespace gurl_base
 
-#endif  // CORE_CHECK_OP_H_
+#define GURL_CHECK_GE(val1, val2) CHECK_GE(val1, val2)
+#define GURL_CHECK_GT(val1, val2) CHECK_GT(val1, val2)
+#define GURL_CHECK_LE(val1, val2) CHECK_LE(val1, val2)
+#define GURL_CHECK_LT(val1, val2) CHECK_LT(val1, val2)
+#define GURL_CHECK_NE(val1, val2) CHECK_NE(val1, val2)
+#define GURL_CHECK_EQ(val1, val2) CHECK_EQ(val1, val2)
+#define GURL_DCHECK_EQ(val1, val2) DCHECK_EQ(val1, val2)
+#define GURL_DCHECK_GE(val1, val2) DCHECK_GE(val1, val2)
+#define GURL_DCHECK_GT(val1, val2) DCHECK_GT(val1, val2)
+#define GURL_DCHECK_LE(val1, val2) DCHECK_LE(val1, val2)
+#define GURL_DCHECK_LT(val1, val2) DCHECK_LT(val1, val2)
+#define GURL_DCHECK_NE(val1, val2) DCHECK_NE(val1, val2)
+
+#endif  // BASE_CHECK_OP_H_

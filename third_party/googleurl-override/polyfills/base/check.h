@@ -1,18 +1,21 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2020 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_CHECK_H_
-#define CORE_CHECK_H_
+#ifndef POLYFILLS_BASE_CHECK_H_
+#define POLYFILLS_BASE_CHECK_H_
 
 #include <iosfwd>
 
-// Included NOMERGE fix
-#include "core/compiler_specific.hpp"
-#include "core/immediate_crash.hpp"
+#include "polyfills/base/base_export.h"
+#include "polyfills/base/logging.h"
 
-#include <base/dcheck_is_on.h>
+#include "base/compiler_specific.h"
+#include "base/dcheck_is_on.h"
+#include "base/immediate_crash.h"
 
-namespace yass {
+namespace gurl_base {
+namespace logging {
 
 // This header defines the CHECK, DCHECK, and DPCHECK macros.
 //
@@ -52,10 +55,10 @@ class VoidifyStream {
 
 // Helper macro which avoids evaluating the arguents to a stream if the
 // condition is false.
-#define LAZY_CHECK_STREAM(stream, condition) !(condition) ? (void)0 : ::yass::VoidifyStream() & (stream)
+#define LAZY_CHECK_STREAM(stream, condition) !(condition) ? (void)0 : ::gurl_base::logging::VoidifyStream() & (stream)
 
 // Macro which uses but does not evaluate expr and any stream parameters.
-#define EAT_CHECK_STREAM_PARAMS(expr) true ? (void)0 : ::yass::VoidifyStream(expr) & (*::yass::g_swallow_stream)
+#define EAT_CHECK_STREAM_PARAMS(expr) true ? (void)0 : ::gurl_base::logging::VoidifyStream(expr) & (*::gurl_base::logging::g_swallow_stream)
 
 extern std::ostream* g_swallow_stream;
 
@@ -66,10 +69,10 @@ class LogMessage;
 class CheckError {
  public:
   static CheckError Check(const char* file, int line, const char* condition);
-  static CheckError CheckOp(const char* file, int line, ::yass::CheckOpResult* result);
+  static CheckError CheckOp(const char* file, int line, ::gurl_base::logging::CheckOpResult* result);
 
   static CheckError DCheck(const char* file, int line, const char* condition);
-  static CheckError DCheckOp(const char* file, int line, ::yass::CheckOpResult* result);
+  static CheckError DCheckOp(const char* file, int line, ::gurl_base::logging::CheckOpResult* result);
 
   static CheckError PCheck(const char* file, int line, const char* condition);
   static CheckError PCheck(const char* file, int line);
@@ -81,7 +84,7 @@ class CheckError {
   // Stream for adding optional details to the error message.
   std::ostream& stream();
 
-  NOMERGE NOINLINE NOT_TAIL_CALLED ~CheckError();
+  NOINLINE NOT_TAIL_CALLED ~CheckError();
 
   CheckError(const CheckError& other) = delete;
   CheckError& operator=(const CheckError& other) = delete;
@@ -101,19 +104,19 @@ class CheckError {
 // This is not calling BreakDebugger since this is called frequently, and
 // calling an out-of-line function instead of a noreturn inline macro prevents
 // compiler optimizations.
-#define CHECK(condition) UNLIKELY(!(condition)) ? ImmediateCrash() : EAT_CHECK_STREAM_PARAMS()
+#define CHECK(condition) UNLIKELY(!(condition)) ? ::gurl_base::ImmediateCrash() : EAT_CHECK_STREAM_PARAMS()
 
 #define PCHECK(condition) \
-  LAZY_CHECK_STREAM(::yass::CheckError::PCheck(__FILE__, __LINE__).stream(), UNLIKELY(!(condition)))
+  LAZY_CHECK_STREAM(::gurl_base::logging::CheckError::PCheck(__FILE__, __LINE__).stream(), UNLIKELY(!(condition)))
 
 #else
 
 #define CHECK(condition)                                                                \
-  LAZY_CHECK_STREAM(::yass::CheckError::Check(__FILE__, __LINE__, #condition).stream(), \
+  LAZY_CHECK_STREAM(::gurl_base::logging::CheckError::Check(__FILE__, __LINE__, #condition).stream(), \
                     !ANALYZER_ASSUME_TRUE(condition))
 
 #define PCHECK(condition)                                                                \
-  LAZY_CHECK_STREAM(::yass::CheckError::PCheck(__FILE__, __LINE__, #condition).stream(), \
+  LAZY_CHECK_STREAM(::gurl_base::logging::CheckError::PCheck(__FILE__, __LINE__, #condition).stream(), \
                     !ANALYZER_ASSUME_TRUE(condition))
 
 #endif
@@ -121,11 +124,11 @@ class CheckError {
 #if DCHECK_IS_ON()
 
 #define DCHECK(condition)                                                                \
-  LAZY_CHECK_STREAM(::yass::CheckError::DCheck(__FILE__, __LINE__, #condition).stream(), \
+  LAZY_CHECK_STREAM(::gurl_base::logging::CheckError::DCheck(__FILE__, __LINE__, #condition).stream(), \
                     !ANALYZER_ASSUME_TRUE(condition))
 
 #define DPCHECK(condition)                                                                \
-  LAZY_CHECK_STREAM(::yass::CheckError::DPCheck(__FILE__, __LINE__, #condition).stream(), \
+  LAZY_CHECK_STREAM(::gurl_base::logging::CheckError::DPCheck(__FILE__, __LINE__, #condition).stream(), \
                     !ANALYZER_ASSUME_TRUE(condition))
 
 #else
@@ -165,6 +168,11 @@ void RawError(const char* message);
   }                                  \
   EAT_CHECK_STREAM_PARAMS()
 
-}  // namespace yass
+}  // namespace logging
+}  // namespace gurl_base
 
-#endif  // CORE_CHECK_H_
+#define GURL_CHECK(val) CHECK(val)
+#define GURL_DCHECK(val) DCHECK(val)
+#define GURL_NOTREACHED() NOTREACHED()
+
+#endif /* POLYFILLS_BASE_CHECK_H_ */

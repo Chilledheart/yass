@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2020 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#include "core/check_op.hpp"
+#include "base/check_op.h"
 
 // check_op.h is a widely included header and its size has significant impact on
 // build time. Try not to raise this limit unless absolutely necessary. See
@@ -16,7 +17,8 @@
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-namespace yass {
+namespace gurl_base {
+namespace logging {
 
 char* CheckOpValueStr(int v) {
   char buf[50];
@@ -96,4 +98,5 @@ CheckOpResult::CheckOpResult(const char* expr_str, char* v1_str, char* v2_str) {
   free(v2_str);
 }
 
-}  // namespace yass
+}  // namespace logging
+}  // namespace gurl_base

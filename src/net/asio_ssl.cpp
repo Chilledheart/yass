@@ -259,7 +259,8 @@ void print_openssl_error() {
   while (uint32_t error = ERR_get_error_line(&file, &line)) {
     char buf[120];
     ERR_error_string_n(error, buf, sizeof(buf));
-    ::yass::LogMessage(file, line, LOGGING_ERROR).stream() << "OpenSSL error: " << buf;
+    ::gurl_base::logging::LogMessage(file, line, ::gurl_base::logging::LOGGING_ERROR).stream()
+        << "OpenSSL error: " << buf;
   }
 }
 
