@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2024 Chilledheart  */
+// Copyright 2019 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_IMMEDIATE_CRASH_H
-#define CORE_IMMEDIATE_CRASH_H
+#ifndef BASE_IMMEDIATE_CRASH_H_
+#define BASE_IMMEDIATE_CRASH_H_
 
 #include <build/build_config.h>
 
@@ -137,11 +138,14 @@
 #define IMMEDIATE_CRASH_ALWAYS_INLINE inline
 #endif
 
+namespace gurl_base {
+
 [[noreturn]] IMMEDIATE_CRASH_ALWAYS_INLINE void ImmediateCrash() {
   TRAP_SEQUENCE_();
 #if defined(__clang__) || defined(COMPILER_GCC)
   __builtin_unreachable();
 #endif  // defined(__clang__) || defined(COMPILER_GCC)
 }
+}  // namespace gurl_base
 
-#endif  // CORE_IMMEDIATE_CRASH_H
+#endif  // BASE_IMMEDIATE_CRASH_H_

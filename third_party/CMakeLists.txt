@@ -136,7 +136,7 @@ add_library(url STATIC
   googleurl/base/strings/string_util.cc
   googleurl/base/strings/string_util_constants.cc
   # FIXME vs2022 doesn't even compile
-  # googleurl/base/strings/utf_ostream_operators.cc
+  googleurl/base/strings/utf_ostream_operators.cc
   googleurl/base/strings/utf_string_conversion_utils.cc
   googleurl/base/strings/utf_string_conversions.cc
   # icu
@@ -188,6 +188,11 @@ add_library(url STATIC
   googleurl-override/base/threading/thread_collision_warner.h
   googleurl-override/base/rand_util.h
   googleurl-override/base/rand_util.cc
+  googleurl-override/polyfills/base/logging.h
+  googleurl-override/polyfills/base/check.h
+  googleurl-override/polyfills/base/check.cc
+  googleurl-override/polyfills/base/check_op.h
+  googleurl-override/polyfills/base/check_op.cc
   )
 
 if (WIN32)
@@ -274,9 +279,10 @@ if (USE_LTO_CMAKE)
 endif()
 
 target_include_directories(url PUBLIC
+  googleurl-override/polyfills
   googleurl-override
-  googleurl
   googleurl/polyfills
+  googleurl
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   )
 

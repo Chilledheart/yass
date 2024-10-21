@@ -6,6 +6,9 @@
 
 #include <windows.h>
 
+namespace gurl_base {
+namespace logging {
+
 ScopedClearLastError::ScopedClearLastError() : last_system_error_(GetLastError()) {
   SetLastError(0);
 }
@@ -13,5 +16,8 @@ ScopedClearLastError::ScopedClearLastError() : last_system_error_(GetLastError()
 ScopedClearLastError::~ScopedClearLastError() {
   SetLastError(last_system_error_);
 }
+
+}  // namespace logging
+}  // namespace gurl_base
 
 #endif  // _WIN32

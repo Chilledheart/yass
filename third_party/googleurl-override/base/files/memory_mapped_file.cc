@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 #include "base/files/memory_mapped_file.h"
+#include "base/check_op.h"
 #include "base/logging.h"
 // #include "base/system/sys_info.h"
 #include "base/numerics/safe_math.h"

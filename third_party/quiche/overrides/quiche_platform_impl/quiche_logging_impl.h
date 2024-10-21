@@ -7,9 +7,9 @@
 
 #include <vector>
 
-#include "core/check_op.hpp"
-#include "core/compiler_specific.hpp"
-#include "core/logging.hpp"
+#include "third_party/googleurl-override/polyfills/base/check_op.h"
+#include "third_party/googleurl/base/compiler_specific.h"
+#include "third_party/googleurl-override/polyfills/base/logging.h"
 
 #define QUICHE_LOG_IMPL(severity) QUICHE_YASS_LOG_##severity
 #define QUICHE_VLOG_IMPL(verbose_level) VLOG(verbose_level)
