@@ -4095,21 +4095,16 @@ add_library(yass_core STATIC
     src/core/safe_strerror.hpp
     src/core/debug.cpp
     src/core/debug.hpp
-    src/core/rand_util.cpp
-    src/core/rand_util.hpp
     src/core/scoped_clear_last_error_win.cpp
   )
 
 if (WIN32)
-  target_sources(yass_core PRIVATE src/core/rand_util_win.cpp)
   target_sources(yass_core PRIVATE src/core/utils_win.cpp)
 elseif (APPLE)
   target_sources(yass_core PRIVATE src/config/config_impl_apple.hpp)
   target_sources(yass_core PRIVATE src/config/config_impl_apple.mm)
-  target_sources(yass_core PRIVATE src/core/rand_util_posix.cpp)
   target_sources(yass_core PRIVATE src/core/utils_mac.mm)
 else()
-  target_sources(yass_core PRIVATE src/core/rand_util_posix.cpp)
   target_sources(yass_core PRIVATE src/core/utils_linux.cpp)
   target_sources(yass_core PRIVATE src/core/utils_freebsd.cpp)
 endif()

@@ -14,6 +14,7 @@
 #include <absl/strings/str_format.h>
 #include <base/memory/ref_counted.h>
 #include <base/memory/scoped_refptr.h>
+#include <base/rand_util.h>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #ifdef _MSC_VER
@@ -31,7 +32,6 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
-#include "core/rand_util.hpp"
 #include "feature.h"
 #include "net/cipher.hpp"
 #include "net/http_parser.hpp"
@@ -101,7 +101,7 @@ void GenerateRandContent(int size) {
   g_send_buffer.clear();
   g_send_buffer.reserve(0, size);
 
-  RandBytes(g_send_buffer.mutable_data(), std::min(256, size));
+  gurl_base::RandBytes(g_send_buffer.mutable_data(), std::min(256, size));
   for (int i = 1; i < size / 256; ++i) {
     memcpy(g_send_buffer.mutable_data() + 256 * i, g_send_buffer.data(), 256);
   }

@@ -5,11 +5,11 @@
 
 #include <memory>
 
+#include <base/rand_util.h>
 #include "third_party/boringssl/src/include/openssl/base64.h"
 #include "third_party/boringssl/src/include/openssl/md5.h"
 
 #include "core/logging.hpp"
-#include "core/rand_util.hpp"
 #include "crypto/decrypter.hpp"
 #include "crypto/encrypter.hpp"
 #include "net/hkdf_sha1.hpp"
@@ -305,7 +305,7 @@ void cipher::encrypt_salt(IOBuf* chunk) {
     size_t nonce_len = impl_->GetIVSize();
     VLOG(4) << "encrypt: nonce: " << nonce_len;
     uint8_t nonce[MAX_NONCE_LENGTH] = {};
-    RandBytes(nonce, nonce_len);
+    gurl_base::RandBytes(nonce, nonce_len);
     chunk->reserve(nonce_len, 0);
     chunk->prepend(nonce_len);
     memcpy(chunk->mutable_data(), nonce, nonce_len);
@@ -317,7 +317,7 @@ void cipher::encrypt_salt(IOBuf* chunk) {
 
   size_t salt_len = key_len_;
   VLOG(4) << "encrypt: salt: " << salt_len;
-  RandBytes(salt_, key_len_);
+  gurl_base::RandBytes(salt_, key_len_);
   chunk->reserve(salt_len, 0);
   chunk->prepend(salt_len);
   memcpy(chunk->mutable_data(), salt_, salt_len);

@@ -186,6 +186,8 @@ add_library(url STATIC
   googleurl-override/base/threading/platform_thread.h
   googleurl-override/base/threading/thread_collision_warner.cc
   googleurl-override/base/threading/thread_collision_warner.h
+  googleurl-override/base/rand_util.h
+  googleurl-override/base/rand_util.cc
   )
 
 if (WIN32)
@@ -195,9 +197,13 @@ if (WIN32)
   target_sources(url PRIVATE
     googleurl/base/strings/string_util_win.h
     googleurl/base/strings/string_util_win.cc)
+
+  target_sources(url PRIVATE googleurl-override/base/rand_util_win.cc)
 elseif(NOT APPLE)
   target_sources(url PRIVATE
     googleurl/base/strings/sys_string_conversions_posix.cc)
+  target_sources(url PRIVATE
+    googleurl-override/base/rand_util_posix.cc)
 else()
   target_sources(url PRIVATE
     googleurl-override/base/apple/scoped_cftyperef.h
@@ -207,6 +213,8 @@ else()
     googleurl-override/base/mac/scoped_ioobject.h
     googleurl-override/base/strings/sys_string_conversions_apple.mm
   )
+  target_sources(url PRIVATE
+    googleurl-override/base/rand_util_posix.cc)
   # missing apple part
 endif()
 
