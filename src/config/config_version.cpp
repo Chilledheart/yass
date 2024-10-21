@@ -83,6 +83,9 @@ static void ParseConfigFileOption(int argc, const char** argv) {
 #ifndef NDEBUG
       std::cout << "Debug build (NDEBUG not #defined)" << std::endl;
 #endif
+#ifdef DCHECK_ALWAYS_ON
+      std::cout << "Assertions build (DCHECK_ALWAYS_ON #defined)" << std::endl;
+#endif
       argv[pos] = "";
       pos += 1;
       exit(0);
@@ -100,8 +103,11 @@ static void ParseConfigFileOption(int argc, const char** argv) {
 #ifdef HAVE_MIMALLOC
   std::cerr << "MIMALLOC: " << mi_version() << std::endl;
 #endif
+#ifdef DCHECK_ALWAYS_ON
+  std::cerr << "Assertions build (DCHECK_ALWAYS_ON #defined)" << std::endl;
+#endif
 #ifndef NDEBUG
-  std::cerr << "Debug build (NDEBUG not #defined)\n" << std::endl;
+  std::cerr << "Debug build (NDEBUG not #defined)" << std::endl;
 #endif
 }
 
@@ -130,8 +136,11 @@ void ReadConfigFileAndArguments(int argc, const char** argv) {
 #ifdef HAVE_MIMALLOC
   LOG(WARNING) << "MIMALLOC: " << mi_version();
 #endif
+#ifdef DCHECK_ALWAYS_ON
+  LOG(WARNING) << "Assertions build (DCHECK_ALWAYS_ON #defined)";
+#endif
 #ifndef NDEBUG
-  LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
+  LOG(WARNING) << "Debug build (NDEBUG not #defined)";
 #endif
 }
 
