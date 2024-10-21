@@ -352,7 +352,7 @@ class ConnectionFactory {
 
   template <typename... Args>
   static scoped_refptr<ConnectionType> Create(Args&&... args) {
-    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
+    return gurl_base::MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
   }
   static constexpr const ConnectionFactoryType Type = ConnectionType::Type;
   static constexpr const std::string_view Name = ConnectionType::Name;

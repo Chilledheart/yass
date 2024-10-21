@@ -11,7 +11,6 @@
 #include "config/config_network.hpp"
 #include "config/config_ptype.hpp"
 #include "core/logging.hpp"
-#include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"
 #include "net/asio.hpp"
 #include "net/network.hpp"
@@ -27,6 +26,7 @@
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_split.h>
 #include <absl/time/time.h>
+#include <base/memory/scoped_refptr.h>
 
 namespace net {
 
@@ -71,7 +71,7 @@ inline int64_t pgrsLimitWaitTime(int64_t cursize, int64_t startsize, int64_t lim
 }
 
 /// the class to describe the traffic between given node (endpoint)
-class stream : public RefCountedThreadSafe<stream> {
+class stream : public gurl_base::RefCountedThreadSafe<stream> {
  public:
   using io_handle_t = absl::AnyInvocable<void(asio::error_code, std::size_t)>;
   using handle_t = absl::AnyInvocable<void(asio::error_code)>;
@@ -79,7 +79,7 @@ class stream : public RefCountedThreadSafe<stream> {
   /// construct a stream object
   template <typename... Args>
   static scoped_refptr<stream> create(Args&&... args) {
-    return MakeRefCounted<stream>(std::forward<Args>(args)...);
+    return gurl_base::MakeRefCounted<stream>(std::forward<Args>(args)...);
   }
 
   /// construct a stream object with ss protocol

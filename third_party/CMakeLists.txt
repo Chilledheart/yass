@@ -101,7 +101,7 @@ add_library(url STATIC
   googleurl/base/functional/identity.h
   googleurl/base/functional/invoke.h
   googleurl/base/functional/not_fn.h
-  googleurl/base/memory/raw_ptr_exclusion.h
+  #googleurl/base/memory/raw_ptr_exclusion.h
   googleurl/base/no_destructor.h
   googleurl/base/numerics/checked_math.h
   googleurl/base/numerics/checked_math_impl.h
@@ -170,6 +170,22 @@ add_library(url STATIC
   # googleurl/url/scheme_host_port.h
   # googleurl/url/origin.cc
   # googleurl/url/origin.h
+  googleurl-override/base/atomic_ref_count.h
+  googleurl-override/base/atomicops.h
+  googleurl-override/base/atomicops_internals_portable.h
+  googleurl-override/base/atomicops_internals_atomicword_compat.h
+  googleurl-override/base/macros/concat.h
+  googleurl-override/base/macros/if.h
+  googleurl-override/base/macros/remove_parens.h
+  googleurl-override/base/macros/uniquify.h
+  googleurl-override/base/memory/raw_ptr_exclusion.h
+  googleurl-override/base/memory/ref_counted.cc
+  googleurl-override/base/memory/ref_counted.h
+  googleurl-override/base/memory/scoped_refptr.h
+  googleurl-override/base/threading/platform_thread.cc
+  googleurl-override/base/threading/platform_thread.h
+  googleurl-override/base/threading/thread_collision_warner.cc
+  googleurl-override/base/threading/thread_collision_warner.h
   )
 
 if (WIN32)
