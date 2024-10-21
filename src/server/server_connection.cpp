@@ -5,11 +5,11 @@
 
 #include <absl/base/attributes.h>
 #include <absl/strings/str_cat.h>
+#include <base/rand_util.h>
 #include <base/strings/string_util.h>
 #include <cstdlib>
 
 #include "config/config.hpp"
-#include "core/rand_util.hpp"
 #include "core/utils.hpp"
 #include "net/asio.hpp"
 #include "net/base64.hpp"
@@ -1632,8 +1632,8 @@ void ServerConnection::OnConnect() {
     // Send "Padding" header
     // originated from forwardproxy.go;func ServeHTTP
     if (padding_support_) {
-      std::string padding(RandInt(30, 64), '~');
-      uint64_t bits = RandUint64();
+      std::string padding(gurl_base::RandInt(30, 64), '~');
+      uint64_t bits = gurl_base::RandUint64();
       for (int i = 0; i < 16; ++i) {
         padding[i] = "!#$()+<>?@[]^`{}"[bits & 15];
         bits = bits >> 4;

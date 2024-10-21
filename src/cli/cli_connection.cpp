@@ -5,10 +5,10 @@
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <base/rand_util.h>
 #include <base/strings/string_util.h>
 
 #include "config/config.hpp"
-#include "core/rand_util.hpp"
 #include "core/utils.hpp"
 #include "net/asio.hpp"
 #include "net/base64.hpp"
@@ -2246,9 +2246,9 @@ void CliConnection::connected() {
     // originated from naive_proxy_delegate.go;func ServeHTTP
     if (padding_support_) {
       // Sends client-side padding header regardless of server support
-      std::string padding(RandInt(16, 32), '~');
+      std::string padding(gurl_base::RandInt(16, 32), '~');
       InitializeNonindexCodes();
-      FillNonindexHeaderValue(RandUint64(), &padding[0], padding.size());
+      FillNonindexHeaderValue(gurl_base::RandUint64(), &padding[0], padding.size());
       headers.emplace_back("padding"s, padding);
     }
     int submit_result = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), false, nullptr);

@@ -5,6 +5,7 @@
 
 #include "base/dcheck_is_on.h"
 #include "base/check.h"
+#include "base/compiler_specific.h"
 #include "build/build_config.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -102,8 +103,8 @@ PlatformThreadId PlatformThread::CurrentId() {
   // Workaround false-positive MSAN use-of-uninitialized-value on
   // thread_local storage for loaded libraries:
   // https://github.com/google/sanitizers/issues/1265
-  // MSAN_UNPOISON(&g_thread_id, sizeof(pid_t));
-  // MSAN_UNPOISON(&g_is_main_thread, sizeof(bool));
+  MSAN_UNPOISON(&g_thread_id, sizeof(pid_t));
+  MSAN_UNPOISON(&g_is_main_thread, sizeof(bool));
   static InitAtFork init_at_fork;
   if (g_thread_id == -1 ||
       (g_is_main_thread &&
