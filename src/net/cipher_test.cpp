@@ -5,8 +5,8 @@
 #include <gtest/gtest.h>
 
 #include <absl/flags/flag.h>
+#include <base/rand_util.h>
 #include <gmock/gmock.h>
-#include "core/rand_util.hpp"
 #include "net/cipher.hpp"
 
 #include "test_util.hpp"
@@ -17,7 +17,7 @@ namespace {
 std::unique_ptr<IOBuf> GenerateRandContent(int size) {
   auto buf = IOBuf::create(size);
 
-  RandBytes(buf->mutable_data(), std::min(256, size));
+  gurl_base::RandBytes(buf->mutable_data(), std::min(256, size));
   for (int i = 1; i < size / 256; ++i) {
     memcpy(buf->mutable_data() + 256 * i, buf->data(), 256);
   }

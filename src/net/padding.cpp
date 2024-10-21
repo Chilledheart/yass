@@ -3,7 +3,7 @@
 
 #include "net/padding.hpp"
 
-#include "core/rand_util.hpp"
+#include <base/rand_util.h>
 
 /// <payload_length> <padding length> <payload> <padding>
 /// input:
@@ -17,7 +17,7 @@ namespace net {
 void AddPadding(std::shared_ptr<net::IOBuf> buf) {
   size_t payload_size = buf->length();
   DCHECK_LE(payload_size, 0xffffu);
-  size_t padding_size = RandInt(0, kMaxPaddingSize);
+  size_t padding_size = gurl_base::RandInt(0, kMaxPaddingSize);
   buf->reserve(kPaddingHeaderSize, padding_size);
 
   uint8_t* p = buf->mutable_buffer();
