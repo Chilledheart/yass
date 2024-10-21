@@ -121,10 +121,11 @@ PlatformThreadId PlatformThread::CurrentId() {
   } else {
 #if DCHECK_IS_ON()
     if (g_thread_id != syscall(__NR_gettid)) {
-      GURL_LOG(FATAL) <<
+      RAW_LOG(
+          FATAL,
           "Thread id stored in TLS is different from thread id returned by "
           "the system. It is likely that the process was forked without going "
-          "through fork().";
+          "through fork().");
     }
 #endif
   }

@@ -834,7 +834,7 @@ bool ShouldCreateLogMessage(LogSeverity severity);
 // Async signal safe logging mechanism.
 void RawLog(int level, const char* message);
 
-#define RAW_LOG(level, message) RawLog(LOGGING_##level, message)
+#define RAW_LOG(level, message) ::gurl_base::logging::RawLog(::gurl_base::logging::LOGGING_##level, message)
 
 }  // namespace log
 }  // namespace gurl_base
