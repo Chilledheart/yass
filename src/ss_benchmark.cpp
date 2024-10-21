@@ -663,8 +663,11 @@ int main(int argc, char** argv) {
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG << " type: " << ProgramTypeToStr(pType);
   LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
   LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
+#ifdef DCHECK_ALWAYS_ON
+  LOG(WARNING) << "Assertions build (DCHECK_ALWAYS_ON #defined)";
+#endif
 #ifndef NDEBUG
-  LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
+  LOG(WARNING) << "Debug build (NDEBUG not #defined)";
 #endif
 
 #ifdef _WIN32
