@@ -5,20 +5,20 @@
 #define H_NET_DOH_RESOLVER_HPP
 
 #include <absl/functional/any_invocable.h>
+#include <base/memory/ref_counted.h>
+#include <base/memory/scoped_refptr.h>
 #include <deque>
 #include <string>
-#include "core/ref_counted.hpp"
-#include "core/scoped_refptr.hpp"
 #include "net/asio.hpp"
 #include "net/doh_request.hpp"
 
 namespace net {
 
-class DoHResolver : public RefCountedThreadSafe<DoHResolver> {
+class DoHResolver : public gurl_base::RefCountedThreadSafe<DoHResolver> {
  public:
   DoHResolver(asio::io_context& io_context);
   static scoped_refptr<DoHResolver> Create(asio::io_context& io_context) {
-    return MakeRefCounted<DoHResolver>(io_context);
+    return gurl_base::MakeRefCounted<DoHResolver>(io_context);
   }
   ~DoHResolver();
 

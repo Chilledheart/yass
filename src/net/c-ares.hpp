@@ -12,8 +12,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "core/ref_counted.hpp"
-#include "core/scoped_refptr.hpp"
+#include <base/memory/ref_counted.h>
+#include <base/memory/scoped_refptr.h>
+
 #include "net/asio.hpp"
 
 namespace net {
@@ -24,11 +25,11 @@ using fd_t = SOCKET;
 using fd_t = int;
 #endif
 
-class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
+class CAresResolver : public gurl_base::RefCountedThreadSafe<CAresResolver> {
  public:
   CAresResolver(asio::io_context& io_context);
   static scoped_refptr<CAresResolver> Create(asio::io_context& io_context) {
-    return MakeRefCounted<CAresResolver>(io_context);
+    return gurl_base::MakeRefCounted<CAresResolver>(io_context);
   }
   ~CAresResolver();
 
@@ -52,7 +53,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
  private:
   struct ResolverPerContext : public RefCountedThreadSafe<ResolverPerContext> {
     static scoped_refptr<ResolverPerContext> Create(asio::io_context& io_context, fd_t fd) {
-      return MakeRefCounted<ResolverPerContext>(io_context, fd);
+      return gurl_base::MakeRefCounted<ResolverPerContext>(io_context, fd);
     }
     ResolverPerContext(asio::io_context& io_context, fd_t fd) : socket(io_context, asio::ip::udp::v4(), fd) {}
     ~ResolverPerContext() {

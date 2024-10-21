@@ -15,9 +15,10 @@
 #include <utility>
 #include <vector>
 
+#include <base/memory/scoped_refptr.h>
+
 #include "config/config_tls.hpp"
 #include "core/logging.hpp"
-#include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "net/asio.hpp"

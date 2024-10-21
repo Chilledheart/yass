@@ -1,12 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_THREADING_THREAD_COLLISION_WARNER_H_
-#define CORE_THREADING_THREAD_COLLISION_WARNER_H_
+#ifndef BASE_THREADING_THREAD_COLLISION_WARNER_H_
+#define BASE_THREADING_THREAD_COLLISION_WARNER_H_
 
-#include <atomic>
-
-#include <base/compiler_specific.h>
+#include "base/atomicops.h"
+#include "base/base_export.h"
+#include "base/compiler_specific.h"
+#include "base/macros/uniquify.h"
+#include "base/memory/raw_ptr.h"
 
 // A helper class alongside macros to be used to verify assumptions about thread
 // safety of a class.
@@ -96,23 +99,22 @@
 
 #if !defined(NDEBUG)
 
-#define DFAKE_UNIQUE_VARIABLE_CONCAT(a, b) a##b
-// CONCAT1 provides extra level of indirection so that __LINE__ macro expands.
-#define DFAKE_UNIQUE_VARIABLE_CONCAT1(a, b) DFAKE_UNIQUE_VARIABLE_CONCAT(a, b)
-#define DFAKE_UNIQUE_VARIABLE_NAME(a) DFAKE_UNIQUE_VARIABLE_CONCAT1(a, __LINE__)
-
 // Defines a class member that acts like a mutex. It is used only as a
 // verification tool.
-#define DFAKE_MUTEX(obj) mutable ThreadCollisionWarner obj
+#define DFAKE_MUTEX(obj) \
+     mutable gurl_base::ThreadCollisionWarner obj
 // Asserts the call is never called simultaneously in two threads. Used at
 // member function scope.
-#define DFAKE_SCOPED_LOCK(obj) ThreadCollisionWarner::ScopedCheck DFAKE_UNIQUE_VARIABLE_NAME(s_check_)(&obj)
+#define DFAKE_SCOPED_LOCK(obj) \
+  gurl_base::ThreadCollisionWarner::ScopedCheck BASE_UNIQUIFY(s_check_)(&obj)
 // Asserts the call is never called simultaneously in two threads. Used at
 // member function scope. Same as DFAKE_SCOPED_LOCK but allows recursive locks.
-#define DFAKE_SCOPED_RECURSIVE_LOCK(obj) \
-  ThreadCollisionWarner::ScopedRecursiveCheck DFAKE_UNIQUE_VARIABLE_NAME(sr_check)(&obj)
+#define DFAKE_SCOPED_RECURSIVE_LOCK(obj)                                     \
+  gurl_base::ThreadCollisionWarner::ScopedRecursiveCheck BASE_UNIQUIFY(sr_check)( \
+      &obj)
 // Asserts the code is always executed in the same thread.
-#define DFAKE_SCOPED_LOCK_THREAD_LOCKED(obj) ThreadCollisionWarner::Check DFAKE_UNIQUE_VARIABLE_NAME(check_)(&obj)
+#define DFAKE_SCOPED_LOCK_THREAD_LOCKED(obj) \
+  gurl_base::ThreadCollisionWarner::Check BASE_UNIQUIFY(check_)(&obj)
 
 #else
 
@@ -123,39 +125,46 @@
 
 #endif
 
+namespace gurl_base {
+
 // The class ThreadCollisionWarner uses an Asserter to notify the collision
 // AsserterBase is the interfaces and DCheckAsserter is the default asserter
 // used. During the unit tests is used another class that doesn't "DCHECK"
 // in case of collision (check thread_collision_warner_unittests.cc)
-struct AsserterBase {
+struct BASE_EXPORT AsserterBase {
   virtual ~AsserterBase() = default;
   virtual void warn() = 0;
 };
 
-struct DCheckAsserter : public AsserterBase {
+struct BASE_EXPORT DCheckAsserter : public AsserterBase {
   ~DCheckAsserter() override = default;
   void warn() override;
 };
 
-class ThreadCollisionWarner {
+class BASE_EXPORT ThreadCollisionWarner {
  public:
   // The parameter asserter is there only for test purpose
   explicit ThreadCollisionWarner(AsserterBase* asserter = new DCheckAsserter())
-      : valid_thread_id_(0), counter_(0), asserter_(asserter) {}
+      : valid_thread_id_(0),
+        counter_(0),
+        asserter_(asserter) {}
 
   ThreadCollisionWarner(const ThreadCollisionWarner&) = delete;
   ThreadCollisionWarner& operator=(const ThreadCollisionWarner&) = delete;
 
-  ~ThreadCollisionWarner() { delete asserter_; }
+  ~ThreadCollisionWarner() { delete asserter_; asserter_ = nullptr; }
 
   // This class is meant to be used through the macro
   // DFAKE_SCOPED_LOCK_THREAD_LOCKED
   // it doesn't leave the critical section, as opposed to ScopedCheck,
   // because the critical section being pinned is allowed to be used only
   // from one thread
-  class Check {
+  class BASE_EXPORT Check {
    public:
-    explicit Check(ThreadCollisionWarner* warner) : warner_(warner) { warner_->EnterSelf(); }
+    explicit Check(ThreadCollisionWarner* warner)
+        : warner_(warner) {
+      warner_->EnterSelf();
+    }
 
     Check(const Check&) = delete;
     Check& operator=(const Check&) = delete;
@@ -163,37 +172,47 @@ class ThreadCollisionWarner {
     ~Check() = default;
 
    private:
-    ThreadCollisionWarner* warner_;
+    raw_ptr<ThreadCollisionWarner> warner_;
   };
 
   // This class is meant to be used through the macro
   // DFAKE_SCOPED_LOCK
-  class ScopedCheck {
+  class BASE_EXPORT ScopedCheck {
    public:
-    explicit ScopedCheck(ThreadCollisionWarner* warner) : warner_(warner) { warner_->Enter(); }
+    explicit ScopedCheck(ThreadCollisionWarner* warner)
+        : warner_(warner) {
+      warner_->Enter();
+    }
 
     ScopedCheck(const ScopedCheck&) = delete;
     ScopedCheck& operator=(const ScopedCheck&) = delete;
 
-    ~ScopedCheck() { warner_->Leave(); }
+    ~ScopedCheck() {
+      warner_->Leave();
+    }
 
    private:
-    ThreadCollisionWarner* warner_;
+    raw_ptr<ThreadCollisionWarner> warner_;
   };
 
   // This class is meant to be used through the macro
   // DFAKE_SCOPED_RECURSIVE_LOCK
-  class ScopedRecursiveCheck {
+  class BASE_EXPORT ScopedRecursiveCheck {
    public:
-    explicit ScopedRecursiveCheck(ThreadCollisionWarner* warner) : warner_(warner) { warner_->EnterSelf(); }
+    explicit ScopedRecursiveCheck(ThreadCollisionWarner* warner)
+        : warner_(warner) {
+      warner_->EnterSelf();
+    }
 
     ScopedRecursiveCheck(const ScopedRecursiveCheck&) = delete;
     ScopedRecursiveCheck& operator=(const ScopedRecursiveCheck&) = delete;
 
-    ~ScopedRecursiveCheck() { warner_->Leave(); }
+    ~ScopedRecursiveCheck() {
+      warner_->Leave();
+    }
 
    private:
-    ThreadCollisionWarner* warner_;
+    raw_ptr<ThreadCollisionWarner> warner_;
   };
 
  private:
@@ -211,15 +230,17 @@ class ThreadCollisionWarner {
 
   // This stores the thread id that is inside the critical section, if the
   // value is 0 then no thread is inside.
-  volatile std::atomic<uint32_t> valid_thread_id_;
+  volatile subtle::Atomic32 valid_thread_id_;
 
   // Counter to trace how many time a critical section was "pinned"
   // (when allowed) in order to unpin it when counter_ reaches 0.
-  volatile std::atomic<uint32_t> counter_;
+  volatile subtle::Atomic32 counter_;
 
   // Here only for class unit tests purpose, during the test I need to not
   // DCHECK but notify the collision with something else.
-  AsserterBase* asserter_;
+  raw_ptr<AsserterBase> asserter_;
 };
 
-#endif  // CORE_THREADING_THREAD_COLLISION_WARNER_H_
+}  // namespace gurl_base
+
+#endif  // BASE_THREADING_THREAD_COLLISION_WARNER_H_

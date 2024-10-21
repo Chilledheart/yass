@@ -6,8 +6,6 @@
 
 #include "cli/cli_connection_stats.hpp"
 #include "core/logging.hpp"
-#include "core/ref_counted.hpp"
-#include "core/scoped_refptr.hpp"
 #include "net/channel.hpp"
 #include "net/cipher.hpp"
 #include "net/connection.hpp"
@@ -26,6 +24,8 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/string_view.h>
+#include <base/memory/ref_counted.h>
+#include <base/memory/scoped_refptr.h>
 #include <deque>
 
 #ifdef HAVE_QUICHE
@@ -85,7 +85,7 @@ class DataFrameSource : public http2::adapter::DataFrameSource {
 
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
-class CliConnection : public RefCountedThreadSafe<CliConnection>,
+class CliConnection : public gurl_base::RefCountedThreadSafe<CliConnection>,
 #ifdef HAVE_QUICHE
                       public http2::adapter::Http2VisitorInterface,
 #endif  // HAVE_QUICHE

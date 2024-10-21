@@ -5,9 +5,9 @@
 #define H_NET_DOT_REQUEST_HPP
 
 #include <absl/strings/str_format.h>
+#include <base/memory/ref_counted.h>
+#include <base/memory/scoped_refptr.h>
 
-#include "core/ref_counted.hpp"
-#include "core/scoped_refptr.hpp"
 #include "net/asio.hpp"
 #include "net/dns_message.hpp"
 #include "net/network.hpp"
@@ -15,7 +15,7 @@
 
 namespace net {
 
-class DoTRequest : public RefCountedThreadSafe<DoTRequest> {
+class DoTRequest : public gurl_base::RefCountedThreadSafe<DoTRequest> {
  public:
   DoTRequest(int ssl_socket_data_index,
              asio::io_context& io_context,
@@ -34,7 +34,7 @@ class DoTRequest : public RefCountedThreadSafe<DoTRequest> {
 
   template <typename... Args>
   static scoped_refptr<DoTRequest> Create(Args&&... args) {
-    return MakeRefCounted<DoTRequest>(std::forward<Args>(args)...);
+    return gurl_base::MakeRefCounted<DoTRequest>(std::forward<Args>(args)...);
   }
   ~DoTRequest();
 

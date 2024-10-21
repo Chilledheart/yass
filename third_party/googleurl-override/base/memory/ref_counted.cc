@@ -1,19 +1,20 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#include "core/ref_counted.hpp"
+#include "base/memory/ref_counted.h"
 
-#include <atomic>
 #include <limits>
 #include <ostream>
 #include <type_traits>
 
-#include "core/thread_collision_warner.hpp"
+#include "base/threading/thread_collision_warner.h"
 
+namespace gurl_base {
 namespace {
 
 #if DCHECK_IS_ON()
-std::atomic<int> g_cross_thread_ref_count_access_allow_count(0);
+std::atomic_int g_cross_thread_ref_count_access_allow_count(0);
 #endif
 
 }  // namespace
@@ -30,8 +31,8 @@ bool RefCountedThreadSafeBase::HasAtLeastOneRef() const {
 
 #if DCHECK_IS_ON()
 RefCountedThreadSafeBase::~RefCountedThreadSafeBase() {
-  DCHECK(in_dtor_) << "RefCountedThreadSafe object deleted without "
-                      "calling Release()";
+  GURL_DCHECK(in_dtor_) << "RefCountedThreadSafe object deleted without "
+                           "calling Release()";
 }
 #endif
 
@@ -52,7 +53,7 @@ void RefCountedBase::AddRefImpl() const {
   //
   // Make sure the addition didn't wrap back around to 0. This form of check
   // works because we assert that `ref_count_` is an unsigned integer type.
-  CHECK(++ref_count_ != 0);
+  GURL_CHECK(++ref_count_ != 0);
 }
 
 void RefCountedBase::ReleaseImpl() const {
@@ -63,11 +64,11 @@ void RefCountedBase::ReleaseImpl() const {
   //
   // Note that unlike with overflow, underflow could also happen on 32-bit
   // architectures. Arguably, we should do this check on32-bit machines too.
-  CHECK(--ref_count_ != std::numeric_limits<decltype(ref_count_)>::max());
+  GURL_CHECK(--ref_count_ != std::numeric_limits<decltype(ref_count_)>::max());
 }
 #endif
 
-#if !defined(ARCH_CPU_X86_FAMILY)
+#if !(defined(ARCH_CPU_X86_FAMILY) || defined(__ARM_FEATURE_ATOMICS))
 bool RefCountedThreadSafeBase::Release() const {
   return ReleaseImpl();
 }
@@ -76,12 +77,6 @@ void RefCountedThreadSafeBase::AddRef() const {
 }
 void RefCountedThreadSafeBase::AddRefWithCheck() const {
   AddRefWithCheckImpl();
-}
-#endif
-
-#if DCHECK_IS_ON()
-bool RefCountedBase::CalledOnValidSequence() const {
-  return g_cross_thread_ref_count_access_allow_count.load() != 0;
 }
 #endif
 
@@ -96,3 +91,5 @@ ScopedAllowCrossThreadRefCountAccess::~ScopedAllowCrossThreadRefCountAccess() {
   --g_cross_thread_ref_count_access_allow_count;
 }
 #endif
+
+}  // namespace gurl_base

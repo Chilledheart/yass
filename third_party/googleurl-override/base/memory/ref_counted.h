@@ -1,25 +1,31 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_REF_COUNTED_H_
-#define CORE_REF_COUNTED_H_
+#ifndef BASE_MEMORY_REF_COUNTED_H_
+#define BASE_MEMORY_REF_COUNTED_H_
 
 #include <stddef.h>
+
+#include <limits>
 #include <utility>
 
-#include "core/atomic_ref_count.hpp"
-#include "core/check_op.hpp"
-#include "core/scoped_refptr.hpp"
-#include "core/thread_collision_warner.hpp"
+#include "base/atomic_ref_count.h"
+#include "base/base_export.h"
+#include "base/check.h"
+#include "base/check_op.h"
+#include "base/compiler_specific.h"
+#include "base/dcheck_is_on.h"
+#include "base/memory/scoped_refptr.h"
+#include "base/template_util.h"
+#include "base/threading/thread_collision_warner.h"
+#include "build/build_config.h"
+#include "third_party/abseil-cpp/absl/utility/utility.h"
 
-#include <base/compiler_specific.h>
-#include <base/dcheck_is_on.h>
-#include <base/gtest_prod_util.h>
-#include <build/build_config.h>
-
+namespace gurl_base {
 namespace subtle {
 
-class RefCountedBase {
+class BASE_EXPORT RefCountedBase {
  public:
   RefCountedBase(const RefCountedBase&) = delete;
   RefCountedBase& operator=(const RefCountedBase&) = delete;
@@ -28,7 +34,8 @@ class RefCountedBase {
   bool HasAtLeastOneRef() const { return ref_count_ >= 1; }
 
  protected:
-  explicit RefCountedBase(StartRefCountFromZeroTag) {}
+  explicit RefCountedBase(StartRefCountFromZeroTag) {
+  }
 
   explicit RefCountedBase(StartRefCountFromOneTag) : ref_count_(1) {
 #if DCHECK_IS_ON()
@@ -39,20 +46,17 @@ class RefCountedBase {
   ~RefCountedBase() {
 #if DCHECK_IS_ON()
     // RefCounted object deleted without calling Release()
-    DCHECK(in_dtor_);
+    GURL_DCHECK(in_dtor_);
 #endif
   }
 
   void AddRef() const {
 #if DCHECK_IS_ON()
-    DCHECK(!in_dtor_);
+    GURL_DCHECK(!in_dtor_);
     // This RefCounted object is created with non-zero reference count.
     // The first reference to such a object has to be made by AdoptRef or
     // MakeRefCounted.
-    DCHECK(!needs_adopt_ref_);
-    if (ref_count_ >= 1) {
-      DCHECK(CalledOnValidSequence());
-    }
+    GURL_DCHECK(!needs_adopt_ref_);
 #endif
 
     AddRefImpl();
@@ -63,12 +67,9 @@ class RefCountedBase {
     ReleaseImpl();
 
 #if DCHECK_IS_ON()
-    DCHECK(!in_dtor_);
+    GURL_DCHECK(!in_dtor_);
     if (ref_count_ == 0)
       in_dtor_ = true;
-
-    if (ref_count_ >= 1)
-      DCHECK(CalledOnValidSequence());
 #endif
 
     return ref_count_ == 0;
@@ -88,22 +89,18 @@ class RefCountedBase {
   // reference, or if the object is accessed from multiple threads
   // simultaneously.
   bool IsOnValidSequence() const {
-#if DCHECK_IS_ON()
-    return ref_count_ <= 1 || CalledOnValidSequence();
-#else
     return true;
-#endif
   }
 
  private:
   template <typename U>
-  friend scoped_refptr<U> AdoptRef(U*);
+  friend scoped_refptr<U> gurl_base::AdoptRef(U*);
 
-  FRIEND_TEST_ALL_PREFIXES(RefCountedDeathTest, TestOverflowCheck);
+  friend class RefCountedOverflowTest;
 
   void Adopted() const {
 #if DCHECK_IS_ON()
-    DCHECK(needs_adopt_ref_);
+    GURL_DCHECK(needs_adopt_ref_);
     needs_adopt_ref_ = false;
 #endif
   }
@@ -116,12 +113,9 @@ class RefCountedBase {
   void ReleaseImpl() const { --ref_count_; }
 #endif
 
-#if DCHECK_IS_ON()
-  bool CalledOnValidSequence() const;
-#endif
-
   mutable uint32_t ref_count_ = 0;
-  static_assert(std::is_unsigned<decltype(ref_count_)>::value, "ref_count_ must be an unsigned type.");
+  static_assert(std::is_unsigned_v<decltype(ref_count_)>,
+                "ref_count_ must be an unsigned type.");
 
 #if DCHECK_IS_ON()
   mutable bool needs_adopt_ref_ = false;
@@ -131,7 +125,7 @@ class RefCountedBase {
   DFAKE_MUTEX(add_release_);
 };
 
-class RefCountedThreadSafeBase {
+class BASE_EXPORT RefCountedThreadSafeBase {
  public:
   RefCountedThreadSafeBase(const RefCountedThreadSafeBase&) = delete;
   RefCountedThreadSafeBase& operator=(const RefCountedThreadSafeBase&) = delete;
@@ -141,7 +135,8 @@ class RefCountedThreadSafeBase {
 
  protected:
   explicit constexpr RefCountedThreadSafeBase(StartRefCountFromZeroTag) {}
-  explicit constexpr RefCountedThreadSafeBase(StartRefCountFromOneTag) : ref_count_(1) {
+  explicit constexpr RefCountedThreadSafeBase(StartRefCountFromOneTag)
+      : ref_count_(1) {
 #if DCHECK_IS_ON()
     needs_adopt_ref_ = true;
 #endif
@@ -154,9 +149,15 @@ class RefCountedThreadSafeBase {
 #endif
 
 // Release and AddRef are suitable for inlining on X86 because they generate
-// very small code sequences. On other platforms (ARM), it causes a size
-// regression and is probably not worth it.
-#if defined(ARCH_CPU_X86_FAMILY)
+// very small code sequences.
+//
+// ARM64 devices supporting ARMv8.1-A atomic instructions generate very little
+// code, e.g. fetch_add() with acquire ordering is a single instruction (ldadd),
+// vs LL/SC in previous ARM architectures. Inline it there as well.
+//
+// On other platforms (e.g. ARM), it causes a size regression and is probably
+// not worth it.
+#if defined(ARCH_CPU_X86_FAMILY) || defined(__ARM_FEATURE_ATOMICS)
   // Returns true if the object should self-delete.
   bool Release() const { return ReleaseImpl(); }
   void AddRef() const { AddRefImpl(); }
@@ -170,41 +171,45 @@ class RefCountedThreadSafeBase {
 
  private:
   template <typename U>
-  friend scoped_refptr<U> AdoptRef(U*);
+  friend scoped_refptr<U> gurl_base::AdoptRef(U*);
+
+  friend class RefCountedOverflowTest;
 
   void Adopted() const {
 #if DCHECK_IS_ON()
-    DCHECK(needs_adopt_ref_);
+    GURL_DCHECK(needs_adopt_ref_);
     needs_adopt_ref_ = false;
 #endif
   }
 
   ALWAYS_INLINE void AddRefImpl() const {
 #if DCHECK_IS_ON()
-    DCHECK(!in_dtor_);
+    GURL_DCHECK(!in_dtor_);
     // This RefCounted object is created with non-zero reference count.
     // The first reference to such a object has to be made by AdoptRef or
     // MakeRefCounted.
-    DCHECK(!needs_adopt_ref_);
+    GURL_DCHECK(!needs_adopt_ref_);
 #endif
-    ref_count_.Increment();
+    GURL_CHECK_NE(ref_count_.Increment(), std::numeric_limits<int>::max());
   }
 
   ALWAYS_INLINE void AddRefWithCheckImpl() const {
 #if DCHECK_IS_ON()
-    DCHECK(!in_dtor_);
+    GURL_DCHECK(!in_dtor_);
     // This RefCounted object is created with non-zero reference count.
     // The first reference to such a object has to be made by AdoptRef or
     // MakeRefCounted.
-    DCHECK(!needs_adopt_ref_);
+    GURL_DCHECK(!needs_adopt_ref_);
 #endif
-    CHECK_GT(ref_count_.Increment(), 0);
+    int pre_increment_count = ref_count_.Increment();
+    GURL_DCHECK_GT(pre_increment_count, 0);
+    GURL_CHECK_NE(pre_increment_count, std::numeric_limits<int>::max());
   }
 
   ALWAYS_INLINE bool ReleaseImpl() const {
 #if DCHECK_IS_ON()
-    DCHECK(!in_dtor_);
-    DCHECK(!ref_count_.IsZero());
+    GURL_DCHECK(!in_dtor_);
+    GURL_DCHECK(!ref_count_.IsZero());
 #endif
     if (!ref_count_.Decrement()) {
 #if DCHECK_IS_ON()
@@ -234,7 +239,7 @@ class RefCountedThreadSafeBase {
 // should properly std::move() the ref to avoid hitting this check).
 // TODO(tzik): Cleanup existing use cases and remove
 // ScopedAllowCrossThreadRefCountAccess.
-class ScopedAllowCrossThreadRefCountAccess final {
+class BASE_EXPORT ScopedAllowCrossThreadRefCountAccess final {
  public:
 #if DCHECK_IS_ON()
   ScopedAllowCrossThreadRefCountAccess();
@@ -250,10 +255,10 @@ class ScopedAllowCrossThreadRefCountAccess final {
 // knock-off of WebKit's RefCounted<T> class.  To use this, just extend your
 // class from it like so:
 //
-//   class MyFoo : public RefCounted<MyFoo> {
+//   class MyFoo : public gurl_base::RefCounted<MyFoo> {
 //    ...
 //    private:
-//     friend class RefCounted<MyFoo>;
+//     friend class gurl_base::RefCounted<MyFoo>;
 //     ~MyFoo();
 //   };
 //
@@ -277,8 +282,8 @@ class ScopedAllowCrossThreadRefCountAccess final {
 // the ref counted class to opt-in.
 //
 // If an object has start-from-one ref count, the first scoped_refptr need to be
-// created by AdoptRef() or MakeRefCounted(). We can use
-// MakeRefCounted() to create create both type of ref counted object.
+// created by gurl_base::AdoptRef() or gurl_base::MakeRefCounted(). We can use
+// gurl_base::MakeRefCounted() to create create both type of ref counted object.
 //
 // The motivations to use start-from-one ref count are:
 //  - Start-from-one ref count doesn't need the ref count increment for the
@@ -289,30 +294,34 @@ class ScopedAllowCrossThreadRefCountAccess final {
 //    TODO(tzik): Implement invalid acquisition detection.
 //  - Behavior parity to Blink's WTF::RefCounted, whose count starts from one.
 //    And start-from-one ref count is a step to merge WTF::RefCounted into
-//    RefCounted.
+//    gurl_base::RefCounted.
 //
 #define REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE() \
-  static constexpr ::subtle::StartRefCountFromOneTag kRefCountPreference = ::subtle::kStartRefCountFromOneTag
+  using RefCountPreferenceTag = ::gurl_base::subtle::StartRefCountFromOneTag
 
 template <class T, typename Traits>
 class RefCounted;
 
 template <typename T>
 struct DefaultRefCountedTraits {
-  static void Destruct(const T* x) { RefCounted<T, DefaultRefCountedTraits>::DeleteInternal(x); }
+  static void Destruct(const T* x) {
+    RefCounted<T, DefaultRefCountedTraits>::DeleteInternal(x);
+  }
 };
 
 template <class T, typename Traits = DefaultRefCountedTraits<T>>
 class RefCounted : public subtle::RefCountedBase {
  public:
-  static constexpr subtle::StartRefCountFromZeroTag kRefCountPreference = subtle::kStartRefCountFromZeroTag;
+  using RefCountPreferenceTag = subtle::StartRefCountFromZeroTag;
 
-  RefCounted() : subtle::RefCountedBase(T::kRefCountPreference) {}
+  RefCounted() : subtle::RefCountedBase(subtle::GetRefCountPreference<T>()) {}
 
   RefCounted(const RefCounted&) = delete;
   RefCounted& operator=(const RefCounted&) = delete;
 
-  void AddRef() const { subtle::RefCountedBase::AddRef(); }
+  void AddRef() const {
+    subtle::RefCountedBase::AddRef();
+  }
 
   void Release() const {
     if (subtle::RefCountedBase::Release()) {
@@ -337,47 +346,48 @@ class RefCounted : public subtle::RefCountedBase {
 };
 
 // Forward declaration.
-template <class T, typename Traits>
-class RefCountedThreadSafe;
+template <class T, typename Traits> class RefCountedThreadSafe;
 
 // Default traits for RefCountedThreadSafe<T>.  Deletes the object when its ref
 // count reaches 0.  Overload to delete it on a different thread etc.
-template <typename T>
+template<typename T>
 struct DefaultRefCountedThreadSafeTraits {
   static void Destruct(const T* x) {
     // Delete through RefCountedThreadSafe to make child classes only need to be
     // friend with RefCountedThreadSafe instead of this struct, which is an
     // implementation detail.
-    RefCountedThreadSafe<T, DefaultRefCountedThreadSafeTraits>::DeleteInternal(x);
+    RefCountedThreadSafe<T,
+                         DefaultRefCountedThreadSafeTraits>::DeleteInternal(x);
   }
 };
 
 //
 // A thread-safe variant of RefCounted<T>
 //
-//   class MyFoo : public RefCountedThreadSafe<MyFoo> {
+//   class MyFoo : public gurl_base::RefCountedThreadSafe<MyFoo> {
 //    ...
 //   };
 //
 // If you're using the default trait, then you should add compile time
 // asserts that no one else is deleting your object.  i.e.
 //    private:
-//     friend class RefCountedThreadSafe<MyFoo>;
+//     friend class gurl_base::RefCountedThreadSafe<MyFoo>;
 //     ~MyFoo();
 //
 // We can use REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE() with RefCountedThreadSafe
 // too. See the comment above the RefCounted definition for details.
-template <class T, typename Traits = DefaultRefCountedThreadSafeTraits<T>>
+template <class T, typename Traits = DefaultRefCountedThreadSafeTraits<T> >
 class RefCountedThreadSafe : public subtle::RefCountedThreadSafeBase {
  public:
-  static constexpr subtle::StartRefCountFromZeroTag kRefCountPreference = subtle::kStartRefCountFromZeroTag;
+  using RefCountPreferenceTag = subtle::StartRefCountFromZeroTag;
 
-  explicit RefCountedThreadSafe() : subtle::RefCountedThreadSafeBase(T::kRefCountPreference) {}
+  explicit RefCountedThreadSafe()
+      : subtle::RefCountedThreadSafeBase(subtle::GetRefCountPreference<T>()) {}
 
   RefCountedThreadSafe(const RefCountedThreadSafe&) = delete;
   RefCountedThreadSafe& operator=(const RefCountedThreadSafe&) = delete;
 
-  void AddRef() const { AddRefImpl(T::kRefCountPreference); }
+  void AddRef() const { AddRefImpl(subtle::GetRefCountPreference<T>()); }
 
   void Release() const {
     if (subtle::RefCountedThreadSafeBase::Release()) {
@@ -396,28 +406,34 @@ class RefCountedThreadSafe : public subtle::RefCountedThreadSafeBase {
     delete x;
   }
 
-  void AddRefImpl(subtle::StartRefCountFromZeroTag) const { subtle::RefCountedThreadSafeBase::AddRef(); }
+  void AddRefImpl(subtle::StartRefCountFromZeroTag) const {
+    subtle::RefCountedThreadSafeBase::AddRef();
+  }
 
-  void AddRefImpl(subtle::StartRefCountFromOneTag) const { subtle::RefCountedThreadSafeBase::AddRefWithCheck(); }
+  void AddRefImpl(subtle::StartRefCountFromOneTag) const {
+    subtle::RefCountedThreadSafeBase::AddRefWithCheck();
+  }
 };
 
 //
 // A thread-safe wrapper for some piece of data so we can place other
 // things in scoped_refptrs<>.
 //
-template <typename T>
-class RefCountedData : public RefCountedThreadSafe<RefCountedData<T>> {
+template<typename T>
+class RefCountedData
+    : public gurl_base::RefCountedThreadSafe< gurl_base::RefCountedData<T> > {
  public:
   RefCountedData() : data() {}
   RefCountedData(const T& in_value) : data(in_value) {}
   RefCountedData(T&& in_value) : data(std::move(in_value)) {}
   template <typename... Args>
-  explicit RefCountedData(std::in_place_t, Args&&... args) : data(std::forward<Args>(args)...) {}
+  explicit RefCountedData(absl::in_place_t, Args&&... args)
+      : data(std::forward<Args>(args)...) {}
 
   T data;
 
  private:
-  friend class RefCountedThreadSafe<RefCountedData<T>>;
+  friend class gurl_base::RefCountedThreadSafe<gurl_base::RefCountedData<T> >;
   ~RefCountedData() = default;
 };
 
@@ -431,4 +447,6 @@ bool operator!=(const RefCountedData<T>& lhs, const RefCountedData<T>& rhs) {
   return !(lhs == rhs);
 }
 
-#endif  // CORE_REF_COUNTED_H_
+}  // namespace gurl_base
+
+#endif  // BASE_MEMORY_REF_COUNTED_H_
