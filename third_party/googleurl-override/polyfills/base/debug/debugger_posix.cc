@@ -1,80 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2024 Chilledheart  */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#include "core/debug.hpp"
-
-#include <absl/time/clock.h>
-#include <base/check_op.h>
-#include <base/posix/eintr_wrapper.h>
-#include <base/strings/string_util.h>
-#include <build/buildflag.h>
-#include <iterator>
-#include <string_view>
-
-// Include NOINLINE fixes
-#include "core/compiler_specific.hpp"
-#include "core/logging.hpp"
-#include "core/utils.hpp"
-
-// This is a widely included header and its size has significant impact on
-// build time. Try not to raise this limit unless absolutely necessary. See
-// https://chromium.googlesource.com/chromium/src/+/HEAD/docs/wmax_tokens.md
-#pragma clang max_tokens_here 250
-
-// This file/function should be excluded from LTO/LTCG to ensure that the
-// compiler can't see this function's implementation when compiling calls to it.
-NOINLINE void Alias(const void* /*var*/) {}
-
-static bool is_debug_ui_suppressed = false;
-
-bool WaitForDebugger(int wait_seconds, bool silent) {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
-  // The pid from which we know which process to attach to are not output by
-  // android ddms, so we have to print it out explicitly.
-  DLOG(INFO) << "DebugUtil::WaitForDebugger(pid=" << static_cast<int>(getpid()) << ")";
-#endif
-  for (int i = 0; i < wait_seconds * 10; ++i) {
-    if (BeingDebugged()) {
-      if (!silent)
-        BreakDebugger();
-      return true;
-    }
-    absl::SleepFor(absl::Milliseconds(100));
-  }
-  return false;
-}
-
-void BreakDebugger() {
-  BreakDebuggerAsyncSafe();
-}
-
-void SetSuppressDebugUI(bool suppress) {
-  is_debug_ui_suppressed = suppress;
-}
-
-bool IsDebugUISuppressed() {
-  return is_debug_ui_suppressed;
-}
-
-#if BUILDFLAG(IS_WIN)
-
-#include <stdlib.h>
-#include <windows.h>
-
-bool BeingDebugged() {
-  return ::IsDebuggerPresent() != 0;
-}
-
-void BreakDebuggerAsyncSafe() {
-  if (IsDebugUISuppressed())
-    _exit(1);
-
-  __debugbreak();
-}
-
-void VerifyDebugger() {}
-
-#else
+#include "base/debug/debugger.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -87,6 +15,12 @@ void VerifyDebugger() {}
 #include <unistd.h>
 
 #include <memory>
+
+#include "base/check_op.h"
+#include "base/notreached.h"
+#include "base/strings/string_util.h"
+#include "base/threading/platform_thread.h"
+#include "build/build_config.h"
 
 #if defined(__GLIBCXX__)
 #include <cxxabi.h>
@@ -105,6 +39,15 @@ void VerifyDebugger() {}
 #endif
 
 #include <ostream>
+
+#include "base/check.h"
+#include "base/debug/alias.h"
+#include "base/posix/eintr_wrapper.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_piece.h"
+
+namespace gurl_base {
+namespace debug {
 
 #if BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_BSD)
 
@@ -153,7 +96,7 @@ bool BeingDebugged() {
   mib[5] = (info_size / sizeof(struct kinfo_proc));
 #endif
 
-  int sysctl_result = sysctl(mib, std::size(mib), &info, &info_size, nullptr, 0);
+  int sysctl_result = sysctl(mib, std::size(mib), &info, &info_size, NULL, 0);
   DCHECK_EQ(sysctl_result, 0);
   if (sysctl_result != 0) {
     is_set = true;
@@ -175,7 +118,8 @@ bool BeingDebugged() {
 
 void VerifyDebugger() {}
 
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_AIX)
+#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || \
+    BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_AIX)
 
 // We can look in /proc/self/status for TracerPid.  We are likely used in crash
 // handling, so we are careful not to use the heap or have side effects.
@@ -214,11 +158,11 @@ static pid_t GetDebuggerProcess() {
     return -1;
 
   std::string pid_str(buf + pid_index, pid_end_index - pid_index);
-  auto pid = StringToIntegerU64(pid_str);
-  if (!pid.has_value())
+  int pid = 0;
+  if (!StringToInt(pid_str, &pid))
     return -1;
 
-  return pid.value();
+  return pid;
 }
 
 bool BeingDebugged() {
@@ -263,7 +207,12 @@ void VerifyDebugger() {}
 #define DEBUG_BREAK_ASM() asm("int3")
 #endif
 
-#if defined(NDEBUG) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
+#if defined(NDEBUG) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID)
+#define DEBUG_BREAK() abort()
+#elif BUILDFLAG(IS_NACL)
+// The NaCl verifier doesn't let use use int3.  For now, we call abort().  We
+// should ask for advice from some NaCl experts about the optimum thing here.
+// http://code.google.com/p/nativeclient/issues/detail?id=645
 #define DEBUG_BREAK() abort()
 #elif !BUILDFLAG(IS_APPLE)
 // Though Android has a "helpful" process called debuggerd to catch native
@@ -288,7 +237,7 @@ void DebugBreak() {
 #else
     volatile int go = 0;
     while (!go)
-      absl::SleepFor(absl::Milliseconds(100));
+      PlatformThread::Sleep(Milliseconds(100));
 #endif
   }
 }
@@ -311,7 +260,7 @@ void BreakDebuggerAsyncSafe() {
   Alias(&static_variable_to_make_this_function_unique);
 
   DEBUG_BREAK();
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#if BUILDFLAG(IS_ANDROID) && !defined(OFFICIAL_BUILD)
   // For Android development we always build release (debug builds are
   // unmanageably large), so the unofficial build is used for debugging. It is
   // helpful to be able to insert BreakDebugger() statements in the source,
@@ -329,4 +278,5 @@ void BreakDebuggerAsyncSafe() {
 #endif
 }
 
-#endif  // BUILDFLAG(IS_WIN)
+}  // namespace debug
+}  // namespace gurl_base
