@@ -350,12 +350,6 @@ PlatformFile OpenReadFile(const std::string& path) {
 }
 #endif
 
-#ifndef _WIN32
-bool IsProgramConsole(int fd) {
-  return isatty(fd) == 1;
-}
-#endif
-
 void PrintMallocStats() {
 #ifdef HAVE_TCMALLOC
   constexpr const char* properties[] = {

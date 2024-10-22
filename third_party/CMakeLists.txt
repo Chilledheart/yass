@@ -174,6 +174,7 @@ add_library(url STATIC
   googleurl-override/base/atomicops.h
   googleurl-override/base/atomicops_internals_portable.h
   googleurl-override/base/atomicops_internals_atomicword_compat.h
+  googleurl-override/base/files/file_util.h
   googleurl-override/base/macros/concat.h
   googleurl-override/base/macros/if.h
   googleurl-override/base/macros/remove_parens.h
@@ -182,6 +183,7 @@ add_library(url STATIC
   googleurl-override/base/memory/ref_counted.cc
   googleurl-override/base/memory/ref_counted.h
   googleurl-override/base/memory/scoped_refptr.h
+  googleurl-override/base/process/process_handle.h
   googleurl-override/base/threading/platform_thread.cc
   googleurl-override/base/threading/platform_thread.h
   googleurl-override/base/threading/thread_collision_warner.cc
@@ -189,6 +191,7 @@ add_library(url STATIC
   googleurl-override/base/rand_util.h
   googleurl-override/base/rand_util.cc
   googleurl-override/polyfills/base/logging.h
+  googleurl-override/polyfills/base/logging.cc
   googleurl-override/polyfills/base/check.h
   googleurl-override/polyfills/base/check.cc
   googleurl-override/polyfills/base/check_op.h
@@ -215,6 +218,7 @@ else()
     googleurl-override/base/apple/scoped_typeref.h
     googleurl-override/base/apple/foundation_util.mm
     googleurl-override/base/apple/foundation_util.h
+    googleurl-override/base/files/file_util_apple.mm
     googleurl-override/base/mac/scoped_ioobject.h
     googleurl-override/base/strings/sys_string_conversions_apple.mm
   )
@@ -224,11 +228,13 @@ endif()
 if (WIN32)
   target_sources(url PRIVATE
     googleurl-override/polyfills/base/debug/debugger_win.cc
+    googleurl-override/base/process/process_handle_win.cc
     googleurl-override/base/scoped_clear_last_error_win.cc
     googleurl-override/base/rand_util_win.cc)
 else()
   target_sources(url PRIVATE
     googleurl-override/polyfills/base/debug/debugger_posix.cc
+    googleurl-override/base/process/process_handle_posix.cc
     googleurl-override/base/posix/safe_strerror.cc
     googleurl-override/base/posix/safe_strerror.h
     googleurl-override/base/rand_util_posix.cc)

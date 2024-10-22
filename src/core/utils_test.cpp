@@ -4,7 +4,6 @@
 #include <gtest/gtest.h>
 
 #include "core/logging.hpp"
-#include "core/process_utils.hpp"
 #include "core/utils.hpp"
 #include "core/utils_fs.hpp"
 
@@ -13,6 +12,7 @@
 #endif
 
 #include <absl/strings/str_format.h>
+#include <base/process/process_handle.h>
 #include <base/rand_util.h>
 #include <filesystem>
 #include <string_view>
@@ -94,7 +94,7 @@ TEST(UtilsTest, ReadFileAndWrite4K) {
   gurl_base::RandBytes(buf.data(), buf.size());
   int tmp_suffix;
   gurl_base::RandBytes(&tmp_suffix, sizeof(tmp_suffix));
-  auto tmp_name = absl::StrFormat("read_write_file-%u-%d", GetPID(), tmp_suffix);
+  auto tmp_name = absl::StrFormat("read_write_file-%u-%d", gurl_base::GetCurrentProcId(), tmp_suffix);
   auto tmp_dir = std::filesystem::path(::testing::TempDir());
 #ifdef _WIN32
   std::string tmp = SysWideToUTF8(tmp_dir / tmp_name);
