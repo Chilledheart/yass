@@ -81,10 +81,10 @@ bool GetExecutablePath(std::string* path) {
       *path = link_path;
       return true;
     } else {
-      PLOG(WARNING) << "Internal error: realpath failed";
+      RAW_LOG(WARNING, "Internal error: realpath failed");
     }
   } else {
-    PLOG(WARNING) << "Internal error: _NSGetExecutablePath failed";
+    RAW_LOG(WARNING, "Internal error: _NSGetExecutablePath failed");
   }
   *path = main_exe_path;
   return false;

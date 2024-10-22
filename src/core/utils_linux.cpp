@@ -154,7 +154,7 @@ bool SetCurrentThreadName(const std::string& name) {
   int err = prctl(PR_SET_NAME, name.c_str());
   // We expect EPERM failures in sandboxed processes, just ignore those.
   if (err < 0 && errno != EPERM)
-    PLOG(ERROR) << "prctl(PR_SET_NAME)";
+    RAW_LOG(WARNING, "prctl(PR_SET_NAME)");
   return err == 0;
 }
 
@@ -166,7 +166,7 @@ uint64_t GetMonotonicTime() {
   if (!started) {
     ret = clock_gettime(CLOCK_MONOTONIC_RAW, &start_ts);
     if (ret < 0) {
-      PLOG(WARNING) << "clock_gettime failed";
+      RAW_LOG(FATAL, "clock_gettime failed");
       return 0;
     }
     started = true;
@@ -175,7 +175,7 @@ uint64_t GetMonotonicTime() {
 
   ret = clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
   if (ret < 0) {
-    PLOG(WARNING) << "clock_gettime failed";
+    RAW_LOG(FATAL, "clock_gettime failed");
     return 0;
   }
   ts.tv_sec -= start_ts.tv_sec;

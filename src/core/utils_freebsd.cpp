@@ -31,7 +31,7 @@ uint64_t GetMonotonicTime() {
   if (!started) {
     ret = clock_gettime(CLOCK_MONOTONIC, &start_ts);
     if (ret < 0) {
-      PLOG(WARNING) << "clock_gettime failed";
+      RAW_LOG(FATAL, "clock_gettime failed");
       return 0;
     }
     started = true;
@@ -40,7 +40,7 @@ uint64_t GetMonotonicTime() {
 
   ret = clock_gettime(CLOCK_MONOTONIC, &ts);
   if (ret < 0) {
-    PLOG(WARNING) << "clock_gettime failed";
+    RAW_LOG(FATAL, "clock_gettime failed");
     return 0;
   }
   ts.tv_sec -= start_ts.tv_sec;
