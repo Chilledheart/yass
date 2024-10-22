@@ -1,11 +1,16 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_DEBUG_H_
-#define CORE_DEBUG_H_
+#ifndef BASE_DEBUG_ALIAS_H_
+#define BASE_DEBUG_ALIAS_H_
 
-#include <base/debug/alias.h>
 #include <stddef.h>
+
+#include "base/base_export.h"
+
+namespace gurl_base {
+namespace debug {
 
 // Make the optimizer think that |var| is aliased. This can be used to inhibit
 // three different kinds of optimizations:
@@ -15,7 +20,7 @@
 // with local variables, not globals, object members, or function return values
 // - these must be copied to locals if you want to ensure they are recorded in
 // crash dumps. Function arguments are fine to use since the
-// Alias() call on them will make sure they are copied to the stack
+// gurl_base::debug::Alias() call on them will make sure they are copied to the stack
 // even if they were passed in a register. Note that if the local variable is a
 // pointer then its value will be retained but the memory that it points to will
 // probably not be saved in the crash dump - by default only stack memory is
@@ -26,14 +31,14 @@
 //
 // Example usage:
 //   int last_error = err_;
-//   Alias(&last_error);
+//   gurl_base::debug::Alias(&last_error);
 //   DEBUG_ALIAS_FOR_CSTR(name_copy, p->name, 16);
 //   CHECK(false);
 //
 // Case #2: Prevent a tail call into a function. This is useful to make sure the
-// function containing the call to Alias() will be present in the
+// function containing the call to gurl_base::debug::Alias() will be present in the
 // call stack. In this case there is no memory that needs to be on
-// the stack so we can use nullptr. The call to Alias() needs to
+// the stack so we can use nullptr. The call to gurl_base::debug::Alias() needs to
 // happen after the call that is suspected to be tail called. Note: This
 // technique will prevent tail calls at the specific call site only. To prevent
 // them for all invocations of a function look at NOT_TAIL_CALLED.
@@ -43,7 +48,7 @@
 //     ... code ...
 //
 //     Bar();
-//     Alias(nullptr);
+//     gurl_base::debug::Alias(nullptr);
 //   }
 //
 // Case #3: Prevent code folding of a non-unique function. Code folding can
@@ -51,7 +56,7 @@
 // identical. If finding the precise signature of a function in the call-stack
 // is important and it's suspected the function is identical to other functions
 // it can be made unique using NO_CODE_FOLDING which is a wrapper around
-// Alias();
+// gurl_base::debug::Alias();
 //
 // Example usage:
 //   NOINLINE void Foo(){
@@ -60,14 +65,43 @@
 //   }
 //
 // Finally please note that these effects compound. This means that saving a
-// stack variable (case #1) using Alias() will also inhibit
+// stack variable (case #1) using gurl_base::debug::Alias() will also inhibit
 // tail calls for calls in earlier lines and prevent code folding.
 
-void Alias(const void* var);
+void BASE_EXPORT Alias(const void* var);
 
-namespace internal {
-size_t strlcpy(char* dst, const char* src, size_t dst_size);
-}  // namespace internal
+}  // namespace debug
+
+// The canonical definitions/declarations for `strlcpy()`, `u16cstrlcpy()`,
+// and `wcslcpy()` are in //base/strings/string_util.{cc,h}. These prototypes
+// are forward declared here to avoid having to include string_utils.h and its
+// transitive tree of headers in an otherwise small header (which is itself
+// included in some very popular headers).
+BASE_EXPORT size_t strlcpy(char* dst, const char* src, size_t dst_size);
+BASE_EXPORT size_t u16cstrlcpy(char16_t* dst,
+                               const char16_t* src,
+                               size_t dst_size);
+BASE_EXPORT size_t wcslcpy(wchar_t* dst, const wchar_t* src, size_t dst_size);
+
+}  // namespace gurl_base
+
+// Convenience macro that copies the null-terminated string from `c_str` into a
+// stack-allocated char array named `var_name` that holds up to `array_size - 1`
+// characters and should be preserved in memory dumps.
+#define DEBUG_ALIAS_FOR_CSTR(var_name, c_str, array_size)  \
+  char var_name[array_size] = {};                          \
+  ::gurl_base::strlcpy(var_name, (c_str), std::size(var_name)); \
+  ::gurl_base::debug::Alias(var_name)
+
+#define DEBUG_ALIAS_FOR_U16CSTR(var_name, c_str, array_size)   \
+  char16_t var_name[array_size] = {};                          \
+  ::gurl_base::u16cstrlcpy(var_name, (c_str), std::size(var_name)); \
+  ::gurl_base::debug::Alias(var_name)
+
+#define DEBUG_ALIAS_FOR_WCHARCSTR(var_name, c_str, array_size) \
+  wchar_t var_name[array_size] = {};                           \
+  ::gurl_base::wcslcpy(var_name, (c_str), std::size(var_name));     \
+  ::gurl_base::debug::Alias(var_name)
 
 // Code folding is a linker optimization whereby the linker identifies functions
 // that are bit-identical and overlays them. This saves space but it leads to
@@ -82,40 +116,6 @@ size_t strlcpy(char* dst, const char* src, size_t dst_size);
 //   void FooBarFailure(size_t size) { NO_CODE_FOLDING(); OOM_CRASH(size); }
 #define NO_CODE_FOLDING()           \
   const int line_number = __LINE__; \
-  Alias(&line_number)
+  gurl_base::debug::Alias(&line_number)
 
-// Waits wait_seconds seconds for a debugger to attach to the current process.
-// When silent is false, an exception is thrown when a debugger is detected.
-bool WaitForDebugger(int wait_seconds, bool silent);
-
-// Returns true if the given process is being run under a debugger.
-//
-// On OS X, the underlying mechanism doesn't work when the sandbox is enabled.
-// To get around this, this function caches its value.
-//
-// WARNING: Because of this, on OS X, a call MUST be made to this function
-// BEFORE the sandbox is enabled.
-bool BeingDebugged();
-
-// Break into the debugger, assumes a debugger is present.
-void BreakDebugger();
-// Async-safe version of BreakDebugger(). In particular, this does not allocate
-// any memory. More broadly, must be safe to call from anywhere, including
-// signal handlers.
-void BreakDebuggerAsyncSafe();
-
-// Used in test code, this controls whether showing dialogs and breaking into
-// the debugger is suppressed for debug errors, even in debug mode (normally
-// release mode doesn't do this stuff --  this is controlled separately).
-// Normally UI is not suppressed.  This is normally used when running automated
-// tests where we want a crash rather than a dialog or a debugger.
-void SetSuppressDebugUI(bool suppress);
-bool IsDebugUISuppressed();
-
-// If a debugger is present, verifies that it is properly set up, and DCHECK()s
-// if misconfigured.  Currently only verifies that //tools/gdb/gdbinit has been
-// sourced when using gdb on Linux and //tools/lldb/lldbinit.py has been sourced
-// when using lldb on macOS.
-void VerifyDebugger();
-
-#endif  // CORE_DEBUG_H_
+#endif  // BASE_DEBUG_ALIAS_H_

@@ -11,12 +11,12 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <base/debug/debugger.h>
 #include <locale.h>
 #include <iostream>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #include "cli/cli_connection_stats.hpp"
-#include "core/debug.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crashpad_helper.hpp"
@@ -227,7 +227,7 @@ int CYassApp::RunMainLoop() {
       // manager to fire the next set of timers.
       DWORD wait_flags = MWMO_INPUTAVAILABLE;
       // Tell the optimizer to retain these values to simplify analyzing hangs.
-      Alias(&wait_flags);
+      gurl_base::debug::Alias(&wait_flags);
       DWORD result = MsgWaitForMultipleObjectsEx(0, nullptr, INFINITE, QS_ALLINPUT, wait_flags);
 
       if (result == WAIT_OBJECT_0) {

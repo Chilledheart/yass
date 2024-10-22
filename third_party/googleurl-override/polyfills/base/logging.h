@@ -19,10 +19,12 @@
 
 #include <absl/flags/declare.h>
 #include <absl/flags/flag.h>
+#include "base/base_export.h"
 #include "base/compiler_specific.h"
 #include "base/dcheck_is_on.h"
-#include "build/build_config.h"
+#include "base/scoped_clear_last_error.h"
 #include "base/strings/utf_ostream_operators.h"
+#include "build/build_config.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <malloc.h>
@@ -30,44 +32,6 @@
 
 namespace gurl_base {
 namespace logging {
-
-// ScopedClearLastError stores and resets the value of thread local error codes
-// (errno, GetLastError()), and restores them in the destructor. This is useful
-// to avoid side effects on these values in instrumentation functions that
-// interact with the OS.
-
-// Common implementation of ScopedClearLastError for all platforms. Use
-// ScopedClearLastError instead.
-class ScopedClearLastErrorBase {
- public:
-  ScopedClearLastErrorBase() : last_errno_(errno) { errno = 0; }
-  ScopedClearLastErrorBase(const ScopedClearLastErrorBase&) = delete;
-  ScopedClearLastErrorBase& operator=(const ScopedClearLastErrorBase&) = delete;
-  ~ScopedClearLastErrorBase() { errno = last_errno_; }
-
- private:
-  const int last_errno_;
-};
-
-#if BUILDFLAG(IS_WIN)
-
-// Windows specific implementation of ScopedClearLastError.
-class ScopedClearLastError : public ScopedClearLastErrorBase {
- public:
-  ScopedClearLastError();
-  ScopedClearLastError(const ScopedClearLastError&) = delete;
-  ScopedClearLastError& operator=(const ScopedClearLastError&) = delete;
-  ~ScopedClearLastError();
-
- private:
-  const unsigned long last_system_error_;
-};
-
-#elif BUILDFLAG(IS_POSIX)
-
-using ScopedClearLastError = ScopedClearLastErrorBase;
-
-#endif  // BUILDFLAG(IS_WIN)
 
 using LogSeverity = int;
 constexpr LogSeverity LOGGING_VERBOSE = -1;  // This is level 1 verbosity

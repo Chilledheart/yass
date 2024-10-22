@@ -9,7 +9,10 @@
 #include <absl/base/thread_annotations.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
+#include <base/debug/alias.h>
+#include <base/debug/debugger.h>
 #include <base/posix/eintr_wrapper.h>
+#include <base/posix/safe_strerror.h>
 #include <base/strings/string_util.h>
 #include <base/strings/sys_string_conversions.h>
 #include <build/build_config.h>
@@ -68,8 +71,6 @@
 #include <dirent.h>  // for automatic removal of old logs
 #endif
 
-#include "core/debug.hpp"
-#include "core/safe_strerror.hpp"
 #include "core/utils.hpp"
 
 #ifdef _MSC_VER
@@ -2556,15 +2557,6 @@ void TruncateStdoutStderr() {
 #endif
 }
 
-std::string StrError(int err) {
-  char buf[100];
-  safe_strerror_r(err, buf, sizeof(buf));
-  if (buf[0] == '\000') {
-    snprintf(buf, sizeof(buf), "Error number %d", err);
-  }
-  return buf;
-}
-
 LogMessageFatal::LogMessageFatal(const char* file, int line) : LogMessage(file, line, LOGGING_FATAL) {}
 
 LogMessageFatal::~LogMessageFatal() {
@@ -3004,7 +2996,7 @@ Win32ErrorLogMessage::~Win32ErrorLogMessage() {
   // We're about to crash (CHECK). Put |err_| on the stack (by placing it in a
   // field) and use Alias in hopes that it makes it into crash dumps.
   DWORD last_error = err_;
-  Alias(&last_error);
+  debug::Alias(&last_error);
 }
 #elif BUILDFLAG(IS_POSIX)
 ErrnoLogMessage::ErrnoLogMessage(const char* file, int line, LogSeverity severity, SystemErrorCode err)
@@ -3015,7 +3007,7 @@ ErrnoLogMessage::~ErrnoLogMessage() {
   // We're about to crash (CHECK). Put |err_| on the stack (by placing it in a
   // field) and use Alias in hopes that it makes it into crash dumps.
   int last_error = err_;
-  Alias(&last_error);
+  debug::Alias(&last_error);
 }
 #endif  // BUILDFLAG(IS_WIN)
 
@@ -3045,7 +3037,7 @@ void RawLog(int level, const char* message) {
   }
 
   if (level == LOGGING_FATAL)
-    BreakDebuggerAsyncSafe();
+    debug::BreakDebuggerAsyncSafe();
 }
 
 }  // namespace logging

@@ -1,12 +1,21 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#ifndef CORE_SAFE_STRERROR_H_
-#define CORE_SAFE_STRERROR_H_
+#ifndef BASE_POSIX_SAFE_STRERROR_H_
+#define BASE_POSIX_SAFE_STRERROR_H_
+
+#include "build/build_config.h"
+
+#if BUILDFLAG(IS_POSIX)
 
 #include <stddef.h>
 
 #include <string>
+
+#include "base/base_export.h"
+
+namespace gurl_base {
 
 // BEFORE using anything from this file, first look at PLOG and friends in
 // logging.h and use them instead if applicable.
@@ -24,7 +33,7 @@
 // result is always null-terminated. The value of errno is never changed.
 //
 // Use this instead of strerror_r().
-void safe_strerror_r(int err, char* buf, size_t len);
+BASE_EXPORT void safe_strerror_r(int err, char *buf, size_t len);
 
 // Calls safe_strerror_r with a buffer of suitable size and returns the result
 // in a C++ string.
@@ -32,6 +41,10 @@ void safe_strerror_r(int err, char* buf, size_t len);
 // Use this instead of strerror(). Note though that safe_strerror_r will be
 // more robust in the case of heap corruption errors, since it doesn't need to
 // allocate a string.
-std::string safe_strerror(int err);
+BASE_EXPORT std::string safe_strerror(int err);
 
-#endif  // CORE_SAFE_STRERROR_H_
+}  // namespace gurl_base
+
+#endif  // !BUILDFLAG(IS_POSIX)
+
+#endif  // BASE_POSIX_SAFE_STRERROR_H_
