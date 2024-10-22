@@ -5,7 +5,7 @@
 #ifndef BASE_IMMEDIATE_CRASH_H_
 #define BASE_IMMEDIATE_CRASH_H_
 
-#include <build/build_config.h>
+#include "build/build_config.h"
 
 // Crashes in the fastest possible way with no attempt at logging.
 // There are several constraints; see http://crbug.com/664209 for more context.
@@ -24,6 +24,8 @@
 //   __builtin_unreachable() is used to provide that hint here. clang also uses
 //   this as a heuristic to pack the instructions in the function epilogue to
 //   improve code density.
+// - gurl_base::ImmediateCrash() is used in allocation hooks. To prevent recursions,
+//   TRAP_SEQUENCE_() must not allocate.
 //
 // Additional properties that are nice to have:
 // - TRAP_SEQUENCE_() should be as compact as possible.
@@ -146,6 +148,7 @@ namespace gurl_base {
   __builtin_unreachable();
 #endif  // defined(__clang__) || defined(COMPILER_GCC)
 }
+
 }  // namespace gurl_base
 
 #endif  // BASE_IMMEDIATE_CRASH_H_

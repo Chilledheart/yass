@@ -193,6 +193,10 @@ add_library(url STATIC
   googleurl-override/polyfills/base/check.cc
   googleurl-override/polyfills/base/check_op.h
   googleurl-override/polyfills/base/check_op.cc
+  googleurl-override/polyfills/base/debug/alias.h
+  googleurl-override/polyfills/base/debug/alias.cc
+  googleurl-override/polyfills/base/debug/debugger.h
+  googleurl-override/polyfills/base/debug/debugger.cc
   )
 
 if (WIN32)
@@ -202,13 +206,9 @@ if (WIN32)
   target_sources(url PRIVATE
     googleurl/base/strings/string_util_win.h
     googleurl/base/strings/string_util_win.cc)
-
-  target_sources(url PRIVATE googleurl-override/base/rand_util_win.cc)
 elseif(NOT APPLE)
   target_sources(url PRIVATE
     googleurl/base/strings/sys_string_conversions_posix.cc)
-  target_sources(url PRIVATE
-    googleurl-override/base/rand_util_posix.cc)
 else()
   target_sources(url PRIVATE
     googleurl-override/base/apple/scoped_cftyperef.h
@@ -218,9 +218,20 @@ else()
     googleurl-override/base/mac/scoped_ioobject.h
     googleurl-override/base/strings/sys_string_conversions_apple.mm
   )
-  target_sources(url PRIVATE
-    googleurl-override/base/rand_util_posix.cc)
   # missing apple part
+endif()
+
+if (WIN32)
+  target_sources(url PRIVATE
+    googleurl-override/polyfills/base/debug/debugger_win.cc
+    googleurl-override/base/scoped_clear_last_error_win.cc
+    googleurl-override/base/rand_util_win.cc)
+else()
+  target_sources(url PRIVATE
+    googleurl-override/polyfills/base/debug/debugger_posix.cc
+    googleurl-override/base/posix/safe_strerror.cc
+    googleurl-override/base/posix/safe_strerror.h
+    googleurl-override/base/rand_util_posix.cc)
 endif()
 
 if (USE_ICU)
