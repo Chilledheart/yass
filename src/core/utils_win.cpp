@@ -350,13 +350,13 @@ static void CheckDynamicLibraries() {
                      [&findData](const wchar_t* dll) { return dll && _wcsicmp(dll, findData.cFileName) == 0; })) {
       continue;
     }
-    std::ostringstream os;
-    os << "\nUnknown DLL library \"" << findData.cFileName << "\" found in the directory with " << me << ".\n\n"
-       << "This may be a virus or a malicious program. \n\n"
-       << "Please remove all DLL libraries from this directory:\n\n"
-       << exe.substr(0, last) << "\n\n"
-       << "Alternatively, you can move " << me << " to a new directory.";
-    RAW_LOG(FATAL, os.str().c_str());
+    std::wostringstream os;
+    os << L"\nUnknown DLL library \"" << findData.cFileName << L"\" found in the directory with " << me << ".\n\n"
+       << L"This may be a virus or a malicious program. \n\n"
+       << L"Please remove all DLL libraries from this directory:\n\n"
+       << exe.substr(0, last) << L"\n\n"
+       << L"Alternatively, you can move " << me << L" to a new directory.";
+    RAW_LOG(FATAL, SysWideToUTF8(os.str()).c_str());
   } while (FindNextFileW(findHandle, &findData));
   FindClose(findHandle);
 }
