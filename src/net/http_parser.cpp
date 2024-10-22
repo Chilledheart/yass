@@ -348,14 +348,14 @@ void HttpRequestParser::OnResponseFirstLineInput(std::string_view /*line_input*/
     error_message_ = "HPE_INVALID_VERSION";
     return;
   }
-  auto status = StringToIntegerU(std::string(status_input));
-  if (!status.has_value()) {
+  int status;
+  if (!StringToInt(status_input, &status) || status <= 0) {
     LOG(WARNING) << "invalid status: " << status_input;
     status_ = ParserStatus::Error;
     error_message_ = "HPE_INVALID_STATUS";
     return;
   }
-  status_code_ = status.value();
+  status_code_ = status;
 }
 
 void HttpRequestParser::OnChunkLength(size_t /*chunk_length*/) {}

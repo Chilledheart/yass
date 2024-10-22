@@ -302,12 +302,11 @@ int DarwinMajorVersionInternal() {
   int darwin_major_version = 0;
   char* dot = strchr(uname_info.release, '.');
   if (dot) {
-    auto ver = StringToInteger(std::string(uname_info.release, dot - uname_info.release));
-
-    if (!ver.has_value()) {
+    int ver;
+    if (!StringToInt(std::string_view(uname_info.release, dot - uname_info.release), &ver)) {
       dot = nullptr;
     } else {
-      darwin_major_version = ver.value();
+      darwin_major_version = ver;
     }
   }
 
@@ -399,13 +398,17 @@ bool ParseModelIdentifier(const std::string& ident, std::string* type, int32_t* 
   size_t comma_loc = ident.find(',', number_loc);
   if (comma_loc == std::string::npos)
     return false;
-  auto major_tmp = StringToInteger(std::string(ident.c_str() + number_loc, comma_loc - number_loc));
-  auto minor_tmp = StringToInteger(std::string(ident.c_str() + comma_loc + 1));
-  if (!major_tmp.has_value() || !minor_tmp.has_value())
+  int major_tmp;
+  if (!StringToInt(std::string_view(ident.c_str() + number_loc, comma_loc - number_loc), &major_tmp)) {
     return false;
+  }
+  int minor_tmp;
+  if (!StringToInt(std::string_view(ident.c_str() + comma_loc + 1), &minor_tmp)) {
+    return false;
+  }
   *type = ident.substr(0, number_loc);
-  *major = major_tmp.value();
-  *minor = minor_tmp.value();
+  *major = major_tmp;
+  *minor = minor_tmp;
   return true;
 }
 

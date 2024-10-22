@@ -14,6 +14,7 @@
 #include <base/compiler_specific.h>
 #include <base/files/memory_mapped_file.h>
 #include <base/files/platform_file.h>
+#include <base/strings/string_number_conversions.h>
 #include <base/strings/sys_string_conversions.h>
 
 #include "core/span.hpp"
@@ -63,10 +64,10 @@ using fd_t = int;
 
 bool IsProgramConsole(internal::fd_t fd);
 
-std::optional<int> StringToInteger(std::string_view value);
-std::optional<unsigned> StringToIntegerU(std::string_view value);
-std::optional<int64_t> StringToInteger64(std::string_view value);
-std::optional<uint64_t> StringToIntegerU64(std::string_view value);
+using gurl_base::StringToInt;
+using gurl_base::StringToInt64;
+using gurl_base::StringToUint;
+using gurl_base::StringToUint64;
 
 #ifdef _WIN32
 bool EnableSecureDllLoading();

@@ -16,12 +16,12 @@
 // (which have built-in Abseil flag support.
 
 bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err) {
-  std::optional<uint64_t> p = StringToIntegerU64(std::string(text));
-  if (!p.has_value() || p.value() > UINT16_MAX) {
+  int result;
+  if (!StringToInt(text, &result) || result < 0 || result > UINT16_MAX) {
     *err = absl::StrCat("bad port number: ", text);
     return false;
   }
-  flag->port = static_cast<uint16_t>(p.value());
+  flag->port = static_cast<uint16_t>(result);
   return true;
 }
 
