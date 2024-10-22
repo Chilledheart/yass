@@ -5,6 +5,7 @@
 
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_join.h>
+#include <base/threading/platform_thread.h>
 #include <build/buildflag.h>
 #include "core/logging.hpp"
 
@@ -259,32 +260,7 @@ static_assert(sizeof(uint32_t) == sizeof(DWORD), "");
 static_assert(sizeof(pid_t) >= sizeof(DWORD), "");
 #endif
 
-// Keep the same implementation with chromium
-
-#if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
-
-// Store the thread ids in local storage since calling the SWI can be
-// expensive and PlatformThread::CurrentId is used liberally. Clear
-// the stored value after a fork() because forking changes the thread
-// id. Forking without going through fork() (e.g. clone()) is not
-// supported, but there is no known usage. Using thread_local is
-// fine here (despite being banned) since it is going to be allowed
-// but is blocked on a clang bug for Mac (https://crbug.com/829078)
-// and we can't use ThreadLocalStorage because of re-entrancy due to
-// CHECK/DCHECKs.
-thread_local pid_t g_thread_id = -1;
-
-static void ClearTidCache() {
-  g_thread_id = -1;
-}
-
-class InitAtFork {
- public:
-  InitAtFork() { pthread_atfork(nullptr, nullptr, ClearTidCache); }
-};
-
-#endif  // BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
-
+// Keep the same implementation with chromium (see base/process/process_handle_posix.cc)
 pid_t GetPID() {
   // Pthreads doesn't have the concept of a thread ID, so we have to reach down
   // into the kernel.
@@ -298,35 +274,7 @@ pid_t GetPID() {
 }
 
 pid_t GetTID() {
-  // Pthreads doesn't have the concept of a thread ID, so we have to reach down
-  // into the kernel.
-#if BUILDFLAG(IS_APPLE)
-  return pthread_mach_thread_np(pthread_self());
-  // On Linux and MacOSX, we try to use gettid().
-#elif BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
-  static InitAtFork init_at_fork;
-  if (g_thread_id == -1) {
-    g_thread_id = syscall(__NR_gettid);
-  } else {
-    DCHECK_EQ(g_thread_id, syscall(__NR_gettid))
-        << "Thread id stored in TLS is different from thread id returned by "
-           "the system. It is likely that the process was forked without going "
-           "through fork().";
-  }
-  return g_thread_id;
-#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
-  // Note: do not cache the return value inside a thread_local variable on
-  // Android (as above). The reasons are:
-  // - thread_local is slow on Android (goes through emutls)
-  // - gettid() is fast, since its return value is cached in pthread (in the
-  //   thread control block of pthread). See gettid.c in bionic.
-  return gettid();
-#elif BUILDFLAG(IS_WIN)
-  return GetCurrentThreadId();
-#else
-  // If none of the techniques above worked, we use pthread_self().
-  return (pid_t)(uintptr_t)pthread_self();
-#endif
+  return gurl_base::PlatformThread::CurrentId();
 }
 
 static pid_t g_main_thread_pid = GetPID();
