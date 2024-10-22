@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2024 Chilledheart  */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 #if defined(__SANITIZE_THREAD__)
 #define DYNAMIC_ANNOTATIONS_ENABLED 1
@@ -9,19 +10,27 @@
 #include <absl/base/thread_annotations.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
-#include <base/debug/alias.h>
-#include <base/debug/debugger.h>
-#include <base/posix/eintr_wrapper.h>
-#include <base/posix/safe_strerror.h>
-#include <base/strings/string_util.h>
-#include <base/strings/sys_string_conversions.h>
-#include <build/build_config.h>
 
-#include "core/logging.hpp"
-#include "core/process_utils.hpp"
+#include "base/logging.h"
+#include "base/compiler_specific.h"
+#include "base/debug/alias.h"
+#include "base/debug/debugger.h"
+#include "base/files/file_util.h"
+#include "base/posix/eintr_wrapper.h"
+#include "base/posix/safe_strerror.h"
+#include "base/strings/string_util.h"
+#include "base/strings/sys_string_conversions.h"
+#include "base/process/process_handle.h"
+#include "base/threading/platform_thread.h"
+#include "build/build_config.h"
+
 // Include for NO_SANITIZE_MEMORY
-#include "core/compiler_specific.hpp"
-#include "version.h"
+// MemorySanitizer annotations.
+#if defined(MEMORY_SANITIZER)
+#define NO_SANITIZE_MEMORY NO_SANITIZE("memory")
+#else  // MEMORY_SANITIZER
+#define NO_SANITIZE_MEMORY
+#endif  // MEMORY_SANITIZER
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
@@ -66,12 +75,10 @@
 #include <sstream>
 #include <vector>
 #if BUILDFLAG(IS_WIN)
-#include "core/windows/dirent.h"
+#include "base/win/dirent.h"
 #else
 #include <dirent.h>  // for automatic removal of old logs
 #endif
-
-#include "core/utils.hpp"
 
 #ifdef _MSC_VER
 // we have strncasecmp in mingw
@@ -360,6 +367,41 @@ ABSL_FLAG(std::string,
 ABSL_FLAG(bool, symbolize_stacktrace, true, "Symbolize the stack trace in the tombstone");
 
 namespace gurl_base {
+
+namespace {
+
+// utils.cpp
+#if BUILDFLAG(IS_WIN)
+bool IsHandleConsole(HANDLE handle) {
+  DWORD mode;
+  return handle != HANDLE() && handle != INVALID_HANDLE_VALUE &&
+         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR && GetConsoleMode(handle, &mode);
+}
+
+bool IsProgramConsole(HANDLE handle) {
+  return IsHandleConsole(handle);
+}
+#endif
+
+// process_utils.cpp
+
+static ProcessId g_main_thread_pid = GetCurrentProcId();
+
+ProcessId GetMainThreadPid() {
+  return g_main_thread_pid;
+}
+
+bool PidHasChanged() {
+  ProcessId pid = GetCurrentProcId();
+  if (g_main_thread_pid == pid) {
+    return false;
+  }
+  g_main_thread_pid = pid;
+  return true;
+}
+
+}
+
 namespace logging {
 
 // TODO(hamaji): consider windows
@@ -952,7 +994,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
 #if BUILDFLAG(IS_WIN)
     // On Windows, also output to the debugger
     ::OutputDebugStringA(message);
-#elif BUILDFLAG(IS_APPLE) && defined(__clang__)
+#elif BUILDFLAG(IS_APPLE)
     // In LOG_TO_SYSTEM_DEBUG_LOG mode, log messages are always written to
     // stderr. If stderr is /dev/null, also log via ASL (Apple System Log) or
     // its successor OS_LOG. If there's something weird about stderr, assume
@@ -1064,7 +1106,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
       const class OSLog {
        public:
         explicit OSLog(const char* subsystem)
-            : os_log_(subsystem ? os_log_create(subsystem, "yass_logging") : OS_LOG_DEFAULT) {}
+            : os_log_(subsystem ? os_log_create(subsystem, "gurl_base logging") : OS_LOG_DEFAULT) {}
         OSLog(const OSLog&) = delete;
         OSLog& operator=(const OSLog&) = delete;
         ~OSLog() {
@@ -1110,7 +1152,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
         priority = ANDROID_LOG_FATAL;
         break;
     }
-    constexpr const char kLogTag[] = YASS_APP_NAME;
+    constexpr const char kLogTag[] = "gurl_base";
 
 #if DCHECK_IS_ON()
     // Split the output by new lines to prevent the Android system from
@@ -1138,7 +1180,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
         log_level = HILOG_LOG_FATAL;
         break;
     }
-    constexpr const char kLogTag[] = YASS_APP_NAME;
+    constexpr const char kLogTag[] = "gurl_base";
     constexpr const unsigned int kLogDomain = 0x0;
 #if DCHECK_IS_ON()
     // Split the output by new lines to prevent the OHOS system from
@@ -1948,7 +1990,7 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity, void (Lo
     if (log_process_id)
       stream() << GetMainThreadPid() << ':';
     if (log_thread_id)
-      stream() << GetTID() << ':';
+      stream() << PlatformThread::CurrentId() << ':';
     if (log_timestamp) {
 #if BUILDFLAG(IS_WIN)
       SYSTEMTIME local_time;
@@ -2084,13 +2126,13 @@ void LogMessage::Flush() {
   LogDestination::WaitForSinks(data_);
 
 #if BUILDFLAG(IS_ANDROID)
-  constexpr const char kLogTag[] = YASS_APP_NAME;
+  constexpr const char kLogTag[] = "gurl_base";
 
   const int level = AndroidLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);
   __android_log_write(level, kLogTag, text.substr(0, data_->num_chars_to_log_).c_str());
 #elif BUILDFLAG(IS_OHOS)
-  constexpr const char kLogTag[] = YASS_APP_NAME;
+  constexpr const char kLogTag[] = "gurl_base";
   constexpr const unsigned int kLogDomain = 0x0;
 
   const HILOG_LogLevel level = OHOSLogLevel(data_->severity_);
@@ -2314,7 +2356,7 @@ std::string LogSink::ToString(LogSeverity severity,
   stream.fill('0');
 
   stream << log_severity_name(severity)[0] << std::setw(6) << tick_counts << ' ' << std::setfill(' ') << std::setw(5)
-         << GetTID() << std::setfill('0') << ' ' << file << ':' << line << "] ";
+         << PlatformThread::CurrentId() << std::setfill('0') << ' ' << file << ':' << line << "] ";
 
   stream << std::string(message, message_len);
   return stream.str();
@@ -2376,7 +2418,9 @@ static void GetTempDirectories(std::vector<std::string>* list) {
     list->push_back(SysWideToUTF8(std::wstring(tmp, len)));
   list->push_back("C:\\tmp\\");
   list->push_back("C:\\temp\\");
-#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+  list->push_back("/data/local/tmp/"); // FIXME use cache dir by system
+#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_IOS)
   std::string tmp_dir;
   if (GetTempDir(&tmp_dir)) {
     if (tmp_dir[tmp_dir.size() - 1] != '/') {
@@ -2384,11 +2428,7 @@ static void GetTempDirectories(std::vector<std::string>* list) {
     }
     list->push_back(tmp_dir);
   }
-#if defined(__ANDROID__) || defined(__OHOS__)
-  list->push_back("/data/local/tmp/");
-#else
   list->push_back("/tmp/");
-#endif
 #else
   // Directories, in order of preference. If we find a dir that
   // exists, we stop adding other less-preferred dirs

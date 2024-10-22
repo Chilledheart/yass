@@ -14,10 +14,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <base/threading/platform_thread.h>
 #include <filesystem>
 
 #include "core/logging.hpp"
-#include "core/process_utils.hpp"
 #include "core/utils_fs.hpp"
 
 using std::filesystem::path;
@@ -110,7 +110,7 @@ void SetThreadPriority(pid_t process_id, pid_t thread_id, ThreadPriority priorit
   // This prevents us from requiring to translate the NS TID to
   // global TID.
   pid_t syscall_tid = thread_id;
-  if (thread_id == GetTID()) {
+  if (thread_id == gurl_base::PlatformThread::CurrentId()) {
     syscall_tid = 0;
   }
 
@@ -134,7 +134,7 @@ void SetThreadPriority(pid_t process_id, pid_t thread_id, ThreadPriority priorit
 
 bool SetCurrentThreadPriority(ThreadPriority priority) {
 #if BUILDFLAG(IS_LINUX)
-  SetThreadPriority(getpid(), GetTID(), priority);
+  SetThreadPriority(getpid(), gurl_base::PlatformThread::CurrentId(), priority);
 #endif  // BUILDFLAG(IS_LINUX)
   return true;
 }

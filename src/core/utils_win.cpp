@@ -217,16 +217,6 @@ uint64_t GetMonotonicTime() {
 #endif
 }
 
-static bool IsHandleConsole(HANDLE handle) {
-  DWORD mode;
-  return handle != HANDLE() && handle != INVALID_HANDLE_VALUE &&
-         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR && GetConsoleMode(handle, &mode);
-}
-
-bool IsProgramConsole(HANDLE handle) {
-  return IsHandleConsole(handle);
-}
-
 static const wchar_t* kDllWhiteList[] = {
 #ifdef HAVE_TCMALLOC
 #if defined(_M_X64) || defined(_M_ARM64)

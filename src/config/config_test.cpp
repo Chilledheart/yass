@@ -6,11 +6,11 @@
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <base/process/process_handle.h>
 #include <base/rand_util.h>
 #include <gmock/gmock.h>
 #include <cstdlib>
 #include "config/config_impl.hpp"
-#include "core/process_utils.hpp"
 #include "core/utils_fs.hpp"
 
 using namespace yass;
@@ -25,7 +25,7 @@ ABSL_FLAG(std::string, test_string, "", "Test string value");
 class ConfigTest : public ::testing::Test {
  public:
   void SetUp() override {
-    key_prefix_ = absl::StrCat("pid_", GetPID(), "_run_", gurl_base::RandUint64());
+    key_prefix_ = absl::StrCat("pid_", gurl_base::GetCurrentProcId(), "_run_", gurl_base::RandUint64());
 #if !(defined(_WIN32) || defined(__APPLE__))
     original_configfile_ = config::g_configfile;
     const char* tmpdir = getenv("TMPDIR");

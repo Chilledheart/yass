@@ -4,7 +4,7 @@
 #include "net/asio_ssl_internal.hpp"
 
 #ifdef _WIN32
-#include "core/windows/dirent.h"
+#include "base/win/dirent.h"
 #else
 #include <dirent.h>
 #endif
