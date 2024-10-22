@@ -257,7 +257,7 @@ std::string GetHomeDir() {
     return home_dir;
   }
 #if defined(__ANDROID__)
-  DLOG(WARNING) << "OS_ANDROID: Home directory lookup not yet implemented.";
+  RAW_LOG(ERROR, "OS_ANDROID: Home directory lookup not yet implemented.");
 #endif
   // Fall back on temp dir if no home directory is defined.
   std::string rv;
