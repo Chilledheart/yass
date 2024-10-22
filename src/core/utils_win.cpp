@@ -217,16 +217,6 @@ uint64_t GetMonotonicTime() {
 #endif
 }
 
-static bool IsHandleConsole(HANDLE handle) {
-  DWORD mode;
-  return handle != HANDLE() && handle != INVALID_HANDLE_VALUE &&
-         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR && GetConsoleMode(handle, &mode);
-}
-
-bool IsProgramConsole(HANDLE handle) {
-  return IsHandleConsole(handle);
-}
-
 static const wchar_t* kDllWhiteList[] = {
 #ifdef HAVE_TCMALLOC
 #if defined(_M_X64) || defined(_M_ARM64)
@@ -350,13 +340,13 @@ static void CheckDynamicLibraries() {
                      [&findData](const wchar_t* dll) { return dll && _wcsicmp(dll, findData.cFileName) == 0; })) {
       continue;
     }
-    std::ostringstream os;
-    os << "\nUnknown DLL library \"" << findData.cFileName << "\" found in the directory with " << me << ".\n\n"
-       << "This may be a virus or a malicious program. \n\n"
-       << "Please remove all DLL libraries from this directory:\n\n"
-       << exe.substr(0, last) << "\n\n"
-       << "Alternatively, you can move " << me << " to a new directory.";
-    RAW_LOG(FATAL, os.str().c_str());
+    std::wostringstream os;
+    os << L"\nUnknown DLL library \"" << findData.cFileName << L"\" found in the directory with " << me << ".\n\n"
+       << L"This may be a virus or a malicious program. \n\n"
+       << L"Please remove all DLL libraries from this directory:\n\n"
+       << exe.substr(0, last) << L"\n\n"
+       << L"Alternatively, you can move " << me << L" to a new directory.";
+    RAW_LOG(FATAL, SysWideToUTF8(os.str()).c_str());
   } while (FindNextFileW(findHandle, &findData));
   FindClose(findHandle);
 }

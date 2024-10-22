@@ -62,8 +62,6 @@ using fd_t = int;
 #endif
 }  // namespace internal
 
-bool IsProgramConsole(internal::fd_t fd);
-
 using gurl_base::StringToInt;
 using gurl_base::StringToInt64;
 using gurl_base::StringToUint;
