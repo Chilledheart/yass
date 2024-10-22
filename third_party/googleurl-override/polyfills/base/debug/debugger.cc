@@ -15,7 +15,7 @@ namespace debug {
 static bool is_debug_ui_suppressed = false;
 
 bool WaitForDebugger(int wait_seconds, bool silent) {
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
   // The pid from which we know which process to attach to are not output by
   // android ddms, so we have to print it out explicitly.
   DLOG(INFO) << "DebugUtil::WaitForDebugger(pid=" << static_cast<int>(getpid())

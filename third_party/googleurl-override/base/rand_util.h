@@ -27,7 +27,7 @@ class TimeDelta;
 
 namespace internal {
 
-#if BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 // Sets the implementation of RandBytes according to the corresponding
 // base::Feature. Thread safe: allows to switch while RandBytes() is in use.
 void ConfigureRandBytesFieldTrial();
