@@ -72,7 +72,7 @@ class URandomFd {
 };
 
 #if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || \
-     BUILDFLAG(IS_ANDROID)) &&                        \
+     BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)) &&  \
     !BUILDFLAG(IS_NACL)
 // TODO(pasko): Unify reading kernel version numbers in:
 // mojo/core/channel_linux.cc
@@ -124,21 +124,9 @@ bool GetRandomSyscall(void* output, size_t output_length) {
   return false;
 }
 #endif  // (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
-        // BUILDFLAG(IS_ANDROID)) && !BUILDFLAG(IS_NACL)
+        // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)) && !BUILDFLAG(IS_NACL)
 
-#if BUILDFLAG(IS_ANDROID)
-std::atomic<bool> g_use_getrandom;
-
-// Note: the BoringSSL feature takes precedence over the getrandom() trial if
-// both are enabled.
-BASE_FEATURE(kUseGetrandomForRandBytes,
-             "UseGetrandomForRandBytes",
-             FEATURE_ENABLED_BY_DEFAULT);
-
-bool UseGetrandom() {
-  return g_use_getrandom.load(std::memory_order_relaxed);
-}
-#elif (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && !BUILDFLAG(IS_NACL)
+#if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)) && !BUILDFLAG(IS_NACL)
 bool UseGetrandom() {
   return true;
 }
@@ -146,22 +134,11 @@ bool UseGetrandom() {
 
 }  // namespace
 
-namespace internal {
-
-#if BUILDFLAG(IS_ANDROID)
-void ConfigureRandBytesFieldTrial() {
-  g_use_getrandom.store(FeatureList::IsEnabled(kUseGetrandomForRandBytes),
-                        std::memory_order_relaxed);
-}
-#endif
-
-}  // namespace internal
-
 namespace {
 
 void RandBytes(void* output, size_t output_length, bool avoid_allocation) {
 #if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || \
-     BUILDFLAG(IS_ANDROID)) &&                        \
+     BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)) && \
     !BUILDFLAG(IS_NACL)
   if (avoid_allocation || UseGetrandom()) {
     // On Android it is mandatory to check that the kernel _version_ has the
