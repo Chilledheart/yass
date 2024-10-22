@@ -34,7 +34,6 @@
 #include <absl/flags/internal/program_name.h>
 #include <absl/strings/str_cat.h>
 #include <base/posix/eintr_wrapper.h>
-#include <base/strings/string_number_conversions.h>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -53,46 +52,6 @@ OpenApkAssetType a_open_apk_asset = nullptr;
 std::string h_cache_dir;
 std::string h_data_dir;
 #endif
-
-std::optional<int> StringToInteger(std::string_view value) {
-  int result;
-
-  if (gurl_base::StringToInt(value, &result)) {
-    return result;
-  }
-
-  return std::nullopt;
-}
-
-std::optional<unsigned> StringToIntegerU(std::string_view value) {
-  unsigned result;
-
-  if (gurl_base::StringToUint(value, &result)) {
-    return result;
-  }
-
-  return std::nullopt;
-}
-
-std::optional<int64_t> StringToInteger64(std::string_view value) {
-  int64_t result;
-
-  if (gurl_base::StringToInt64(value, &result)) {
-    return result;
-  }
-
-  return std::nullopt;
-}
-
-std::optional<uint64_t> StringToIntegerU64(std::string_view value) {
-  uint64_t result;
-
-  if (gurl_base::StringToUint64(value, &result)) {
-    return result;
-  }
-
-  return std::nullopt;
-}
 
 #ifdef _WIN32
 const char kSeparators[] = "/\\";

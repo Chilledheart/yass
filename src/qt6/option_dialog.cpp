@@ -119,22 +119,33 @@ void OptionDialog::LoadChanges() {
 
 bool OptionDialog::OnSave() {
   auto tcp_keep_alive = tcp_keep_alive_->checkState() == Qt::CheckState::Checked;
-  auto tcp_keep_alive_cnt = StringToIntegerU(tcp_keep_alive_cnt_->text().toUtf8().data());
-  auto tcp_keep_alive_idle_timeout = StringToIntegerU(tcp_keep_alive_idle_timeout_->text().toUtf8().data());
-  auto tcp_keep_alive_interval = StringToIntegerU(tcp_keep_alive_interval_->text().toUtf8().data());
 
-  auto enable_post_quantum_kyber = enable_post_quantum_kyber_->checkState() == Qt::CheckState::Checked;
-
-  if (!tcp_keep_alive_cnt.has_value() || !tcp_keep_alive_idle_timeout.has_value() ||
-      !tcp_keep_alive_interval.has_value()) {
-    LOG(WARNING) << "invalid options";
+  int tcp_keep_alive_cnt;
+  if (!StringToInt(tcp_keep_alive_cnt_->text().toUtf8().data(), &tcp_keep_alive_cnt) || tcp_keep_alive_cnt < 0) {
+    LOG(WARNING) << "invalid options: tcp_keep_alive_cnt";
     return false;
   }
 
+  int tcp_keep_alive_idle_timeout;
+  if (!StringToInt(tcp_keep_alive_idle_timeout_->text().toUtf8().data(), &tcp_keep_alive_idle_timeout) ||
+      tcp_keep_alive_idle_timeout < 0) {
+    LOG(WARNING) << "invalid options: tcp_keep_alive_idle_timeout";
+    return false;
+  }
+
+  int tcp_keep_alive_interval;
+  if (!StringToInt(tcp_keep_alive_interval_->text().toUtf8().data(), &tcp_keep_alive_interval) ||
+      tcp_keep_alive_interval < 0) {
+    LOG(WARNING) << "invalid options: tcp_keep_alive_interval";
+    return false;
+  }
+
+  auto enable_post_quantum_kyber = enable_post_quantum_kyber_->checkState() == Qt::CheckState::Checked;
+
   absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
-  absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, tcp_keep_alive_cnt.value());
-  absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, tcp_keep_alive_idle_timeout.value());
-  absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval.value());
+  absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, tcp_keep_alive_cnt);
+  absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, tcp_keep_alive_idle_timeout);
+  absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval);
 
   absl::SetFlag(&FLAGS_enable_post_quantum_kyber, enable_post_quantum_kyber);
 

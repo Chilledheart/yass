@@ -75,25 +75,6 @@ TEST(UtilsTest, ExpandUserFromString) {
 }
 #endif
 
-TEST(UtilsTest, StringToInteger) {
-  auto i = StringToInteger("123");
-  ASSERT_TRUE(i.has_value());
-  ASSERT_EQ(i.value(), 123);
-
-  constexpr const char s3[] = "123\1";
-  i = StringToInteger(std::string(s3, 3));
-  ASSERT_TRUE(i.has_value());
-  ASSERT_EQ(i.value(), 123);
-
-  i = StringToInteger(std::string(s3, 4));
-  ASSERT_FALSE(i.has_value());
-
-  constexpr const char s4[] = "123a\1";
-
-  i = StringToInteger(std::string(s4, 4));
-  ASSERT_FALSE(i.has_value());
-}
-
 TEST(UtilsTest, GetTempDir) {
   std::string tmp_dir;
   ASSERT_TRUE(GetTempDir(&tmp_dir));

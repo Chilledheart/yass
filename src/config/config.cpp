@@ -319,8 +319,8 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     err_msg << ",Invalid Rate Limit: " << _limit_rate;
   }
 
-  auto timeout = StringToIntegerU(_timeout);
-  if (!timeout.has_value()) {
+  int timeout;
+  if (!StringToInt(_timeout, &timeout) || timeout < 0) {
     err_msg << ",Invalid Connect Timeout: " << _timeout;
   }
 
@@ -337,7 +337,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     absl::SetFlag(&FLAGS_doh_url, doh_url);
     absl::SetFlag(&FLAGS_dot_host, dot_host);
     absl::SetFlag(&FLAGS_limit_rate, limit_rate);
-    absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
+    absl::SetFlag(&FLAGS_connect_timeout, timeout);
   } else {
     ret = ret.substr(1);
   }
@@ -425,8 +425,8 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     err_msg << ",Invalid Rate Limit: " << _limit_rate;
   }
 
-  auto timeout = StringToIntegerU(_timeout);
-  if (!timeout.has_value()) {
+  int timeout;
+  if (!StringToInt(_timeout, &timeout) || timeout < 0) {
     err_msg << ",Invalid Connect Timeout: " << _timeout;
   }
 
@@ -443,7 +443,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
     absl::SetFlag(&FLAGS_doh_url, doh_url);
     absl::SetFlag(&FLAGS_dot_host, dot_host);
     absl::SetFlag(&FLAGS_limit_rate, limit_rate);
-    absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
+    absl::SetFlag(&FLAGS_connect_timeout, timeout);
   } else {
     ret = ret.substr(1);
   }

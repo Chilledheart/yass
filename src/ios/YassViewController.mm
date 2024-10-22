@@ -134,8 +134,8 @@
     }
   }
   if (textField == self.serverPort) {
-    auto port = StringToInteger(SysNSStringToUTF8(textField.text));
-    return port.has_value() && port.value() > 0 && port.value() < 65536 ? YES : NO;
+    int port;
+    return StringToInt(SysNSStringToUTF8(textField.text), &port) && port > 0 && port <= UINT16_MAX ? YES : NO;
   }
   if (textField == self.dohURL && [textField.text length]) {
     NSURL* url = [NSURL URLWithString:textField.text];
@@ -155,8 +155,8 @@
     }
   }
   if (textField == self.timeout) {
-    auto port = StringToInteger(SysNSStringToUTF8(textField.text));
-    return port.has_value() && port.value() >= 0 ? YES : NO;
+    int timeout;
+    return StringToInt(SysNSStringToUTF8(textField.text), &timeout) && timeout >= 0 ? YES : NO;
   }
   return YES;
 }
