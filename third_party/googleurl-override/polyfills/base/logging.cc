@@ -2418,9 +2418,7 @@ static void GetTempDirectories(std::vector<std::string>* list) {
     list->push_back(SysWideToUTF8(std::wstring(tmp, len)));
   list->push_back("C:\\tmp\\");
   list->push_back("C:\\temp\\");
-#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
-  list->push_back("/data/local/tmp/"); // FIXME use cache dir by system
-#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_IOS)
+#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_IOS)
   std::string tmp_dir;
   if (GetTempDir(&tmp_dir)) {
     if (tmp_dir[tmp_dir.size() - 1] != '/') {
@@ -2428,7 +2426,11 @@ static void GetTempDirectories(std::vector<std::string>* list) {
     }
     list->push_back(tmp_dir);
   }
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+  list->push_back("/data/local/tmp/");
+#else
   list->push_back("/tmp/");
+#endif
 #else
   // Directories, in order of preference. If we find a dir that
   // exists, we stop adding other less-preferred dirs

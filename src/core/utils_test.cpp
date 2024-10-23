@@ -12,6 +12,7 @@
 #endif
 
 #include <absl/strings/str_format.h>
+#include <base/files/file_util.h>
 #include <base/process/process_handle.h>
 #include <base/rand_util.h>
 #include <filesystem>
@@ -77,13 +78,13 @@ TEST(UtilsTest, ExpandUserFromString) {
 
 TEST(UtilsTest, GetTempDir) {
   std::string tmp_dir;
-  ASSERT_TRUE(GetTempDir(&tmp_dir));
+  ASSERT_TRUE(gurl_base::GetTempDir(&tmp_dir));
   ASSERT_FALSE(tmp_dir.empty());
   LOG(WARNING) << "tmp_dir: " << tmp_dir;
 }
 
 TEST(UtilsTest, GetHomeDir) {
-  std::string home_dir = GetHomeDir();
+  std::string home_dir = gurl_base::GetHomeDir();
   ASSERT_FALSE(home_dir.empty());
   LOG(WARNING) << "home_dir: " << home_dir;
 }

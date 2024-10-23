@@ -5,6 +5,7 @@
 
 #include "android/yass.hpp"
 
+#include <base/files/file_util.h>
 #include <jni.h>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
@@ -46,7 +47,9 @@ void Init(JNIEnv* env, jobject activity_obj) {
   // FIXME correct the path
   std::string lib_path;
   CHECK_EQ(0, GetNativeLibraryDirectory(env, activity_obj, &lib_path));
-  CHECK(InitializeCrashpad(lib_path + "/libnative-lib.so"));
+  std::string data_path;
+  CHECK_EQ(0, GetDataLibraryDirectory(env, activity_obj, &data_path));
+  CHECK(InitializeCrashpad(lib_path + "/libnative-lib.so", data_path));
 #endif
 
   config::ReadConfigFileAndArguments(0, nullptr);
@@ -141,7 +144,7 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv* env,
   // before any log calls
   std::string cache_path;
   CHECK_EQ(0, GetCacheLibraryDirectory(env, obj, &cache_path));
-  a_cache_dir = cache_path;
+  gurl_base::SetTempDir(cache_path);
 
   std::string exe_path;
   GetExecutablePath(&exe_path);
@@ -149,7 +152,7 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv* env,
 
   std::string data_path;
   CHECK_EQ(0, GetDataLibraryDirectory(env, obj, &data_path));
-  a_data_dir = data_path;
+  gurl_base::SetDataDir(data_path);
 
   LOG(INFO) << "exe path: " << exe_path;
   LOG(INFO) << "cache dir: " << cache_path;

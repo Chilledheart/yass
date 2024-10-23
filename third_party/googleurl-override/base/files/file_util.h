@@ -11,6 +11,7 @@
 #include <string>
 
 #include "base/base_export.h"
+#include "build/build_config.h"
 
 namespace gurl_base {
 
@@ -21,6 +22,28 @@ namespace gurl_base {
 // permissions are set so that other users on the system can't edit them while
 // they're open (which can lead to security issues).
 BASE_EXPORT bool GetTempDir(std::string* path);
+#if BUILDFLAG(IS_WIN)
+BASE_EXPORT bool GetTempDir(std::wstring* path);
+#endif
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+BASE_EXPORT void SetTempDir(const std::string& path);
+#endif
+
+// Get the home directory. This is more complicated than just getenv("HOME")
+// as it knows to fall back on getpwent() etc.
+//
+// You should not generally call this directly. Instead use DIR_HOME with the
+// path service which will use this function but cache the value.
+// Path service may also override DIR_HOME.
+BASE_EXPORT std::string GetHomeDir();
+#if BUILDFLAG(IS_WIN)
+BASE_EXPORT std::wstring GetHomeDirW();
+#endif
+
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+BASE_EXPORT bool GetDataDir(std::string* path);
+BASE_EXPORT void SetDataDir(const std::string& path);
+#endif
 
 }  // namespace gurl_base
 

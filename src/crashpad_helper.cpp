@@ -21,8 +21,8 @@ extern std::string a_data_dir;
 
 #if BUILDFLAG(IS_IOS)
 static std::unique_ptr<crashpad::CrashReportDatabase> g_database;
-bool InitializeCrashpad(const std::string& exe_path) {
-  std::filesystem::path tempDir = std::filesystem::temp_directory_path();
+bool InitializeCrashpad(const std::string& exe_path, const std::string& temp_path) {
+  std::filesystem::path tempDir = temp_path;
 
   base::FilePath reportsDir(tempDir / "crashpad");
 
@@ -48,13 +48,9 @@ bool InitializeCrashpad(const std::string& exe_path) {
   return ret;
 }
 #else
-bool InitializeCrashpad(const std::string& exe_path) {
+bool InitializeCrashpad(const std::string& exe_path, const std::string& temp_path) {
   std::filesystem::path exeDir = std::filesystem::path(exe_path).parent_path();
-#ifdef __ANDROID__
-  std::filesystem::path tempDir = a_data_dir;
-#else
-  std::filesystem::path tempDir = std::filesystem::temp_directory_path();
-#endif
+  std::filesystem::path tempDir = temp_path;
 
   // Ensure that handler is shipped with your application
 #ifdef _WIN32

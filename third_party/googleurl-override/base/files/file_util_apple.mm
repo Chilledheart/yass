@@ -35,4 +35,21 @@ bool GetTempDir(std::string* path) {
   return true;
 }
 
+std::string GetHomeDir() {
+  NSString* tmp = NSHomeDirectory();
+  if (tmp != nil) {
+    auto path = SysNSStringToUTF8(tmp);
+    if (!path.empty()) {
+      return path;
+    }
+  }
+  // Fall back on temp dir if no home directory is defined.
+  std::string rv;
+  if (GetTempDir(&rv)) {
+    return rv;
+  }
+  // Last resort.
+  return "/tmp";
+}
+
 }  // namespace gurl_base

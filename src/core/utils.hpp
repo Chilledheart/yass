@@ -20,15 +20,8 @@
 #include "core/span.hpp"
 
 #ifdef __ANDROID__
-extern std::string a_cache_dir;
-extern std::string a_data_dir;
 typedef int (*OpenApkAssetType)(const std::string&, gurl_base::MemoryMappedFile::Region*);
 extern OpenApkAssetType a_open_apk_asset;
-#endif
-
-#ifdef __OHOS__
-extern std::string h_cache_dir;
-extern std::string h_data_dir;
 #endif
 
 using gurl_base::PlatformFile;
@@ -186,16 +179,6 @@ bool GetExecutablePath(std::wstring* exe_path);
 void SetExecutablePath(const std::string& exe_path);
 #ifdef _WIN32
 void SetExecutablePath(const std::wstring& exe_path);
-#endif
-
-bool GetTempDir(std::string* path);
-#ifdef _WIN32
-bool GetTempDir(std::wstring* path);
-#endif
-
-std::string GetHomeDir();
-#ifdef _WIN32
-std::wstring GetHomeDirW();
 #endif
 
 bool Net_ipv6works();

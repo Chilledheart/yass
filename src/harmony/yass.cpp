@@ -4,6 +4,7 @@
 
 #include "harmony/yass.hpp"
 
+#include <base/files/file_util.h>
 #include <base/posix/eintr_wrapper.h>
 #include <js_native_api.h>
 #include <js_native_api_types.h>
@@ -1107,8 +1108,11 @@ static napi_value initRoutine(napi_env env, napi_callback_info info) {
   GetExecutablePath(&exe_path);
   SetExecutablePath(exe_path);
 
-  h_cache_dir = std::string(cache_path_buf, cache_path_size);
-  h_data_dir = std::string(data_path_buf, data_path_size);
+  auto h_cache_dir = std::string(cache_path_buf, cache_path_size);
+  auto h_data_dir = std::string(data_path_buf, data_path_size);
+
+  gurl_base::SetTempDir(h_cache_dir);
+  gurl_base::SetDataDir(h_data_dir);
 
   LOG(INFO) << "exe path: " << exe_path;
   LOG(INFO) << "cache dir: " << h_cache_dir;
