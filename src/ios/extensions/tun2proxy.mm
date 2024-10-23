@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <base/check.h>
 #include <base/posix/eintr_wrapper.h>
 
 struct Tun2Proxy_InitContext {
@@ -39,7 +40,7 @@ static NEPacket* packetFromData(NSData* data) {
   uint8_t version_ih = 0;
   [data getBytes:&version_ih length:sizeof(version_ih)];
   uint8_t version = version_ih >> 4;
-  assert((version == 4 || version == 6) && "unsupported ip hdr");
+  DCHECK(version == 4 || version == 6) << "unsupported ip hdr version: " << version;
   return [[NEPacket alloc] initWithData:data protocolFamily:version == 6 ? AF_INET6 : AF_INET];
 }
 
@@ -103,10 +104,12 @@ Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow* packetFlow,
 }
 
 int Tun2Proxy_Run(Tun2Proxy_InitContext* context) {
+  DCHECK(context);
   return tun2proxy_run(context->tun2proxy_ptr);
 }
 
 void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPacket*>* packets) {
+  DCHECK(context);
   for (NEPacket* packet in packets) {
     ReadPacketContext* p = new ReadPacketContext;
     p->data = packet.data;
@@ -118,11 +121,15 @@ void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPack
 }
 
 void Tun2Proxy_Shutdown(Tun2Proxy_InitContext* context) {
+  DCHECK(context);
   tun2proxy_shutdown(context->tun2proxy_ptr);
   IGNORE_EINTR(close(context->read_fd));
 }
 
 void Tun2Proxy_Destroy(Tun2Proxy_InitContext* context) {
+  if (context == nullptr) {
+    return;
+  }
   tun2proxy_destroy(context->tun2proxy_ptr);
   context->packetFlow = nil;
   context->tun2proxy_ptr = nullptr;

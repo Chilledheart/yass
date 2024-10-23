@@ -98,7 +98,17 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
     if (successed) {
       NSLog(@"worker started");
-      [self startTunnelWithOptionsOnCallback:completionHandler];
+      BOOL ret = [self startTunnelWithOptionsOnCallback:completionHandler];
+
+      if (!ret) {
+        [self stopTunnelWithReason:NEProviderStopReasonConfigurationFailed
+                 completionHandler:^() {
+                   completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
+                                                         code:200
+                                                     userInfo:@{@"Error reason" : @"tunnel init failure"}]);
+                 }];
+        return;
+      }
     } else {
       completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
                                             code:200
@@ -109,7 +119,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   worker_->Start(std::move(callback));
 }
 
-- (void)startTunnelWithOptionsOnCallback:(void (^)(NSError*))completionHandler {
+- (BOOL)startTunnelWithOptionsOnCallback:(void (^)(NSError*))completionHandler {
   NETunnelProviderProtocol* protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
 
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
@@ -133,20 +143,16 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   } else if ([remote_ips_v6 count]) {
     remoteIp = remote_ips_v6[0];
   } else {
-    completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
-                                          code:200
-                                      userInfo:@{@"Error reason" : @"invalid IP address"}]);
-    return;
+    NSLog(@"tun2proxy inited with empty remote ip addresses");
+    return FALSE;
   }
 
   std::string proxy_url = absl::StrFormat("socks5://%s:%d", SysNSStringToUTF8(local_host), local_port);
 
   context_ = Tun2Proxy_Init(self.packetFlow, proxy_url, DEFAULT_MTU, 0, true);
   if (!context_) {
-    completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
-                                          code:200
-                                      userInfo:@{@"Error reason" : @"tun2proxy init failure"}]);
-    return;
+    NSLog(@"tun2proxy inited with empty tun2proxy context");
+    return FALSE;
   }
   NSLog(@"tun2proxy inited with %s remote ip %@ mtu %d dns_proxy %s", proxy_url.c_str(), remoteIp, DEFAULT_MTU, "true");
   Tun2Proxy_InitContext* context = context_;
@@ -219,16 +225,26 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   tunnelNetworkSettings.proxySettings = proxySettings;
 #endif
 
+  __weak YassPacketTunnelProvider* weakSelf = self;
   [self setTunnelNetworkSettings:tunnelNetworkSettings
                completionHandler:^(NSError* _Nullable error) {
                  if (error) {
-                   completionHandler(error);
+                   __typeof__(self) strongSelf = weakSelf;
+                   if (strongSelf == nil) {
+                     completionHandler(error);
+                     return;
+                   }
+                   [strongSelf stopTunnelWithReason:NEProviderStopReasonConfigurationFailed
+                                  completionHandler:^() {
+                                    completionHandler(error);
+                                  }];
                    return;
                  }
                  NSLog(@"tunnel: start");
                  completionHandler(nil);
                }];
   [self readPackets];
+  return TRUE;
 }
 
 - (void)readPackets {
@@ -252,6 +268,10 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
   NSLog(@"tunnel: stop with reason %ld", reason);
+  if (stopped_) {
+    completionHandler();
+    return;
+  }
   stopped_ = true;
   if (!worker_) {
     // nothing to do, just leave
@@ -261,19 +281,15 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   }
   absl::AnyInvocable<void()> callback = [self, completionHandler]() {
     NSLog(@"worker stopped");
-    if (context_ == nullptr) {
-      NSLog(@"tun2proxy destroyed an empty context");
-      DCHECK(!tun2proxy_thread_);
-      goto done;
+    if (tun2proxy_thread_) {
+      Tun2Proxy_Shutdown(context_);
+      NSLog(@"tun2proxy shutdown");
+      tun2proxy_thread_->join();
+      tun2proxy_thread_.reset();
     }
-    Tun2Proxy_Shutdown(context_);
-    NSLog(@"tun2proxy shutdown");
-    tun2proxy_thread_->join();
-    tun2proxy_thread_.reset();
     Tun2Proxy_Destroy(context_);
     NSLog(@"tun2proxy destroyed");
     context_ = nullptr;
-  done:
     completionHandler();
   };
   worker_->Stop(std::move(callback));
