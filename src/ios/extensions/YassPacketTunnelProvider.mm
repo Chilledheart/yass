@@ -40,6 +40,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
 - (void)startTunnelWithOptions:(NSDictionary*)options completionHandler:(void (^)(NSError*))completionHandler {
   stopped_ = false;
+  context_ = nullptr;
   // setup signal handler
   signal(SIGPIPE, SIG_IGN);
 
