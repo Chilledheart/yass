@@ -18,6 +18,7 @@ bool parseTelemetryJson(std::string_view resp, uint64_t* total_rx_bytes, uint64_
 constexpr const char kAppMessageGetTelemetry[] = "__get_telemetry";
 
 constexpr const char kServerHostFieldName[] = "server_host";
+constexpr const char kServerSNIFieldName[] = "server_sni";
 constexpr const char kServerPortFieldName[] = "server_port";
 constexpr const char kUsernameFieldName[] = "username";
 constexpr const char kPasswordFieldName[] = "password";

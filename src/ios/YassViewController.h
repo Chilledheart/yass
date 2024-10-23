@@ -18,6 +18,7 @@
 @property(weak, nonatomic) IBOutlet UIButton* startButton;
 @property(weak, nonatomic) IBOutlet UIButton* stopButton;
 @property(weak, nonatomic) IBOutlet UITextField* serverHost;
+@property(weak, nonatomic) IBOutlet UITextField* serverSNI;
 @property(weak, nonatomic) IBOutlet UITextField* serverPort;
 @property(weak, nonatomic) IBOutlet UITextField* username;
 @property(weak, nonatomic) IBOutlet UITextField* password;
