@@ -4,6 +4,7 @@
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <base/files/file_util.h>
 #include <stdint.h>
 #include <cassert>
 #include <iostream>
@@ -86,12 +87,13 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
 #elif defined(__APPLE__)
   std::cerr << "using option from defaults database" << std::endl;
   return std::make_unique<ConfigImplApple>();
-#elif defined(__ANDROID__)
-  std::string configfile = absl::StrCat(a_data_dir, "/", "config.json");
-  std::cerr << "using option from file: " << configfile << std::endl;
-  return std::make_unique<ConfigImplLocal>(configfile);
-#elif defined(__OHOS__)
-  std::string configfile = absl::StrCat(h_data_dir, "/", "config.json");
+#elif BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+  std::string data_dir;
+  if (!gurl_base::GetDataDir(&data_dir)) {
+    std::cerr << "data dir not set, falling back to ~/.yass" << std::endl;
+    data_dir = "~/.yass";
+  }
+  std::string configfile = absl::StrCat(data_dir, "/", "config.json");
   std::cerr << "using option from file: " << configfile << std::endl;
   return std::make_unique<ConfigImplLocal>(configfile);
 #else

@@ -33,6 +33,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/internal/program_name.h>
 #include <absl/strings/str_cat.h>
+#include <base/files/file_util.h>
 #include <base/posix/eintr_wrapper.h>
 #include <iomanip>
 #include <limits>
@@ -43,14 +44,7 @@
 #include "core/logging.hpp"
 
 #ifdef __ANDROID__
-std::string a_cache_dir;
-std::string a_data_dir;
 OpenApkAssetType a_open_apk_asset = nullptr;
-#endif
-
-#ifdef __OHOS__
-std::string h_cache_dir;
-std::string h_data_dir;
 #endif
 
 #ifdef _WIN32
@@ -141,9 +135,10 @@ std::string ExpandUser(std::string_view file_path) {
         home = home_str;
       }
     }
-#ifdef __ANDROID__
-    if (!a_data_dir.empty()) {
-      home = a_data_dir;
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+    std::string data_dir;
+    if (gurl_base::GetDataDir(&data_dir)) {
+      home = data_dir;
     }
 #endif
     if (home.empty()) {
@@ -224,49 +219,6 @@ void SetExecutablePath(const std::string& exe_path) {
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
-bool GetTempDir(std::string* path) {
-  const char* tmp = getenv("TMPDIR");
-  if (tmp) {
-    *path = tmp;
-    return true;
-  }
-#if BUILDFLAG(IS_ANDROID)
-  // return PathService::Get(DIR_CACHE, path);
-  if (!a_cache_dir.empty()) {
-    *path = a_cache_dir;
-    return true;
-  }
-#endif
-#if BUILDFLAG(IS_OHOS)
-  if (!h_cache_dir.empty()) {
-    *path = h_cache_dir;
-    return true;
-  }
-#endif
-#if defined(__ANDROID__) || defined(__OHOS__)
-  *path = "/data/local/tmp";
-#else
-  *path = "/tmp";
-#endif
-  return true;
-}
-
-std::string GetHomeDir() {
-  const char* home_dir = getenv("HOME");
-  if (home_dir && home_dir[0]) {
-    return home_dir;
-  }
-#if defined(__ANDROID__)
-  RAW_LOG(ERROR, "OS_ANDROID: Home directory lookup not yet implemented.");
-#endif
-  // Fall back on temp dir if no home directory is defined.
-  std::string rv;
-  if (GetTempDir(&rv)) {
-    return rv;
-  }
-  // Last resort.
-  return "/tmp";
-}
 #endif
 
 /*

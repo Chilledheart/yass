@@ -207,12 +207,10 @@ if (WIN32)
     googleurl/base/strings/sys_string_conversions_win.cc)
 
   target_sources(url PRIVATE
+    googleurl-override/base/files/file_util_win.cc
     googleurl/base/strings/string_util_win.h
     googleurl/base/strings/string_util_win.cc)
-elseif(NOT APPLE)
-  target_sources(url PRIVATE
-    googleurl/base/strings/sys_string_conversions_posix.cc)
-else()
+elseif(APPLE)
   target_sources(url PRIVATE
     googleurl-override/base/apple/scoped_cftyperef.h
     googleurl-override/base/apple/scoped_typeref.h
@@ -223,6 +221,10 @@ else()
     googleurl-override/base/strings/sys_string_conversions_apple.mm
   )
   # missing apple part
+else()
+  target_sources(url PRIVATE
+    googleurl-override/base/files/file_util_posix.cc
+    googleurl/base/strings/sys_string_conversions_posix.cc)
 endif()
 
 if (WIN32)
