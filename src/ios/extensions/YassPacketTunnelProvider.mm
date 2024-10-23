@@ -253,13 +253,27 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
   NSLog(@"tunnel: stop with reason %ld", reason);
   stopped_ = true;
+  if (!worker_) {
+    // nothing to do, just leave
+    NSLog(@"tunnel: stopped with empty worker");
+    completionHandler();
+    return;
+  }
   absl::AnyInvocable<void()> callback = [self, completionHandler]() {
     NSLog(@"worker stopped");
+    if (context_ == nullptr) {
+      NSLog(@"tun2proxy destroyed an empty context");
+      DCHECK(!tun2proxy_thread_);
+      goto done;
+    }
     Tun2Proxy_Shutdown(context_);
-    NSLog(@"tun2proxy destroyed");
+    NSLog(@"tun2proxy shutdown");
     tun2proxy_thread_->join();
     tun2proxy_thread_.reset();
     Tun2Proxy_Destroy(context_);
+    NSLog(@"tun2proxy destroyed");
+    context_ = nullptr;
+  done:
     completionHandler();
   };
   worker_->Stop(std::move(callback));
