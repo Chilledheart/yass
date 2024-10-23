@@ -43,6 +43,7 @@
   [self.cipherMethod setDataSource:self];
   [self.cipherMethod reloadAllComponents];
   [self.serverHost setDelegate:self];
+  [self.serverSNI setDelegate:self];
   [self.serverPort setDelegate:self];
   [self.username setDelegate:self];
   [self.password setDelegate:self];
@@ -100,6 +101,9 @@
 - (BOOL)textFieldShouldReturn:(UITextField*)textField {
   if (textField == self.serverHost) {
     [textField resignFirstResponder];
+    [self.serverSNI becomeFirstResponder];
+  } else if (textField == self.serverSNI) {
+    [textField resignFirstResponder];
     [self.serverPort becomeFirstResponder];
   } else if (textField == self.serverPort) {
     [textField resignFirstResponder];
@@ -129,6 +133,11 @@
 
 - (BOOL)textFieldShouldEndEditing:(UITextField*)textField {
   if (textField == self.serverHost) {
+    if (textField.text.length > TLSEXT_MAXLEN_host_name) {
+      return NO;
+    }
+  }
+  if (textField == self.serverSNI) {
     if (textField.text.length > TLSEXT_MAXLEN_host_name) {
       return NO;
     }
@@ -198,6 +207,7 @@
 - (void)Starting {
   [self UpdateStatusBar];
   [self.serverHost setUserInteractionEnabled:FALSE];
+  [self.serverSNI setUserInteractionEnabled:FALSE];
   [self.serverPort setUserInteractionEnabled:FALSE];
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
@@ -213,6 +223,7 @@
 - (void)Started {
   [self UpdateStatusBar];
   [self.serverHost setUserInteractionEnabled:FALSE];
+  [self.serverSNI setUserInteractionEnabled:FALSE];
   [self.serverPort setUserInteractionEnabled:FALSE];
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
@@ -228,6 +239,7 @@
 - (void)StartFailed {
   [self UpdateStatusBar];
   [self.serverHost setUserInteractionEnabled:TRUE];
+  [self.serverSNI setUserInteractionEnabled:TRUE];
   [self.serverPort setUserInteractionEnabled:TRUE];
   [self.username setUserInteractionEnabled:TRUE];
   [self.password setUserInteractionEnabled:TRUE];
@@ -243,6 +255,7 @@
 - (void)Stopping {
   [self UpdateStatusBar];
   [self.serverHost setUserInteractionEnabled:FALSE];
+  [self.serverSNI setUserInteractionEnabled:FALSE];
   [self.serverPort setUserInteractionEnabled:FALSE];
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
@@ -258,6 +271,7 @@
 - (void)Stopped {
   [self UpdateStatusBar];
   [self.serverHost setUserInteractionEnabled:TRUE];
+  [self.serverSNI setUserInteractionEnabled:TRUE];
   [self.serverPort setUserInteractionEnabled:TRUE];
   [self.username setUserInteractionEnabled:TRUE];
   [self.password setUserInteractionEnabled:TRUE];
@@ -308,6 +322,7 @@
 
 - (void)LoadChanges {
   self.serverHost.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+  self.serverSNI.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_server_sni));
   self.serverPort.text = SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_server_port)));
   self.username.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));

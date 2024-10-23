@@ -62,6 +62,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   NETunnelProviderProtocol* protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
   auto server_host = SysNSStringToUTF8(dict[@(kServerHostFieldName)]);
+  auto server_sni = SysNSStringToUTF8(dict[@(kServerSNIFieldName)]);
   auto server_port = SysNSStringToUTF8(dict[@(kServerPortFieldName)]);
   auto username = SysNSStringToUTF8(dict[@(kUsernameFieldName)]);
   auto password = SysNSStringToUTF8(dict[@(kPasswordFieldName)]);
@@ -74,9 +75,8 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   auto connect_timeout = SysNSStringToUTF8(dict[@(kConnectTimeoutFieldName)]);
   auto enable_post_quantum_kyber = [dict[@(kEnablePostQuantumKyberKey)] boolValue];
 
-  auto err_msg =
-      config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
-                                     local_host, local_port, doh_url, dot_host, limit_rate, connect_timeout);
+  auto err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
+                                                local_host, local_port, doh_url, dot_host, limit_rate, connect_timeout);
   if (!err_msg.empty()) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
                                           code:200
