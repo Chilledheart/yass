@@ -318,6 +318,12 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Thu Oct 24 2024 Chilledheart <keeyou-cn@outlook.com> - 1.15.1-1
+  - build: add an option to enable/disable assertions
+  - tls: enable post quantum option for server-side
+  - tls: support both of mlkem and kyber for server-side
+  - tls: enable ALPS for HTTP/2 only
+  - core: move logging and other modules to googleurl
 * Tue Oct 15 2024 Chilledheart <keeyou-cn@outlook.com> - 1.15.0-1
   - bump to chromium 131 dependents
   - net: optimize yield algorithm

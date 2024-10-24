@@ -1,3 +1,12 @@
+yass (1.15.1-1) UNRELEASED; urgency=medium
+
+  * build: add an option to enable/disable assertions.
+  * tls: enable post quantum option for server-side.
+  * tls: support both of mlkem and kyber for server-side.
+  * tls: enable ALPS for HTTP/2 only.
+  * core: move logging and other modules to googleurl.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 24 Oct 2024 10:36:37 +0800
 yass (1.15.0-1) UNRELEASED; urgency=medium
 
   * bump to chromium 131 dependents.
