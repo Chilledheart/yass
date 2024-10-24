@@ -39,6 +39,7 @@
   NSTimer* refresh_timer_;
 
   NSString* server_host_;
+  NSString* server_sni_;
   NSString* server_port_;
   NSString* username_;
   NSString* password_;
@@ -258,6 +259,7 @@
 
   tunnelProtocol.providerConfiguration = @{
     @(kServerHostFieldName) : server_host_,
+    @(kServerSNIFieldName) : server_sni_,
     @(kServerPortFieldName) : server_port_,
     @(kUsernameFieldName) : username_,
     @(kPasswordFieldName) : password_,
@@ -415,6 +417,7 @@
 - (std::string)SaveConfig {
   YassViewController* viewController = [self getRootViewController];
   server_host_ = viewController.serverHost.text;
+  server_sni_ = viewController.serverSNI.text;
   server_port_ = viewController.serverPort.text;
   username_ = viewController.username.text;
   password_ = viewController.password.text;
@@ -425,6 +428,7 @@
   connect_timeout_ = viewController.timeout.text;
 
   auto server_host = SysNSStringToUTF8(server_host_);
+  auto server_sni = SysNSStringToUTF8(server_sni_);
   auto server_port = SysNSStringToUTF8(server_port_);
   auto username = SysNSStringToUTF8(username_);
   auto password = SysNSStringToUTF8(password_);
@@ -434,7 +438,7 @@
   auto limit_rate = SysNSStringToUTF8(limit_rate_);
   auto connect_timeout = SysNSStringToUTF8(connect_timeout_);
 
-  return config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
                                         "127.0.0.1", "0", doh_url, dot_host, limit_rate, connect_timeout);
 }
 

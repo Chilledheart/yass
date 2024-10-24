@@ -13,6 +13,9 @@
 /* Class = "UILabel"; text = "Server Host"; ObjectID = "g3k-Ab-Oin"; */
 "1EK-58-4Tb.text" = "Server Host";
 
+/* Class = "UILabel"; text = "Server SNI"; ObjectID = "g3k-Ab-Oin"; */
+"cQD-Db-bXg.text" = "Server SNI";
+
 /* Class = "UILabel"; text = "Server Port"; ObjectID = "mcp-Vm-U1E"; */
 "h37-oZ-p8D.text" = "Server Port";
 
